@@ -1,0 +1,10 @@
+# ============================================================================
+# NEURECTOMY Kubernetes Namespace
+# ============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: neurectomy
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/part-of: neurectomy-platform

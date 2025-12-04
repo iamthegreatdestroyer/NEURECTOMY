@@ -38,12 +38,12 @@ proptest! {
     #[test]
     fn prop_status_code_valid(code in arbitrary_status_code()) {
         prop_assert!(code >= 100 && code < 600);
-        
+
         // Categorize by range
         let is_success = code >= 200 && code < 300;
         let is_client_error = code >= 400 && code < 500;
         let is_server_error = code >= 500 && code < 600;
-        
+
         prop_assert!(is_success || is_client_error || is_server_error || code < 200);
     }
 
@@ -55,7 +55,7 @@ proptest! {
         id in "[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}"
     ) {
         let path = format!("/api/{}/{}/{}", version, resource, id);
-        
+
         prop_assert!(path.starts_with("/api/"));
         prop_assert!(path.contains(&version));
     }
@@ -83,7 +83,7 @@ proptest! {
         // Remaining should not exceed limit
         let actual_remaining = remaining.min(limit);
         prop_assert!(actual_remaining <= limit);
-        
+
         // Reset should be positive
         prop_assert!(reset_seconds > 0);
     }
@@ -98,12 +98,12 @@ proptest! {
         let total_pages = (total + per_page - 1) / per_page;
         let has_next = page < total_pages;
         let has_prev = page > 1;
-        
+
         if total > 0 {
             prop_assert!(total_pages >= 1);
         }
         prop_assert!(page >= 1);
-        
+
         // Verify logic consistency
         if page == 1 {
             prop_assert!(!has_prev);
@@ -124,7 +124,7 @@ proptest! {
             operation,
             field
         );
-        
+
         prop_assert!(query.contains("query"));
         prop_assert!(query.contains('{') && query.contains('}'));
     }
@@ -141,7 +141,7 @@ proptest! {
                 "message": message
             }
         });
-        
+
         prop_assert!(error["error"]["code"].is_string());
         prop_assert!(error["error"]["message"].is_string());
     }
@@ -150,7 +150,7 @@ proptest! {
     #[test]
     fn prop_request_id_format(_seed in 0u64..10000) {
         let request_id = format!("req_{}", uuid::Uuid::new_v4());
-        
+
         prop_assert!(request_id.starts_with("req_"));
         prop_assert!(request_id.len() > 10);
     }

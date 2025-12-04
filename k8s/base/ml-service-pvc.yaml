@@ -1,0 +1,36 @@
+# ============================================================================
+# NEURECTOMY ML Service - Persistent Volume Claims
+# ============================================================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ml-models-pvc
+  namespace: neurectomy
+  labels:
+    app.kubernetes.io/name: ml-service
+    app.kubernetes.io/component: storage
+    app.kubernetes.io/part-of: neurectomy-platform
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: standard
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ml-data-pvc
+  namespace: neurectomy
+  labels:
+    app.kubernetes.io/name: ml-service
+    app.kubernetes.io/component: storage
+    app.kubernetes.io/part-of: neurectomy-platform
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: standard
+  resources:
+    requests:
+      storage: 50Gi

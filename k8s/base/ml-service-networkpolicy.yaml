@@ -1,0 +1,72 @@
+# ============================================================================
+# NEURECTOMY ML Service - Network Policy
+# ============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ml-service
+  namespace: neurectomy
+  labels:
+    app.kubernetes.io/name: ml-service
+    app.kubernetes.io/component: network
+    app.kubernetes.io/part-of: neurectomy-platform
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: ml-service
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow traffic from ingress controller
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8000
+    # Allow traffic from within neurectomy namespace
+    - from:
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 8000
+  egress:
+    # Allow DNS
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53
+    # Allow traffic to PostgreSQL
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgres
+      ports:
+        - protocol: TCP
+          port: 5432
+    # Allow traffic to Redis
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: redis
+      ports:
+        - protocol: TCP
+          port: 6379
+    # Allow traffic to MLflow
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: mlflow
+      ports:
+        - protocol: TCP
+          port: 5000
+    # Allow external HTTPS (for APIs like VAST)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 443

@@ -1,0 +1,56 @@
+# ============================================================================
+# NEURECTOMY ML Service - Kubernetes Service
+# ============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: ml-service
+  namespace: neurectomy
+  labels:
+    app.kubernetes.io/name: ml-service
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: neurectomy-platform
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: ml-service
+---
+# ============================================================================
+# NEURECTOMY ML Service - Ingress
+# ============================================================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ml-service
+  namespace: neurectomy
+  labels:
+    app.kubernetes.io/name: ml-service
+    app.kubernetes.io/component: backend
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+    - hosts:
+        - ml-api.neurectomy.io
+      secretName: ml-service-tls
+  rules:
+    - host: ml-api.neurectomy.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ml-service
+                port:
+                  name: http

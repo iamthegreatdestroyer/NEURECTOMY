@@ -1,0 +1,18 @@
+# ============================================================================
+# NEURECTOMY ML Service - ConfigMap
+# ============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ml-service-config
+  namespace: neurectomy
+  labels:
+    app.kubernetes.io/name: ml-service
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: neurectomy-platform
+data:
+  mlflow-tracking-uri: "http://mlflow:5000"
+  log-level: "INFO"
+  rate-limit-requests: "100"
+  rate-limit-window-seconds: "60"
+  max-workers: "4"

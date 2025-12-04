@@ -17,7 +17,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-neurectomy}
       POSTGRES_DB: ${POSTGRES_DB:-neurectomy}
     ports:
-      - "5432:5432"
+      - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/postgres/init:/docker-entrypoint-initdb.d
@@ -190,6 +190,154 @@ services:
       - neurectomy-network
 
   # =============================================================================
+  # MLOps Services (Phase 2: Intelligence Layer)
+  # =============================================================================
+
+  mlflow:
+    build:
+      context: ./docker/mlflow
+      dockerfile: Dockerfile
+    container_name: neurectomy-mlflow
+    restart: unless-stopped
+    environment:
+      MLFLOW_TRACKING_URI: http://0.0.0.0:5000
+      MLFLOW_BACKEND_STORE_URI: postgresql://neurectomy:neurectomy@postgres:5432/mlflow
+      MLFLOW_ARTIFACT_ROOT: /mlflow/artifacts
+    command: >
+      mlflow server
+      --backend-store-uri postgresql://neurectomy:neurectomy@postgres:5432/mlflow
+      --default-artifact-root /mlflow/artifacts
+      --host 0.0.0.0
+      --port 5000
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow_artifacts:/mlflow/artifacts
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - neurectomy-network
+
+  optuna-dashboard:
+    image: ghcr.io/optuna/optuna-dashboard:latest
+    container_name: neurectomy-optuna-dashboard
+    restart: unless-stopped
+    command: >
+      optuna-dashboard postgresql://neurectomy:neurectomy@postgres:5432/optuna
+      --host 0.0.0.0
+      --port 8080
+    ports:
+      - "8085:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - neurectomy-network
+
+  # ChromaDB for vector storage (alternative to pgvector for experimentation)
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: neurectomy-chromadb
+    restart: unless-stopped
+    environment:
+      CHROMA_SERVER_AUTH_CREDENTIALS_PROVIDER: chromadb.auth.token.TokenConfigServerAuthCredentialsProvider
+      CHROMA_SERVER_AUTH_TOKEN_TRANSPORT_HEADER: X-Chroma-Token
+      CHROMA_SERVER_AUTH_CREDENTIALS: ${CHROMA_TOKEN:-neurectomy-secret-token}
+    ports:
+      - "8001:8000"
+    volumes:
+      - chromadb_data:/chroma/chroma
+    networks:
+      - neurectomy-network
+
+  # =============================================================================
+  # NEURECTOMY ML Service
+  # =============================================================================
+
+  ml-service:
+    build:
+      context: ./services/ml-service
+      dockerfile: Dockerfile
+    container_name: neurectomy-ml-service
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: production
+      PORT: 8000
+      DATABASE_URL: postgresql://neurectomy:neurectomy@postgres:5432/neurectomy
+      REDIS_URL: redis://redis:6379
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      JWT_SECRET: ${JWT_SECRET:-neurectomy-jwt-secret-change-in-production}
+      JWT_ALGORITHM: HS256
+      JWT_ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      JWT_REFRESH_TOKEN_EXPIRE_DAYS: 7
+      RATE_LIMIT_REQUESTS: 100
+      RATE_LIMIT_WINDOW_SECONDS: 60
+    ports:
+      - "8002:8000"
+    volumes:
+      - ml_models:/app/models
+      - ml_data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mlflow:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - neurectomy-network
+
+  # ML Service with GPU support (for training)
+  ml-service-gpu:
+    build:
+      context: ./services/ml-service
+      dockerfile: Dockerfile.gpu
+    container_name: neurectomy-ml-service-gpu
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: production
+      PORT: 8000
+      DATABASE_URL: postgresql://neurectomy:neurectomy@postgres:5432/neurectomy
+      REDIS_URL: redis://redis:6379
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      JWT_SECRET: ${JWT_SECRET:-neurectomy-jwt-secret-change-in-production}
+      CUDA_VISIBLE_DEVICES: 0
+    ports:
+      - "8003:8000"
+    volumes:
+      - ml_models:/app/models
+      - ml_data:/app/data
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mlflow:
+        condition: service_healthy
+    profiles:
+      - gpu
+    networks:
+      - neurectomy-network
+
+  # =============================================================================
   # NEURECTOMY Services (for production-like development)
   # =============================================================================
 
@@ -250,3 +398,11 @@ volumes:
     name: neurectomy-prometheus-data
   grafana_data:
     name: neurectomy-grafana-data
+  mlflow_artifacts:
+    name: neurectomy-mlflow-artifacts
+  chromadb_data:
+    name: neurectomy-chromadb-data
+  ml_models:
+    name: neurectomy-ml-models
+  ml_data:
+    name: neurectomy-ml-data

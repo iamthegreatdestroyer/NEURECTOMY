@@ -1,0 +1,120 @@
+# ============================================================================
+# NEURECTOMY ML Service - Kubernetes Deployment
+# ============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-service
+  namespace: neurectomy
+  labels:
+    app.kubernetes.io/name: ml-service
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: neurectomy-platform
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ml-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ml-service
+        app.kubernetes.io/component: backend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: ml-service
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: ml-service
+          image: neurectomy/ml-service:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          env:
+            - name: ENVIRONMENT
+              value: "production"
+            - name: PORT
+              value: "8000"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: ml-service-secrets
+                  key: database-url
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: ml-service-secrets
+                  key: redis-url
+            - name: MLFLOW_TRACKING_URI
+              valueFrom:
+                configMapKeyRef:
+                  name: ml-service-config
+                  key: mlflow-tracking-uri
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: ml-service-secrets
+                  key: jwt-secret
+            - name: JWT_ALGORITHM
+              value: "HS256"
+            - name: JWT_ACCESS_TOKEN_EXPIRE_MINUTES
+              value: "30"
+            - name: JWT_REFRESH_TOKEN_EXPIRE_DAYS
+              value: "7"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          volumeMounts:
+            - name: models
+              mountPath: /app/models
+            - name: data
+              mountPath: /app/data
+      volumes:
+        - name: models
+          persistentVolumeClaim:
+            claimName: ml-models-pvc
+        - name: data
+          persistentVolumeClaim:
+            claimName: ml-data-pvc
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: ml-service
+                topologyKey: kubernetes.io/hostname

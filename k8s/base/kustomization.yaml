@@ -1,0 +1,22 @@
+# ============================================================================
+# NEURECTOMY Kubernetes - Base Kustomization
+# ============================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: neurectomy
+
+resources:
+  - namespace.yaml
+  - ml-service-serviceaccount.yaml
+  - ml-service-configmap.yaml
+  - ml-service-secrets.yaml
+  - ml-service-pvc.yaml
+  - ml-service-deployment.yaml
+  - ml-service-service.yaml
+  - ml-service-hpa.yaml
+  - ml-service-networkpolicy.yaml
+
+commonLabels:
+  app.kubernetes.io/managed-by: kustomize
+  app.kubernetes.io/version: "1.0.0"

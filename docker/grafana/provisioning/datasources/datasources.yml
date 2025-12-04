@@ -1,0 +1,50 @@
+# ============================================================================
+# NEURECTOMY Grafana Datasources
+# ============================================================================
+
+apiVersion: 1
+
+datasources:
+  # Prometheus - Primary metrics source
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+    jsonData:
+      timeInterval: "15s"
+      httpMethod: POST
+
+  # PostgreSQL - Direct database queries
+  - name: PostgreSQL
+    type: postgres
+    url: postgres:5432
+    database: neurectomy
+    user: neurectomy
+    secureJsonData:
+      password: neurectomy
+    jsonData:
+      sslmode: disable
+      maxOpenConns: 5
+      maxIdleConns: 2
+      connMaxLifetime: 14400
+
+  # TimescaleDB - Time-series data
+  - name: TimescaleDB
+    type: postgres
+    url: timescaledb:5432
+    database: neurectomy_ts
+    user: neurectomy
+    secureJsonData:
+      password: neurectomy
+    jsonData:
+      sslmode: disable
+      timescaledb: true
+
+  # Jaeger - Distributed tracing
+  - name: Jaeger
+    type: jaeger
+    access: proxy
+    url: http://jaeger:16686
+    editable: false

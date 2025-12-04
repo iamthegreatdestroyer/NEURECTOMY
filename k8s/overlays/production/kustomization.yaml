@@ -1,0 +1,98 @@
+# ============================================================================
+# NEURECTOMY Kubernetes - Production Overlay
+# ============================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: neurectomy-prod
+
+resources:
+  - ../../base
+
+namePrefix: prod-
+
+commonLabels:
+  environment: production
+
+patches:
+  # Increase replicas for production
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+    target:
+      kind: Deployment
+      name: ml-service
+
+  # Increase resource limits for production
+  - patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: "4Gi"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: "2000m"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: "1Gi"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: "500m"
+    target:
+      kind: Deployment
+      name: ml-service
+
+  # Production HPA settings
+  - patch: |-
+      - op: replace
+        path: /spec/minReplicas
+        value: 3
+      - op: replace
+        path: /spec/maxReplicas
+        value: 20
+    target:
+      kind: HorizontalPodAutoscaler
+      name: ml-service
+
+  # Production storage
+  - patch: |-
+      - op: replace
+        path: /spec/resources/requests/storage
+        value: "100Gi"
+    target:
+      kind: PersistentVolumeClaim
+      name: ml-models-pvc
+
+  - patch: |-
+      - op: replace
+        path: /spec/resources/requests/storage
+        value: "200Gi"
+    target:
+      kind: PersistentVolumeClaim
+      name: ml-data-pvc
+
+  # Production ingress with real domain
+  - patch: |-
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: api.neurectomy.io
+      - op: replace
+        path: /spec/rules/0/host
+        value: api.neurectomy.io
+    target:
+      kind: Ingress
+      name: ml-service
+
+configMapGenerator:
+  - name: ml-service-config
+    behavior: merge
+    literals:
+      - log-level=WARNING
+      - rate-limit-requests=100
+      - rate-limit-window-seconds=60
+      - max-workers=4
+# Note: Production secrets should be managed via:
+# - Sealed Secrets (Bitnami)
+# - External Secrets Operator
+# - HashiCorp Vault
+# Do NOT include actual secrets in this file

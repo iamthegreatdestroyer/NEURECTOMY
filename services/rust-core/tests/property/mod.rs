@@ -4,10 +4,10 @@
 //!
 //! @ECLIPSE @AXIOM - Formal property testing
 
+mod api_properties;
 mod auth_properties;
 mod data_properties;
-mod api_properties;
 
+pub use api_properties::*;
 pub use auth_properties::*;
 pub use data_properties::*;
-pub use api_properties::*;

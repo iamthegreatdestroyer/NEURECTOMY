@@ -1,0 +1,181 @@
+# ============================================================================
+# NEURECTOMY Prometheus Alert Rules
+# ============================================================================
+
+groups:
+  # ==========================================================================
+  # ML Service Alerts
+  # ==========================================================================
+  - name: ml-service
+    rules:
+      # High error rate
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum(rate(neurectomy_http_requests_total{status="error"}[5m]))
+            /
+            sum(rate(neurectomy_http_requests_total[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+
+      # High latency
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.95, 
+            sum(rate(neurectomy_http_request_duration_seconds_bucket[5m])) by (le, endpoint)
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High latency detected on {{ $labels.endpoint }}"
+          description: "P95 latency is {{ $value | humanizeDuration }}"
+
+      # Service down
+      - alert: MLServiceDown
+        expr: up{job="ml-service"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "ML Service is down"
+          description: "ML Service has been unreachable for more than 1 minute"
+
+  # ==========================================================================
+  # Training Alerts
+  # ==========================================================================
+  - name: training
+    rules:
+      # Training job stuck
+      - alert: TrainingJobStuck
+        expr: |
+          neurectomy_training_jobs_active > 0
+          and on()
+          increase(neurectomy_training_epoch_current[30m]) == 0
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Training job appears stuck"
+          description: "No epoch progress in the last 30 minutes"
+
+      # Too many failed training jobs
+      - alert: HighTrainingFailureRate
+        expr: |
+          sum(rate(neurectomy_training_jobs_total{status="failed"}[1h]))
+          /
+          sum(rate(neurectomy_training_jobs_total[1h])) > 0.3
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High training job failure rate"
+          description: "{{ $value | humanizePercentage }} of training jobs failing"
+
+      # Training loss not decreasing
+      - alert: TrainingLossNotDecreasing
+        expr: |
+          delta(neurectomy_training_loss[1h]) > 0
+        for: 2h
+        labels:
+          severity: info
+        annotations:
+          summary: "Training loss not decreasing for job {{ $labels.job_id }}"
+          description: "Loss has increased over the last hour"
+
+  # ==========================================================================
+  # Resource Alerts
+  # ==========================================================================
+  - name: resources
+    rules:
+      # High GPU utilization
+      - alert: HighGPUUtilization
+        expr: neurectomy_gpu_utilization_percent > 95
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High GPU utilization on GPU {{ $labels.gpu_id }}"
+          description: "GPU utilization is {{ $value }}%"
+
+      # GPU memory pressure
+      - alert: GPUMemoryPressure
+        expr: |
+          neurectomy_gpu_memory_used_bytes 
+          / 
+          (neurectomy_gpu_memory_used_bytes + neurectomy_gpu_memory_free_bytes) > 0.9
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High GPU memory usage on GPU {{ $labels.gpu_id }}"
+          description: "GPU memory usage is {{ $value | humanizePercentage }}"
+
+      # Model cache too large
+      - alert: ModelCacheTooLarge
+        expr: neurectomy_model_cache_size_bytes > 10e9
+        for: 5m
+        labels:
+          severity: info
+        annotations:
+          summary: "Model cache exceeds 10GB"
+          description: "Cache size is {{ $value | humanize1024 }}"
+
+  # ==========================================================================
+  # Security Alerts
+  # ==========================================================================
+  - name: security
+    rules:
+      # High authentication failure rate
+      - alert: HighAuthFailureRate
+        expr: |
+          sum(rate(neurectomy_auth_attempts_total{status="failed"}[5m]))
+          /
+          sum(rate(neurectomy_auth_attempts_total[5m])) > 0.2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High authentication failure rate"
+          description: "{{ $value | humanizePercentage }} of auth attempts failing"
+
+      # Possible brute force attack
+      - alert: PossibleBruteForce
+        expr: sum(rate(neurectomy_auth_attempts_total{status="failed"}[1m])) > 10
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Possible brute force attack detected"
+          description: "{{ $value }} failed auth attempts per second"
+
+      # High rate limit hits
+      - alert: HighRateLimitHits
+        expr: sum(rate(neurectomy_rate_limit_hits_total[5m])) > 1
+        for: 10m
+        labels:
+          severity: info
+        annotations:
+          summary: "High rate limit hits on {{ $labels.endpoint }}"
+          description: "{{ $value }} rate limit hits per second"
+
+  # ==========================================================================
+  # Analytics Alerts
+  # ==========================================================================
+  - name: analytics
+    rules:
+      # Anomaly detected
+      - alert: AnomalyDetected
+        expr: |
+          sum(increase(neurectomy_anomalies_detected_total{severity="high"}[5m])) > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High severity anomaly detected"
+          description: "{{ $value }} anomalies detected in {{ $labels.metric_type }}"

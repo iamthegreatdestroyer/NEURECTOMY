@@ -57,7 +57,7 @@ proptest! {
             "eyJhbGciOiJIUzI1NiJ9.{}.signature",
             base64_encode(&format!("{{\"sub\":\"{}\",\"email\":\"{}\"}}", user_id, email))
         );
-        
+
         let parts: Vec<&str> = token.split('.').collect();
         prop_assert_eq!(parts.len(), 3);
     }
@@ -66,7 +66,7 @@ proptest! {
     #[test]
     fn prop_api_key_format(prefix in "[a-z]{4}", id in "[a-zA-Z0-9]{32}") {
         let api_key = format!("nrct_{}_{}", prefix, id);
-        
+
         prop_assert!(api_key.starts_with("nrct_"));
         prop_assert!(api_key.len() >= 40);
     }
@@ -76,7 +76,7 @@ proptest! {
     fn prop_session_ids_unique(_seed in 0u64..1000) {
         let session1 = uuid::Uuid::new_v4();
         let session2 = uuid::Uuid::new_v4();
-        
+
         prop_assert_ne!(session1, session2);
     }
 
@@ -85,7 +85,7 @@ proptest! {
     fn prop_token_expiry_future(ttl_seconds in 1i64..86400) {
         let now = chrono::Utc::now().timestamp();
         let expiry = now + ttl_seconds;
-        
+
         prop_assert!(expiry > now);
     }
 
@@ -102,7 +102,7 @@ proptest! {
             "superadmin" => 4,
             _ => 0,
         };
-        
+
         // Higher roles can do everything lower roles can
         prop_assert!(role_level >= 0);
         prop_assert!(role_level <= 4);
@@ -111,7 +111,7 @@ proptest! {
 
 /// Simple base64 encoding for test purposes
 fn base64_encode(input: &str) -> String {
-    use base64::{Engine as _, engine::general_purpose};
+    use base64::{engine::general_purpose, Engine as _};
     general_purpose::STANDARD.encode(input)
 }
 
@@ -123,7 +123,7 @@ mod additional_tests {
     fn test_password_policy_constraints() {
         let min_length = 12;
         let max_length = 128;
-        
+
         assert!(min_length > 8); // Minimum security requirement
         assert!(max_length >= min_length);
     }
@@ -132,7 +132,7 @@ mod additional_tests {
     fn test_token_rotation_interval() {
         let access_ttl = 3600; // 1 hour
         let refresh_ttl = 604800; // 7 days
-        
+
         // Refresh should be significantly longer than access
         assert!(refresh_ttl > access_ttl * 24);
     }

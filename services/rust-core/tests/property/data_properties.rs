@@ -27,7 +27,7 @@ proptest! {
     #[test]
     fn prop_uuid_valid_format(_seed in 0u64..10000) {
         let id = Uuid::new_v4();
-        
+
         prop_assert!(!id.is_nil());
         prop_assert_eq!(id.to_string().len(), 36); // UUID format: 8-4-4-4-12
     }
@@ -52,7 +52,7 @@ proptest! {
     fn prop_timestamp_valid(offset_days in -365i64..365) {
         let now = chrono::Utc::now();
         let timestamp = now + chrono::Duration::days(offset_days);
-        
+
         // Timestamp should be serializable
         let formatted = timestamp.to_rfc3339();
         prop_assert!(!formatted.is_empty());
@@ -70,7 +70,7 @@ proptest! {
             "temperature": temperature,
             "max_tokens": max_tokens
         });
-        
+
         prop_assert!(config.is_object());
         prop_assert!(config.get("model").is_some());
     }
@@ -79,9 +79,9 @@ proptest! {
     #[test]
     fn prop_embedding_dimensions(dim in 128usize..4096) {
         let embedding: Vec<f32> = (0..dim).map(|i| i as f32 * 0.01).collect();
-        
+
         prop_assert_eq!(embedding.len(), dim);
-        
+
         // Embeddings should be normalized (approximately)
         let magnitude: f32 = embedding.iter().map(|x| x * x).sum::<f32>().sqrt();
         prop_assert!(magnitude > 0.0);
@@ -100,7 +100,7 @@ proptest! {
     fn prop_foreign_key_consistency(_seed in 0u64..1000) {
         let user_id = Uuid::new_v4();
         let agent_user_id = user_id; // FK should match
-        
+
         prop_assert_eq!(user_id, agent_user_id);
     }
 
@@ -112,7 +112,7 @@ proptest! {
     ) {
         // Data should exist regardless of deleted flag
         prop_assert!(!name.is_empty());
-        
+
         // Deleted items have deleted_at timestamp
         let has_deleted_at = deleted;
         prop_assert_eq!(deleted, has_deleted_at);
@@ -140,10 +140,10 @@ mod roundtrip_tests {
             value in i64::MIN..i64::MAX
         ) {
             let original = TestModel { id, name, value };
-            
+
             let json = serde_json::to_string(&original).unwrap();
             let deserialized: TestModel = serde_json::from_str(&json).unwrap();
-            
+
             prop_assert_eq!(original, deserialized);
         }
     }
