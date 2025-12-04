@@ -1,0 +1,88 @@
+[tool.poetry]
+name = "neurectomy-ml-service"
+version = "0.1.0"
+description = "Machine Learning & AI Service for NEURECTOMY"
+authors = ["NEURECTOMY Team"]
+license = "Proprietary"
+readme = "README.md"
+packages = [{include = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.109.0"
+uvicorn = {extras = ["standard"], version = "^0.27.0"}
+pydantic = "^2.5.0"
+pydantic-settings = "^2.1.0"
+
+# Database
+sqlalchemy = "^2.0.25"
+asyncpg = "^0.29.0"
+redis = "^5.0.1"
+
+# ML/AI
+torch = "^2.1.0"
+transformers = "^4.36.0"
+sentence-transformers = "^2.2.2"
+scikit-learn = "^1.4.0"
+numpy = "^1.26.0"
+pandas = "^2.1.0"
+
+# LLM Integration
+openai = "^1.8.0"
+anthropic = "^0.10.0"
+ollama = "^0.1.0"
+
+# MLOps
+mlflow = "^2.10.0"
+optuna = "^3.5.0"
+
+# Observability
+opentelemetry-api = "^1.22.0"
+opentelemetry-sdk = "^1.22.0"
+opentelemetry-instrumentation-fastapi = "^0.43b0"
+structlog = "^24.1.0"
+prometheus-client = "^0.19.0"
+
+# Utilities
+httpx = "^0.26.0"
+python-multipart = "^0.0.6"
+python-jose = {extras = ["cryptography"], version = "^3.3.0"}
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+pytest-asyncio = "^0.23.0"
+pytest-cov = "^4.1.0"
+httpx = "^0.26.0"
+ruff = "^0.1.0"
+mypy = "^1.8.0"
+black = "^24.1.0"
+pre-commit = "^3.6.0"
+faker = "^22.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # Pyflakes
+    "I",   # isort
+    "C",   # flake8-comprehensions
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+]
+ignore = ["E501", "B008", "C901"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-v --cov=src --cov-report=term-missing"
