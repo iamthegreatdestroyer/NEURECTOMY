@@ -8,9 +8,23 @@
 // Agent Types
 // =============================================================================
 
-export type AgentStatus = 'idle' | 'running' | 'paused' | 'error' | 'completed';
+export type AgentStatus =
+  | "idle"
+  | "running"
+  | "paused"
+  | "error"
+  | "completed"
+  | "active";
 
-export type AgentTier = 'foundational' | 'specialist' | 'innovator' | 'meta' | 'domain' | 'emerging' | 'human-centric' | 'enterprise';
+export type AgentTier =
+  | "foundational"
+  | "specialist"
+  | "innovator"
+  | "meta"
+  | "domain"
+  | "emerging"
+  | "human-centric"
+  | "enterprise";
 
 export interface Agent {
   id: string;
@@ -42,11 +56,59 @@ export interface AgentPerformanceMetrics {
   lastInvocation?: Date;
 }
 
+// Agent configuration for creating/updating agents
+export interface AgentConfig {
+  name: string;
+  codename: string;
+  tier: AgentTier;
+  description: string;
+  philosophy: string;
+  capabilities: string[];
+  metadata?: Partial<AgentMetadata>;
+}
+
+// Agent runtime state
+export interface AgentState {
+  status: AgentStatus;
+  currentTask?: string;
+  progress?: number;
+  lastError?: string;
+  metrics?: AgentPerformanceMetrics;
+}
+
+// Agent template for creating pre-configured agents
+export interface AgentTemplate {
+  id: string;
+  name: string;
+  description: string;
+  tier: AgentTier;
+  defaultCapabilities: string[];
+  requiredInputs: string[];
+  optionalInputs?: string[];
+  category: string;
+}
+
+// Agent runtime metrics
+export interface AgentMetrics {
+  agentId: string;
+  requestCount: number;
+  successCount: number;
+  errorCount: number;
+  avgLatencyMs: number;
+  lastRequestAt?: Date;
+  uptimeSeconds: number;
+}
+
 // =============================================================================
 // Workflow Types
 // =============================================================================
 
-export type WorkflowStatus = 'draft' | 'active' | 'paused' | 'completed' | 'failed';
+export type WorkflowStatus =
+  | "draft"
+  | "active"
+  | "paused"
+  | "completed"
+  | "failed";
 
 export interface Workflow {
   id: string;
@@ -62,7 +124,14 @@ export interface Workflow {
 
 export interface WorkflowNode {
   id: string;
-  type: 'agent' | 'condition' | 'input' | 'output' | 'transform' | 'parallel' | 'loop';
+  type:
+    | "agent"
+    | "condition"
+    | "input"
+    | "output"
+    | "transform"
+    | "parallel"
+    | "loop";
   position: Position3D;
   data: WorkflowNodeData;
   status?: AgentStatus;
@@ -86,10 +155,34 @@ export interface WorkflowEdge {
   animated?: boolean;
 }
 
+// Workflow definition for creating/updating workflows
+export interface WorkflowDefinition {
+  name: string;
+  description?: string;
+  nodes: Omit<WorkflowNode, "id">[];
+  edges: Omit<WorkflowEdge, "id">[];
+  metadata?: Record<string, unknown>;
+}
+
+// Task definition for agent tasks
+export interface TaskDefinition {
+  name: string;
+  description?: string;
+  agentId: string;
+  inputs: Record<string, unknown>;
+  timeout?: number;
+  priority?: "low" | "normal" | "high" | "critical";
+  retryPolicy?: {
+    maxRetries: number;
+    backoffMs: number;
+    exponential?: boolean;
+  };
+}
+
 export interface PortDefinition {
   id: string;
   name: string;
-  type: 'string' | 'number' | 'boolean' | 'object' | 'array' | 'any';
+  type: "string" | "number" | "boolean" | "object" | "array" | "any";
   required?: boolean;
   default?: unknown;
 }
@@ -120,7 +213,7 @@ export interface Transform3D {
 export interface TimelineKeyframe<T = unknown> {
   time: number;
   value: T;
-  easing?: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'cubic-bezier';
+  easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "cubic-bezier";
   bezierHandles?: [number, number, number, number];
 }
 
@@ -143,7 +236,12 @@ export interface TimelineMarker {
 // Container Types
 // =============================================================================
 
-export type ContainerStatus = 'created' | 'running' | 'paused' | 'exited' | 'dead';
+export type ContainerStatus =
+  | "created"
+  | "running"
+  | "paused"
+  | "exited"
+  | "dead";
 
 export interface Container {
   id: string;
@@ -163,7 +261,7 @@ export interface Container {
 export interface PortMapping {
   hostPort: number;
   containerPort: number;
-  protocol: 'tcp' | 'udp';
+  protocol: "tcp" | "udp";
 }
 
 export interface VolumeMount {
@@ -173,7 +271,7 @@ export interface VolumeMount {
 }
 
 export interface ContainerHealth {
-  status: 'healthy' | 'unhealthy' | 'starting' | 'none';
+  status: "healthy" | "unhealthy" | "starting" | "none";
   failingStreak: number;
   lastCheck?: Date;
 }
@@ -191,7 +289,9 @@ export interface NeurectomyEvent<T = unknown> {
   metadata?: Record<string, unknown>;
 }
 
-export type EventHandler<T = unknown> = (event: NeurectomyEvent<T>) => void | Promise<void>;
+export type EventHandler<T = unknown> = (
+  event: NeurectomyEvent<T>
+) => void | Promise<void>;
 
 // =============================================================================
 // API Types
@@ -221,7 +321,7 @@ export interface PaginationParams {
   page?: number;
   pageSize?: number;
   sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
+  sortOrder?: "asc" | "desc";
 }
 
 // =============================================================================
@@ -239,10 +339,10 @@ export interface User {
   lastLoginAt?: Date;
 }
 
-export type UserRole = 'admin' | 'developer' | 'viewer';
+export type UserRole = "admin" | "developer" | "viewer";
 
 export interface UserPreferences {
-  theme: 'light' | 'dark' | 'system';
+  theme: "light" | "dark" | "system";
   language: string;
   notifications: NotificationPreferences;
   editor: EditorPreferences;
@@ -262,12 +362,3 @@ export interface EditorPreferences {
   wordWrap: boolean;
   minimap: boolean;
 }
-
-// =============================================================================
-// Re-exports
-// =============================================================================
-
-export * from './agent';
-export * from './workflow';
-export * from './container';
-export * from './visualization';

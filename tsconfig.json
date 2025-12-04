@@ -19,6 +19,7 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
+    "types": ["@webgpu/types"],
     "baseUrl": ".",
     "paths": {
       "@neurectomy/ui": ["packages/ui/src"],

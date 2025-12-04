@@ -1,0 +1,111 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "NEURECTOMY",
+  "version": "0.1.0",
+  "identifier": "com.neurectomy.desktop",
+  "build": {
+    "beforeBuildCommand": "pnpm build",
+    "beforeDevCommand": "pnpm dev",
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "NEURECTOMY - Dimensional Forge",
+        "width": 1600,
+        "height": 900,
+        "minWidth": 1280,
+        "minHeight": 720,
+        "resizable": true,
+        "fullscreen": false,
+        "decorations": true,
+        "transparent": false,
+        "center": true,
+        "titleBarStyle": "Visible",
+        "hiddenTitle": false,
+        "theme": "Dark"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' ws://localhost:* http://localhost:* https://api.openai.com https://api.anthropic.com; worker-src 'self' blob:;",
+      "capabilities": ["default"]
+    }
+  },
+  "plugins": {
+    "shell": {
+      "open": true,
+      "scope": []
+    },
+    "fs": {
+      "scope": [
+        "$APPDATA",
+        "$APPDATA/**",
+        "$DOCUMENT",
+        "$DOCUMENT/**",
+        "$DOWNLOAD",
+        "$DOWNLOAD/**"
+      ]
+    },
+    "dialog": {
+      "open": true,
+      "save": true
+    },
+    "notification": {
+      "all": true
+    },
+    "clipboard-manager": {
+      "all": true
+    },
+    "window-state": {
+      "all": true
+    },
+    "updater": {
+      "active": true,
+      "pubkey": "",
+      "endpoints": []
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "resources": [],
+    "externalBin": [],
+    "copyright": "© 2025 NEURECTOMY",
+    "category": "DeveloperTool",
+    "shortDescription": "AI Agent Platform with 3D/4D Visualization",
+    "longDescription": "NEURECTOMY is a revolutionary AI agent orchestration platform featuring CAD-like 3D/4D visualization through the Dimensional Forge module.",
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": ""
+    },
+    "linux": {
+      "appimage": {
+        "bundleMediaFramework": true
+      },
+      "deb": {
+        "depends": []
+      },
+      "rpm": {
+        "depends": []
+      }
+    },
+    "macOS": {
+      "frameworks": [],
+      "minimumSystemVersion": "10.15",
+      "exceptionDomain": "",
+      "signingIdentity": null,
+      "providerShortName": null,
+      "entitlements": null
+    }
+  }
+}

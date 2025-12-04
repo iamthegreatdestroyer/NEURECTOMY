@@ -1,9 +1,6 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalDependencies": [
-    ".env",
-    ".env.local"
-  ],
+  "globalDependencies": [".env", ".env.local"],
   "globalEnv": [
     "NODE_ENV",
     "DATABASE_URL",
@@ -11,11 +8,10 @@
     "NEO4J_URI",
     "NATS_URL"
   ],
-  "pipeline": {
+  "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**", "build/**", "target/release/**"],
-      "cache": true
+      "outputs": ["dist/**", ".next/**", "build/**", "target/release/**"]
     },
     "dev": {
       "dependsOn": ["^build"],
@@ -24,17 +20,14 @@
     },
     "test": {
       "dependsOn": ["build"],
-      "outputs": ["coverage/**"],
-      "cache": true
+      "outputs": ["coverage/**"]
     },
     "lint": {
-      "outputs": [],
-      "cache": true
+      "outputs": []
     },
     "typecheck": {
       "dependsOn": ["^build"],
-      "outputs": [],
-      "cache": true
+      "outputs": []
     },
     "clean": {
       "cache": false

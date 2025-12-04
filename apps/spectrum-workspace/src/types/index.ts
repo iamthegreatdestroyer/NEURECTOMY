@@ -6,26 +6,23 @@ export interface Agent {
   status: AgentStatus;
   model?: string;
   capabilities?: string[];
+  tier?: number;
+  codename?: string;
   createdAt: string;
   updatedAt: string;
   metrics?: AgentMetrics;
 }
 
-export type AgentType = 
-  | 'assistant'
-  | 'coding'
-  | 'research'
-  | 'creative'
-  | 'security'
-  | 'devops'
-  | 'custom';
+export type AgentType =
+  | "assistant"
+  | "coding"
+  | "research"
+  | "creative"
+  | "security"
+  | "devops"
+  | "custom";
 
-export type AgentStatus = 
-  | 'active'
-  | 'idle'
-  | 'busy'
-  | 'error'
-  | 'offline';
+export type AgentStatus = "active" | "idle" | "busy" | "error" | "offline";
 
 export interface AgentMetrics {
   messagesProcessed: number;
@@ -57,7 +54,7 @@ export interface Conversation {
 
 export interface Message {
   id: string;
-  role: 'user' | 'assistant' | 'system';
+  role: "user" | "assistant" | "system";
   content: string;
   timestamp: string;
   metadata?: Record<string, unknown>;
@@ -75,23 +72,23 @@ export interface Container {
   createdAt: string;
 }
 
-export type ContainerStatus = 
-  | 'running'
-  | 'stopped'
-  | 'paused'
-  | 'restarting'
-  | 'exited';
+export type ContainerStatus =
+  | "running"
+  | "stopped"
+  | "paused"
+  | "restarting"
+  | "exited";
 
 export interface PortMapping {
   hostPort: number;
   containerPort: number;
-  protocol: 'tcp' | 'udp';
+  protocol: "tcp" | "udp";
 }
 
 export interface KubernetesCluster {
   id: string;
   name: string;
-  status: 'active' | 'inactive' | 'provisioning';
+  status: "active" | "inactive" | "provisioning";
   nodes: number;
   pods: number;
   services: number;
@@ -113,20 +110,20 @@ export interface TrainingJob {
   estimatedCompletion?: string;
 }
 
-export type TrainingStatus = 
-  | 'queued'
-  | 'preparing'
-  | 'training'
-  | 'evaluating'
-  | 'completed'
-  | 'failed'
-  | 'cancelled';
+export type TrainingStatus =
+  | "queued"
+  | "preparing"
+  | "training"
+  | "evaluating"
+  | "completed"
+  | "failed"
+  | "cancelled";
 
 export interface ModelVersion {
   id: string;
   name: string;
   version: string;
-  framework: 'pytorch' | 'tensorflow' | 'onnx';
+  framework: "pytorch" | "tensorflow" | "onnx";
   size: number;
   metrics: ModelMetrics;
   createdAt: string;
@@ -145,7 +142,7 @@ export interface ResearchTopic {
   id: string;
   title: string;
   description: string;
-  status: 'active' | 'completed' | 'archived';
+  status: "active" | "completed" | "archived";
   sources: number;
   insights: number;
   createdAt: string;
@@ -154,7 +151,7 @@ export interface ResearchTopic {
 export interface KnowledgeNode {
   id: string;
   label: string;
-  type: 'concept' | 'entity' | 'document' | 'insight';
+  type: "concept" | "entity" | "document" | "insight";
   connections: string[];
   metadata?: Record<string, unknown>;
 }
@@ -162,7 +159,7 @@ export interface KnowledgeNode {
 // Notification Types
 export interface Notification {
   id: string;
-  type: 'info' | 'success' | 'warning' | 'error';
+  type: "info" | "success" | "warning" | "error";
   title: string;
   message: string;
   timestamp: string;
@@ -178,7 +175,7 @@ export interface NotificationAction {
 
 // Settings Types
 export interface UserPreferences {
-  theme: 'light' | 'dark' | 'system';
+  theme: "light" | "dark" | "system";
   sidebarCollapsed: boolean;
   notifications: NotificationPreferences;
   editor: EditorPreferences;
@@ -239,7 +236,7 @@ export interface WebSocketMessage {
 }
 
 export interface AgentStreamEvent {
-  type: 'token' | 'complete' | 'error';
+  type: "token" | "complete" | "error";
   agentId: string;
   content?: string;
   error?: string;

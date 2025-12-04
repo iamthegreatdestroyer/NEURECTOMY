@@ -1,0 +1,55 @@
+[package]
+name = "neurectomy-desktop"
+version = "0.1.0"
+description = "NEURECTOMY Desktop Application - Dimensional Forge"
+authors = ["NEURECTOMY Team"]
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/neurectomy/neurectomy"
+
+[lib]
+name = "neurectomy_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[[bin]]
+name = "neurectomy-desktop"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [
+    "protocol-asset",
+    "devtools",
+] }
+tauri-plugin-shell = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+tauri-plugin-clipboard-manager = "2"
+tauri-plugin-notification = "2"
+tauri-plugin-os = "2"
+tauri-plugin-process = "2"
+tauri-plugin-updater = "2"
+tauri-plugin-window-state = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+chrono = { version = "0.4", features = ["serde"] }
+os_info = "3"
+hostname = "0.3"
+num_cpus = "1"
+sys-info = "0.9"
+
+[profile.dev]
+incremental = true
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true

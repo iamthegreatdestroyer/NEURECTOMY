@@ -1,0 +1,214 @@
+NEURECTOMY Phase 3: Dimensional Forge & 3D/4D Engine
+Timeline: Months 7-9
+
+Phase 3 is where NEURECTOMY becomes truly revolutionary—building the Dimensional Forge module that enables CAD-like 3D/4D visualization of agent architectures. This is the visual heart of the platform.
+
+🎯 Phase 3 Focus Areas & Agent Pairings
+1. WebGPU/Vulkan 3D Engine Core
+Task	Assigned Agents	Rationale
+WebGPU Renderer Architecture	@CORE + @ARCHITECT	Low-level systems + system design
+Vulkan Backend Integration	@CORE + @VELOCITY	Low-level graphics + performance
+Shader Programming (WGSL/GLSL)	@CORE + @AXIOM	Low-level + mathematical precision
+GPU Memory Management	@CORE + @VELOCITY	Systems programming + optimization
+Render Pipeline Design	@ARCHITECT + @CORE	Architecture + implementation
+Cross-Platform Graphics Abstraction	@BRIDGE + @CORE	Cross-platform + low-level
+2. Three. js Integration Layer
+Task	Assigned Agents	Rationale
+Three.js Scene Management	@APEX + @CANVAS	Production code + visual design
+Custom Three.js Components	@APEX + @ARCHITECT	Implementation + component design
+Three.js + WebGPU Bridge	@CORE + @APEX	Low-level + high-level integration
+Camera Systems & Controls	@CANVAS + @VELOCITY	UX + performance
+Lighting & Materials System	@CANVAS + @AXIOM	Visual design + physics-based math
+Post-Processing Effects	@CANVAS + @CORE	Visual effects + GPU optimization
+3. CAD-Like Visualization System
+Task	Assigned Agents	Rationale
+Agent Architecture Visualization	@ARCHITECT + @CANVAS	System design + visual representation
+Component Connection Rendering	@VERTEX + @CANVAS	Graph visualization + UI/UX
+Layer & Hierarchy Display	@ARCHITECT + @CANVAS	Architecture + visual hierarchy
+Interactive Selection & Manipulation	@CANVAS + @APEX	UX interaction + implementation
+Measurement & Annotation Tools	@CANVAS + @SCRIBE	UI tools + documentation
+Blueprint/Schematic View	@ARCHITECT + @CANVAS	Technical diagrams + design
+4. 4D Temporal Visualization (TimescaleDB)
+Task	Assigned Agents	Rationale
+Time-Series Data Integration	@STREAM + @PRISM	Real-time data + analytics
+Temporal Navigation UI	@CANVAS + @STREAM	UI/UX + time-series
+Agent Evolution Playback	@CANVAS + @NEURAL	Visualization + agent behavior
+Historical State Reconstruction	@STREAM + @VERTEX	Temporal data + graph state
+Timeline Scrubbing Interface	@CANVAS + @VELOCITY	UI + performance
+4D Animation System	@CANVAS + @AXIOM	Animation + mathematical interpolation
+5. Physics Engine Integration (Rapier)
+Task	Assigned Agents	Rationale
+Rapier Physics Setup	@CORE + @AXIOM	Low-level + physics math
+Collision Detection System	@VELOCITY + @AXIOM	Performance + mathematical precision
+Rigid Body Dynamics	@AXIOM + @CORE	Physics math + implementation
+Constraint Systems	@AXIOM + @ARCHITECT	Mathematical constraints + design
+Physics-Based Layout Algorithms	@AXIOM + @VELOCITY	Force-directed layouts + optimization
+Real-Time Physics Simulation	@VELOCITY + @STREAM	Performance + real-time updates
+6. Digital Twin System
+Task	Assigned Agents	Rationale
+Agent Digital Twin Architecture	@ARCHITECT + @NEURAL	System design + agent modeling
+Real-Time State Synchronization	@STREAM + @LATTICE	Real-time + distributed sync
+Twin-to-Agent Binding	@SYNAPSE + @NEURAL	Integration + agent systems
+Predictive Twin Simulation	@ORACLE + @NEURAL	Forecasting + agent behavior
+Twin Diff & Comparison	@PRISM + @ARBITER	Analysis + comparison
+Twin Export/Import	@SYNAPSE + @SCRIBE	API + serialization
+7. Graph Visualization (Neo4j Aura)
+Task	Assigned Agents	Rationale
+Neo4j Graph Rendering	@VERTEX + @CANVAS	Graph DB specialist + visualization
+Force-Directed Graph Layouts	@VERTEX + @AXIOM	Graph + mathematical algorithms
+Relationship Visualization	@VERTEX + @CANVAS	Graph relationships + UI
+Graph Query Visualization	@VERTEX + @PRISM	Graph queries + data display
+Hierarchical Graph Views	@VERTEX + @ARCHITECT	Graph + architectural hierarchy
+Graph Animation & Transitions	@VERTEX + @CANVAS	Graph + smooth animations
+8. Interactive 3D Editor
+Task	Assigned Agents	Rationale
+3D Gizmo System (Transform/Rotate/Scale)	@CANVAS + @AXIOM	UI controls + 3D math
+Snap-to-Grid & Alignment	@CANVAS + @VELOCITY	UX + performance
+Multi-Select & Group Operations	@CANVAS + @APEX	UI + implementation
+Undo/Redo System for 3D	@APEX + @ARBITER	Implementation + state management
+Keyboard Shortcuts & Hotkeys	@CANVAS + @MENTOR	UX + developer experience
+Context Menus & Property Panels	@CANVAS + @SYNAPSE	UI + data binding
+9. Performance & Optimization
+Task	Assigned Agents	Rationale
+Level of Detail (LOD) System	@VELOCITY + @CANVAS	Performance + visual quality
+Frustum Culling Optimization	@VELOCITY + @AXIOM	Performance + 3D math
+Instanced Rendering	@VELOCITY + @CORE	Performance + GPU optimization
+Occlusion Culling	@VELOCITY + @AXIOM	Performance + spatial algorithms
+Memory Pool Management	@VELOCITY + @CORE	Performance + memory systems
+Web Worker Offloading	@VELOCITY + @APEX	Performance + async processing
+GPU Profiling & Debugging	@SENTRY + @CORE	Observability + GPU analysis
+10. Tauri 2. 0 Desktop Integration
+Task	Assigned Agents	Rationale
+Tauri Application Shell	@BRIDGE + @APEX	Cross-platform + implementation
+Native File System Access	@BRIDGE + @CORE	Cross-platform + system APIs
+Native GPU Access	@BRIDGE + @CORE	Desktop + GPU integration
+Native Menu & Window Management	@BRIDGE + @CANVAS	Desktop + UI
+Auto-Update System	@BRIDGE + @FLUX	Desktop + DevOps
+Native Notifications	@BRIDGE + @CANVAS	Desktop + UX
+Secure IPC (Inter-Process Communication)	@BRIDGE + @CIPHER	Desktop + security
+11. Accessibility & Internationalization
+Task	Assigned Agents	Rationale
+3D Accessibility Features	@CANVAS + @MENTOR	Accessibility + education
+Screen Reader Support for 3D	@CANVAS + @LINGUA	Accessibility + NLP descriptions
+Keyboard Navigation in 3D	@CANVAS + @APEX	Accessibility + implementation
+Color Blindness Modes	@CANVAS	UI/UX accessibility specialist
+Internationalization (i18n)	@LINGUA + @CANVAS	NLP + UI localization
+RTL Language Support	@LINGUA + @CANVAS	Language + layout
+12. Documentation & Tutorials
+Task	Assigned Agents	Rationale
+3D Engine API Documentation	@SCRIBE + @CORE	Documentation + technical depth
+Visualization Best Practices	@SCRIBE + @CANVAS	Docs + design guidance
+Interactive 3D Tutorials	@MENTOR + @CANVAS	Education + visual learning
+Video Documentation	@SCRIBE + @MENTOR	Documentation + education
+🚀 Implementation Action Plan for Phase 3
+Step 1: WebGPU Foundation (Week 1-3)
+Action	Agent Invocation	Command
+WebGPU Renderer	@CORE @ARCHITECT	"Design WebGPU renderer architecture with pipeline state management and resource binding"
+Shader System	@CORE @AXIOM	"Implement WGSL shader compilation system with hot-reloading and error reporting"
+GPU Memory Manager	@CORE @VELOCITY	"Create GPU buffer pool manager with automatic defragmentation and memory pressure handling"
+Vulkan Fallback	@CORE @BRIDGE	"Implement Vulkan backend for platforms without WebGPU support"
+Step 2: Three.js Integration (Week 3-5)
+Action	Agent Invocation	Purpose
+Scene Architecture	@APEX @CANVAS	"Design Three.js scene graph optimized for large agent architectures (1000+ nodes)"
+WebGPU Bridge	@CORE @APEX	"Create Three.js WebGPURenderer integration with custom render passes"
+Camera System	@CANVAS @VELOCITY	"Implement multi-camera system with smooth transitions and cinematic controls"
+Materials Library	@CANVAS @AXIOM	"Build PBR material library with real-time parameter editing"
+Step 3: CAD Visualization (Week 5-7)
+Action	Agent Invocation	Purpose
+Agent Renderer	@ARCHITECT @CANVAS	"Create 3D agent component visualization with connection lines and data flow indicators"
+Interaction System	@CANVAS @APEX	"Implement selection, hover states, and drag-drop for 3D agent manipulation"
+Blueprint Mode	@ARCHITECT @CANVAS	"Design 2D blueprint/schematic view with automatic layout from 3D model"
+Measurement Tools	@CANVAS @SCRIBE	"Add distance, angle, and capacity measurement tools with annotations"
+Step 4: 4D Temporal Engine (Week 7-9)
+Action	Agent Invocation	Purpose
+TimescaleDB Integration	@STREAM @PRISM	"Connect TimescaleDB for high-resolution temporal agent state storage"
+Time Navigation	@CANVAS @STREAM	"Build timeline UI with scrubbing, playback controls, and keyframe markers"
+Evolution Playback	@CANVAS @NEURAL	"Implement agent evolution visualization with morphing animations"
+State Interpolation	@AXIOM @VELOCITY	"Create smooth state interpolation for high-quality temporal playback"
+Step 5: Physics & Graph (Week 9-11)
+Action	Agent Invocation	Purpose
+Rapier Integration	@CORE @AXIOM	"Integrate Rapier physics for realistic agent component interaction"
+Force-Directed Layout	@VERTEX @AXIOM	"Implement force-directed graph layout with physics-based settling"
+Neo4j Visualization	@VERTEX @CANVAS	"Create real-time Neo4j graph visualization with relationship highlighting"
+Collision System	@VELOCITY @AXIOM	"Optimize collision detection for thousands of simultaneous objects"
+Step 6: Desktop & Polish (Week 11-13)
+Action	Agent Invocation	Purpose
+Tauri Shell	@BRIDGE @APEX	"Build Tauri 2.0 application wrapper with native performance"
+Native Features	@BRIDGE @CORE	"Implement native file dialogs, GPU detection, and system integration"
+Accessibility	@CANVAS @MENTOR	"Add comprehensive accessibility features including keyboard navigation and screen reader support"
+Performance Tuning	@VELOCITY @SENTRY	"Profile and optimize for 60fps with 10,000+ rendered objects"
+🔄 Recommended Multi-Agent Workflows for Phase 3
+For 3D Engine Architecture:
+Code
+@CORE @ARCHITECT @VELOCITY design high-performance WebGPU rendering pipeline for complex agent visualizations
+For Physics-Based Visualization:
+Code
+@AXIOM @CORE @CANVAS implement physics-based layout algorithms with smooth animation transitions
+For Graph Visualization:
+Code
+@VERTEX @CANVAS @VELOCITY create interactive graph visualization with force-directed layout and real-time updates
+For 4D Temporal System:
+Code
+@STREAM @PRISM @CANVAS design temporal navigation system for agent evolution visualization
+For Cross-Platform Desktop:
+Code
+@BRIDGE @CORE @FLUX build Tauri desktop application with native GPU acceleration
+For Performance Optimization:
+Code
+@VELOCITY @CORE @SENTRY optimize 3D rendering for 60fps with large-scale agent architectures
+For Accessibility:
+Code
+@CANVAS @MENTOR @LINGUA implement 3D accessibility features with screen reader descriptions
+📊 Phase 3 Milestone Checkpoints
+Milestone	Week	Key Deliverables	Lead Agents
+M1: WebGPU Core	1-3	Renderer, shaders, GPU memory	@CORE, @AXIOM, @VELOCITY
+M2: Three.js Layer	3-5	Scene management, cameras, materials	@APEX, @CANVAS
+M3: CAD Visualization	5-7	Agent rendering, interactions, blueprints	@ARCHITECT, @CANVAS
+M4: 4D Temporal	7-9	TimescaleDB, timeline UI, playback	@STREAM, @PRISM, @CANVAS
+M5: Physics & Graph	9-11	Rapier, Neo4j viz, force layouts	@VERTEX, @AXIOM, @CORE
+M6: Desktop & Polish	11-13	Tauri, accessibility, optimization	@BRIDGE, @CANVAS, @VELOCITY
+💡 Phase 3 Pro Tips
+WebGPU First, Fallback Second: Use @CORE @BRIDGE to build WebGPU-first with Vulkan/WebGL fallbacks
+Profile Early: Have @VELOCITY @SENTRY set up GPU profiling from day one - 3D performance issues compound quickly
+Physics for UX: Use @AXIOM @CANVAS to make physics feel natural, not just technically correct
+Accessibility is Critical: 3D UIs often ignore accessibility - @CANVAS @MENTOR should be involved throughout
+Test on Low-End Hardware: Use @BRIDGE to ensure the engine scales down gracefully
+Timeline UX: The 4D timeline is complex - involve @CANVAS heavily for intuitive temporal navigation
+🔗 Phase 3 Dependencies on Previous Phases
+Previous Phase	Phase 3 Dependency
+Phase 1: PostgreSQL	State persistence for 3D scenes
+Phase 1: Neo4j	Graph data for visualization
+Phase 1: WebSocket	Real-time 3D state sync
+Phase 1: React Frontend	3D canvas integration
+Phase 2: TimescaleDB	4D temporal data source
+Phase 2: Agent Intelligence	Agent behavior visualization
+Phase 2: Embeddings	Semantic 3D search
+🎨 Visual Reference: Dimensional Forge Architecture
+Code
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        DIMENSIONAL FORGE                                 │
+├─────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐          │
+│  │   3D VIEWPORT   │  │   TIMELINE      │  │  PROPERTY       │          │
+│  │   (WebGPU/      │  │   (4D Temporal  │  │  PANEL          │          │
+│  │    Three.js)    │  │    Navigation)  │  │  (Agent Props)  │          │
+│  └────────┬────────┘  └────────┬────────┘  └────────┬────────┘          │
+│           │                    │                    │                    │
+│  ┌────────▼────────────────────▼────────────────────▼────────┐          │
+│  │                    SCENE GRAPH ENGINE                      │          │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │          │
+│  │  │ Agents   │  │ Connec-  │  │ Annota-  │  │ Digital  │   │          │
+│  │  │ (Nodes)  │  │ tions    │  │ tions    │  │ Twins    │   │          │
+│  │  └──────────┘  └──────────┘  └──────────┘  └──────────┘   │          │
+│  └────────────────────────────────────────────────────────────┘          │
+│           │                    │                    │                    │
+│  ┌────────▼────────┐  ┌────────▼────────┐  ┌────────▼────────┐          │
+│  │  PHYSICS        │  │  GRAPH ENGINE   │  │  TEMPORAL       │          │
+│  │  (Rapier)       │  │  (Neo4j Viz)    │  │  (TimescaleDB)  │          │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘          │
+│                                │                                         │
+│  ┌─────────────────────────────▼─────────────────────────────┐          │
+│  │              GPU ABSTRACTION LAYER                         │          │
+│  │         (WebGPU → Vulkan → WebGL Fallback)                 │          │
+│  └────────────────────────────────────────────────────────────┘          │
+└─────────────────────────────────────────────────────────────────────────┘

@@ -1,0 +1,72 @@
+{
+  "name": "@neurectomy/3d-engine",
+  "version": "0.1.0",
+  "description": "High-performance 3D/4D visualization engine for NEURECTOMY Dimensional Forge",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./webgpu": {
+      "types": "./dist/webgpu/index.d.ts",
+      "import": "./dist/webgpu/index.js"
+    },
+    "./physics": {
+      "types": "./dist/physics/index.d.ts",
+      "import": "./dist/physics/index.js"
+    },
+    "./graph": {
+      "types": "./dist/graph/index.d.ts",
+      "import": "./dist/graph/index.js"
+    },
+    "./temporal": {
+      "types": "./dist/temporal/index.d.ts",
+      "import": "./dist/temporal/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
+    "clean": "rimraf dist .turbo"
+  },
+  "dependencies": {
+    "@dimforge/rapier3d-compat": "^0.12.0",
+    "@neurectomy/types": "workspace:*",
+    "d3-force-3d": "^3.0.5",
+    "gl-matrix": "^3.4.3",
+    "three": "^0.160.0"
+  },
+  "devDependencies": {
+    "@react-three/drei": "^9.88.0",
+    "@react-three/fiber": "^8.15.0",
+    "@react-three/postprocessing": "^3.0.4",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "@types/three": "^0.160.0",
+    "@vitest/coverage-v8": "^1.2.0",
+    "@webgpu/types": "^0.1.67",
+    "immer": "^10.1.1",
+    "rimraf": "^5.0.5",
+    "tsup": "^8.0.1",
+    "typescript": "^5.5.0",
+    "vitest": "^1.2.0",
+    "zustand": "^4.4.7"
+  },
+  "peerDependencies": {
+    "@react-three/fiber": ">=8.0.0",
+    "immer": ">=10.0.0",
+    "react": ">=18.0.0",
+    "zustand": ">=4.0.0"
+  }
+}

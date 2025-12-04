@@ -3,15 +3,16 @@
  * Type-safe GraphQL client for Rust Core backend
  */
 
-import { GraphQLClient, gql } from 'graphql-request';
+import { GraphQLClient, gql } from "graphql-request";
 
 // Configuration
-const GRAPHQL_URL = import.meta.env.VITE_GRAPHQL_URL || 'http://localhost:8080/graphql';
+const GRAPHQL_URL =
+  import.meta.env.VITE_GRAPHQL_URL || "http://localhost:8080/graphql";
 
 // Create GraphQL client instance
 export const graphqlClient = new GraphQLClient(GRAPHQL_URL, {
-  headers: () => {
-    const token = localStorage.getItem('auth_token');
+  headers: (): Record<string, string> => {
+    const token = localStorage.getItem("auth_token");
     return token ? { Authorization: `Bearer ${token}` } : {};
   },
 });
@@ -156,8 +157,18 @@ export const EXECUTION_FRAGMENT = gql`
 
 export const GET_EXECUTIONS = gql`
   ${EXECUTION_FRAGMENT}
-  query GetExecutions($agentId: ID, $status: ExecutionStatus, $limit: Int, $offset: Int) {
-    executions(agentId: $agentId, status: $status, limit: $limit, offset: $offset) {
+  query GetExecutions(
+    $agentId: ID
+    $status: ExecutionStatus
+    $limit: Int
+    $offset: Int
+  ) {
+    executions(
+      agentId: $agentId
+      status: $status
+      limit: $limit
+      offset: $offset
+    ) {
       ...ExecutionFields
       agent {
         id
@@ -390,7 +401,7 @@ export interface Agent {
   name: string;
   description?: string;
   agentType: string;
-  status: 'idle' | 'active' | 'processing' | 'error' | 'offline';
+  status: "idle" | "active" | "processing" | "error" | "offline";
   model?: string;
   tier: number;
   capabilities: string[];
@@ -411,7 +422,7 @@ export interface AgentMetrics {
 export interface Execution {
   id: string;
   agentId: string;
-  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+  status: "pending" | "running" | "completed" | "failed" | "cancelled";
   input: unknown;
   output?: unknown;
   errorMessage?: string;
@@ -425,7 +436,7 @@ export interface Workflow {
   id: string;
   name: string;
   description?: string;
-  status: 'draft' | 'active' | 'archived';
+  status: "draft" | "active" | "archived";
   nodes: unknown[];
   edges: unknown[];
   createdAt: string;
@@ -449,7 +460,7 @@ export interface SystemStatus {
   uptime: number;
   services: {
     name: string;
-    status: 'connected' | 'disconnected' | 'degraded';
+    status: "connected" | "disconnected" | "degraded";
     latencyMs?: number;
   }[];
 }
@@ -459,119 +470,179 @@ export interface SystemStatus {
 // ============================================================================
 
 export const agentsApi = {
-  getAll: async (params?: { status?: string; tier?: number; limit?: number; offset?: number }) => {
-    const data = await graphqlClient.request<{ agents: Agent[] }>(GET_AGENTS, params);
+  getAll: async (params?: {
+    status?: string;
+    tier?: number;
+    limit?: number;
+    offset?: number;
+  }) => {
+    const data = await graphqlClient.request<{ agents: Agent[] }>(
+      GET_AGENTS,
+      params
+    );
     return data.agents;
   },
-  
+
   getById: async (id: string) => {
-    const data = await graphqlClient.request<{ agent: Agent & { metrics: AgentMetrics } }>(GET_AGENT, { id });
+    const data = await graphqlClient.request<{
+      agent: Agent & { metrics: AgentMetrics };
+    }>(GET_AGENT, { id });
     return data.agent;
   },
-  
+
   create: async (input: Partial<Agent>) => {
-    const data = await graphqlClient.request<{ createAgent: Agent }>(CREATE_AGENT, { input });
+    const data = await graphqlClient.request<{ createAgent: Agent }>(
+      CREATE_AGENT,
+      { input }
+    );
     return data.createAgent;
   },
-  
+
   update: async (id: string, input: Partial<Agent>) => {
-    const data = await graphqlClient.request<{ updateAgent: Agent }>(UPDATE_AGENT, { id, input });
+    const data = await graphqlClient.request<{ updateAgent: Agent }>(
+      UPDATE_AGENT,
+      { id, input }
+    );
     return data.updateAgent;
   },
-  
+
   delete: async (id: string) => {
     await graphqlClient.request(DELETE_AGENT, { id });
   },
-  
+
   start: async (id: string) => {
-    const data = await graphqlClient.request<{ startAgent: { id: string; status: string } }>(START_AGENT, { id });
+    const data = await graphqlClient.request<{
+      startAgent: { id: string; status: string };
+    }>(START_AGENT, { id });
     return data.startAgent;
   },
-  
+
   stop: async (id: string) => {
-    const data = await graphqlClient.request<{ stopAgent: { id: string; status: string } }>(STOP_AGENT, { id });
+    const data = await graphqlClient.request<{
+      stopAgent: { id: string; status: string };
+    }>(STOP_AGENT, { id });
     return data.stopAgent;
   },
-  
+
   execute: async (agentId: string, input: unknown, stream = false) => {
-    const data = await graphqlClient.request<{ executeAgent: Execution }>(EXECUTE_AGENT, { agentId, input, stream });
+    const data = await graphqlClient.request<{ executeAgent: Execution }>(
+      EXECUTE_AGENT,
+      { agentId, input, stream }
+    );
     return data.executeAgent;
   },
 };
 
 export const executionsApi = {
-  getAll: async (params?: { agentId?: string; status?: string; limit?: number; offset?: number }) => {
-    const data = await graphqlClient.request<{ executions: Execution[] }>(GET_EXECUTIONS, params);
+  getAll: async (params?: {
+    agentId?: string;
+    status?: string;
+    limit?: number;
+    offset?: number;
+  }) => {
+    const data = await graphqlClient.request<{ executions: Execution[] }>(
+      GET_EXECUTIONS,
+      params
+    );
     return data.executions;
   },
-  
+
   getById: async (id: string) => {
-    const data = await graphqlClient.request<{ execution: Execution }>(GET_EXECUTION, { id });
+    const data = await graphqlClient.request<{ execution: Execution }>(
+      GET_EXECUTION,
+      { id }
+    );
     return data.execution;
   },
-  
+
   cancel: async (id: string) => {
     await graphqlClient.request(CANCEL_EXECUTION, { id });
   },
 };
 
 export const workflowsApi = {
-  getAll: async (params?: { status?: string; limit?: number; offset?: number }) => {
-    const data = await graphqlClient.request<{ workflows: Workflow[] }>(GET_WORKFLOWS, params);
+  getAll: async (params?: {
+    status?: string;
+    limit?: number;
+    offset?: number;
+  }) => {
+    const data = await graphqlClient.request<{ workflows: Workflow[] }>(
+      GET_WORKFLOWS,
+      params
+    );
     return data.workflows;
   },
-  
+
   getById: async (id: string) => {
-    const data = await graphqlClient.request<{ workflow: Workflow }>(GET_WORKFLOW, { id });
+    const data = await graphqlClient.request<{ workflow: Workflow }>(
+      GET_WORKFLOW,
+      { id }
+    );
     return data.workflow;
   },
-  
+
   create: async (input: Partial<Workflow>) => {
-    const data = await graphqlClient.request<{ createWorkflow: Workflow }>(CREATE_WORKFLOW, { input });
+    const data = await graphqlClient.request<{ createWorkflow: Workflow }>(
+      CREATE_WORKFLOW,
+      { input }
+    );
     return data.createWorkflow;
   },
-  
+
   update: async (id: string, input: Partial<Workflow>) => {
-    const data = await graphqlClient.request<{ updateWorkflow: Workflow }>(UPDATE_WORKFLOW, { id, input });
+    const data = await graphqlClient.request<{ updateWorkflow: Workflow }>(
+      UPDATE_WORKFLOW,
+      { id, input }
+    );
     return data.updateWorkflow;
   },
-  
+
   delete: async (id: string) => {
     await graphqlClient.request(DELETE_WORKFLOW, { id });
   },
-  
+
   execute: async (id: string, input?: unknown) => {
-    const data = await graphqlClient.request<{ executeWorkflow: { id: string; status: string; startedAt: string } }>(
-      EXECUTE_WORKFLOW,
-      { id, input }
-    );
+    const data = await graphqlClient.request<{
+      executeWorkflow: { id: string; status: string; startedAt: string };
+    }>(EXECUTE_WORKFLOW, { id, input });
     return data.executeWorkflow;
   },
 };
 
 export const systemApi = {
   getStatus: async () => {
-    const data = await graphqlClient.request<{ systemStatus: SystemStatus }>(GET_SYSTEM_STATUS);
+    const data = await graphqlClient.request<{ systemStatus: SystemStatus }>(
+      GET_SYSTEM_STATUS
+    );
     return data.systemStatus;
   },
-  
+
   getDashboardStats: async () => {
-    const data = await graphqlClient.request<{ dashboardStats: DashboardStats }>(GET_DASHBOARD_STATS);
+    const data = await graphqlClient.request<{
+      dashboardStats: DashboardStats;
+    }>(GET_DASHBOARD_STATS);
     return data.dashboardStats;
   },
 };
 
 export const userApi = {
   getMe: async () => {
-    const data = await graphqlClient.request<{ me: { id: string; email: string; name: string; role: string; preferences: unknown } }>(GET_ME);
+    const data = await graphqlClient.request<{
+      me: {
+        id: string;
+        email: string;
+        name: string;
+        role: string;
+        preferences: unknown;
+      };
+    }>(GET_ME);
     return data.me;
   },
-  
+
   updatePreferences: async (preferences: unknown) => {
-    const data = await graphqlClient.request<{ updatePreferences: { id: string; preferences: unknown } }>(
-      UPDATE_PREFERENCES,
-      { preferences }
-    );
+    const data = await graphqlClient.request<{
+      updatePreferences: { id: string; preferences: unknown };
+    }>(UPDATE_PREFERENCES, { preferences });
     return data.updatePreferences;
   },
 };

@@ -1,6 +1,6 @@
 /**
  * Dashboard Feature
- * 
+ *
  * Main dashboard showing:
  * - Agent overview and status
  * - System health metrics
@@ -8,62 +8,55 @@
  * - Quick actions
  */
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { 
-  Activity, 
-  Boxes, 
-  Brain, 
-  Compass, 
-  Shield, 
-  Zap 
-} from 'lucide-react';
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { Activity, Boxes, Brain, Compass, Shield, Zap } from "lucide-react";
 
 const moduleCards = [
   {
-    id: 'dimensional-forge',
-    name: 'Dimensional Forge',
-    description: '3D/4D Agent visualization and orchestration',
+    id: "dimensional-forge",
+    name: "Dimensional Forge",
+    description: "3D/4D Agent visualization and orchestration",
     icon: Boxes,
-    color: 'neural-blue',
-    path: '/forge',
-    status: 'active',
+    color: "neural-blue",
+    path: "/forge",
+    status: "active" as const,
   },
   {
-    id: 'container-command',
-    name: 'Container Command',
-    description: 'Docker & Kubernetes orchestration',
+    id: "container-command",
+    name: "Container Command",
+    description: "Docker & Kubernetes orchestration",
     icon: Activity,
-    color: 'synapse-purple',
-    path: '/containers',
-    status: 'active',
+    color: "synapse-purple",
+    path: "/containers",
+    status: "active" as const,
   },
   {
-    id: 'intelligence-foundry',
-    name: 'Intelligence Foundry',
-    description: 'ML/AI model training and integration',
+    id: "intelligence-foundry",
+    name: "Intelligence Foundry",
+    description: "ML/AI model training and integration",
     icon: Brain,
-    color: 'forge-orange',
-    path: '/intelligence',
-    status: 'active',
+    color: "forge-orange",
+    path: "/intelligence",
+    status: "active" as const,
   },
   {
-    id: 'discovery-engine',
-    name: 'Discovery Engine',
-    description: 'Open-source discovery and integration',
+    id: "discovery-engine",
+    name: "Discovery Engine",
+    description: "Open-source discovery and integration",
     icon: Compass,
-    color: 'matrix-green',
-    path: '/discovery',
-    status: 'coming-soon',
+    color: "matrix-green",
+    path: "/discovery",
+    status: "coming-soon" as const,
   },
   {
-    id: 'legal-fortress',
-    name: 'Legal Fortress',
-    description: 'IP protection and compliance',
+    id: "legal-fortress",
+    name: "Legal Fortress",
+    description: "IP protection and compliance",
     icon: Shield,
-    color: 'cipher-cyan',
-    path: '/legal',
-    status: 'coming-soon',
+    color: "cipher-cyan",
+    path: "/legal",
+    status: "coming-soon" as const,
   },
 ];
 
@@ -88,7 +81,9 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center gap-2 px-4 py-2 bg-card rounded-lg border border-border">
             <Activity className="w-4 h-4 text-neural-blue" />
-            <span className="text-sm">{runningContainers} Running Containers</span>
+            <span className="text-sm">
+              {runningContainers} Running Containers
+            </span>
           </div>
         </div>
       </div>
@@ -153,14 +148,14 @@ interface StatCardProps {
   title: string;
   value: string;
   change: string;
-  trend: 'up' | 'down' | 'neutral';
+  trend: "up" | "down" | "neutral";
 }
 
 function StatCard({ title, value, change, trend }: StatCardProps) {
   const trendColor = {
-    up: 'text-matrix-green',
-    down: 'text-destructive',
-    neutral: 'text-muted-foreground',
+    up: "text-matrix-green",
+    down: "text-destructive",
+    neutral: "text-muted-foreground",
   }[trend];
 
   return (
@@ -180,18 +175,25 @@ interface ModuleCardProps {
   icon: React.ElementType;
   color: string;
   path: string;
-  status: 'active' | 'coming-soon';
+  status: "active" | "coming-soon";
 }
 
-function ModuleCard({ name, description, icon: Icon, color, path, status }: ModuleCardProps) {
-  const isActive = status === 'active';
-  
+function ModuleCard({
+  name,
+  description,
+  icon: Icon,
+  color,
+  path,
+  status,
+}: ModuleCardProps) {
+  const isActive = status === "active";
+
   return (
     <a
       href={isActive ? path : undefined}
       className={`
         panel p-6 block transition-all duration-200
-        ${isActive ? 'hover:border-primary/50 cursor-pointer' : 'opacity-60 cursor-not-allowed'}
+        ${isActive ? "hover:border-primary/50 cursor-pointer" : "opacity-60 cursor-not-allowed"}
       `}
     >
       <div className="flex items-start gap-4">
