@@ -108,6 +108,9 @@ axum-test = "14"
 # Snapshot testing
 insta = { version = "1.34", features = ["json", "yaml"] }
 
+# Benchmarking
+criterion = { version = "0.5", features = ["html_reports", "async_tokio"] }
+
 [profile.release]
 lto = true
 codegen-units = 1
@@ -128,3 +131,15 @@ path = "tests/integration/mod.rs"
 [[test]]
 name = "property"
 path = "tests/property/mod.rs"
+
+[[bench]]
+name = "api_benchmarks"
+harness = false
+
+[[bench]]
+name = "auth_benchmarks"
+harness = false
+
+[[bench]]
+name = "database_benchmarks"
+harness = false

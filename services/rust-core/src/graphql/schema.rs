@@ -2,14 +2,14 @@
 //!
 //! Assembles the complete GraphQL schema with all types, queries, mutations, and subscriptions
 
-use std::sync::Arc;
 use async_graphql::Schema;
+use std::sync::Arc;
 
 use crate::db::DatabaseConnections;
 use crate::graphql::context::GraphQLContext;
 use crate::graphql::dataloaders::DataLoaders;
-use crate::graphql::queries::QueryRoot;
 use crate::graphql::mutations::MutationRoot;
+use crate::graphql::queries::QueryRoot;
 use crate::graphql::subscriptions::SubscriptionRoot;
 
 /// The complete NEURECTOMY GraphQL schema type
@@ -19,10 +19,10 @@ pub type NeurectomySchema = Schema<QueryRoot, MutationRoot, SubscriptionRoot>;
 pub fn build_schema(db: DatabaseConnections) -> NeurectomySchema {
     // Create context with database connections
     let context = GraphQLContext::new(db.clone());
-    
+
     // Create dataloaders
     let loaders = DataLoaders::new(db);
-    
+
     Schema::build(QueryRoot, MutationRoot, SubscriptionRoot)
         // Add global context
         .data(context)
@@ -37,27 +37,26 @@ pub fn build_schema(db: DatabaseConnections) -> NeurectomySchema {
 }
 
 /// Build schema with custom configuration
-pub fn build_schema_with_config(
-    db: DatabaseConnections,
-    config: SchemaConfig,
-) -> NeurectomySchema {
+pub fn build_schema_with_config(db: DatabaseConnections, config: SchemaConfig) -> NeurectomySchema {
     let context = GraphQLContext::new(db.clone());
     let loaders = DataLoaders::new(db);
-    
+
     let mut builder = Schema::build(QueryRoot, MutationRoot, SubscriptionRoot)
         .data(context)
         .data(loaders)
         .limit_complexity(config.max_complexity)
         .limit_depth(config.max_depth);
-    
+
     if config.enable_federation {
-        builder = builder.enable_federation().enable_subscription_in_federation();
+        builder = builder
+            .enable_federation()
+            .enable_subscription_in_federation();
     }
-    
+
     if !config.enable_introspection {
         builder = builder.disable_introspection();
     }
-    
+
     builder.finish()
 }
 
