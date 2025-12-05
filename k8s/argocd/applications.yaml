@@ -1,0 +1,171 @@
+# ============================================================================
+# NEURECTOMY - ArgoCD Application Definitions
+# GitOps-based continuous deployment configuration
+# ============================================================================
+
+# Prerequisites:
+# 1. Install ArgoCD:
+#    kubectl create namespace argocd
+#    kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+#
+# 2. Configure repository credentials:
+#    argocd repo add https://github.com/iamthegreatdestroyer/NEURECTOMY --username <user> --password <token>
+
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: neurectomy
+  namespace: argocd
+spec:
+  description: NEURECTOMY Platform Applications
+  sourceRepos:
+    - https://github.com/iamthegreatdestroyer/NEURECTOMY
+    - https://charts.bitnami.com/bitnami
+    - https://prometheus-community.github.io/helm-charts
+  destinations:
+    - namespace: neurectomy
+      server: https://kubernetes.default.svc
+    - namespace: neurectomy-dev
+      server: https://kubernetes.default.svc
+    - namespace: neurectomy-prod
+      server: https://kubernetes.default.svc
+    - namespace: monitoring
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  roles:
+    - name: admin
+      policies:
+        - p, proj:neurectomy:admin, applications, *, neurectomy/*, allow
+      groups:
+        - neurectomy-admins
+
+---
+# ML Service Application - Development
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: neurectomy-ml-service-dev
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: neurectomy
+  source:
+    repoURL: https://github.com/iamthegreatdestroyer/NEURECTOMY
+    targetRevision: develop
+    path: k8s/overlays/development
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: neurectomy-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  revisionHistoryLimit: 10
+
+---
+# ML Service Application - Production
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: neurectomy-ml-service-prod
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: neurectomy
+  source:
+    repoURL: https://github.com/iamthegreatdestroyer/NEURECTOMY
+    targetRevision: main
+    path: k8s/overlays/production
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: neurectomy-prod
+  syncPolicy:
+    automated:
+      prune: false # Manual pruning for production
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 5m
+  revisionHistoryLimit: 20
+
+---
+# Monitoring Stack (Prometheus, Grafana)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: neurectomy-monitoring
+  namespace: argocd
+spec:
+  project: neurectomy
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: kube-prometheus-stack
+    targetRevision: 55.5.0
+    helm:
+      releaseName: prometheus
+      values: |
+        prometheus:
+          prometheusSpec:
+            retention: 15d
+            storageSpec:
+              volumeClaimTemplate:
+                spec:
+                  storageClassName: neurectomy-fast
+                  accessModes: ["ReadWriteOnce"]
+                  resources:
+                    requests:
+                      storage: 50Gi
+        grafana:
+          adminPassword: "${GRAFANA_ADMIN_PASSWORD}"
+          persistence:
+            enabled: true
+            storageClassName: neurectomy-fast
+            size: 10Gi
+        alertmanager:
+          alertmanagerSpec:
+            storage:
+              volumeClaimTemplate:
+                spec:
+                  storageClassName: neurectomy-fast
+                  accessModes: ["ReadWriteOnce"]
+                  resources:
+                    requests:
+                      storage: 10Gi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

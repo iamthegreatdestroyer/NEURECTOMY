@@ -34,5 +34,47 @@ export {
   TimeoutError,
 } from "./errors";
 
+// Export event sourcing
+export {
+  // Types
+  type BaseEvent,
+  type EventMetadata,
+  type EventRecord,
+  type EventStore,
+  type EventHandler,
+  type Projection,
+  type Snapshot,
+  // Classes
+  InMemoryEventStore,
+  Aggregate,
+  // Functions
+  createEvent,
+  runProjection,
+  createLiveProjection,
+  createSnapshot,
+} from "./events";
+
+// Export feature flags
+export {
+  // Types
+  type FeatureFlag,
+  type FlagValue,
+  type TargetingRule,
+  type RuleCondition,
+  type ConditionOperator,
+  type EvaluationContext,
+  type EvaluationResult,
+  type EvaluationReason,
+  type FeatureFlagClientConfig,
+  // Classes
+  FeatureFlagClient,
+  // Functions
+  createFlag,
+  createRule,
+  createCondition,
+  getFeatureFlagClient,
+  initFeatureFlags,
+} from "./feature-flags";
+
 // Export constants
 export { DEFAULT_TIMEOUT, MAX_RETRIES, API_VERSION } from "./constants";

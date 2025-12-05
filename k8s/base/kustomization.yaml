@@ -7,16 +7,31 @@ kind: Kustomization
 namespace: neurectomy
 
 resources:
+  # Core namespace and governance
   - namespace.yaml
+  - resource-quotas.yaml
+
+  # Storage (comment out if using cloud-specific storage classes)
+  # - storage-classes.yaml
+
+  # ML Service components
   - ml-service-serviceaccount.yaml
   - ml-service-configmap.yaml
   - ml-service-secrets.yaml
+  # Uncomment when using External Secrets Operator
+  # - external-secrets.yaml
   - ml-service-pvc.yaml
   - ml-service-deployment.yaml
   - ml-service-service.yaml
   - ml-service-hpa.yaml
+  - ml-service-pdb.yaml
   - ml-service-networkpolicy.yaml
 
 commonLabels:
   app.kubernetes.io/managed-by: kustomize
   app.kubernetes.io/version: "1.0.0"
+
+# Image configuration - override in overlays
+images:
+  - name: neurectomy/ml-service
+    newTag: latest

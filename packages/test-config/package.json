@@ -1,0 +1,63 @@
+{
+  "name": "@neurectomy/test-config",
+  "version": "0.1.0",
+  "description": "Shared test configuration for NEURECTOMY monorepo",
+  "type": "module",
+  "exports": {
+    "./vitest": "./vitest.shared.ts",
+    "./setup": "./setup.ts",
+    "./setup-dom": "./setup-dom.ts",
+    "./mocks": "./mocks/index.ts",
+    "./mocks/api": "./mocks/api.ts",
+    "./mocks/storage": "./mocks/storage.ts",
+    "./mocks/events": "./mocks/events.ts",
+    "./utils": "./utils/index.ts"
+  },
+  "files": [
+    "*.ts",
+    "mocks/**/*.ts",
+    "utils/**/*.ts"
+  ],
+  "dependencies": {
+    "@testing-library/jest-dom": "^6.4.0",
+    "@testing-library/react": "^14.2.0",
+    "@testing-library/user-event": "^14.5.2",
+    "msw": "^2.2.0"
+  },
+  "devDependencies": {
+    "@neurectomy/typescript-config": "workspace:*",
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.3.0"
+  },
+  "peerDependencies": {
+    "vitest": "^1.0.0",
+    "@types/react": "^18.0.0 || ^19.0.0",
+    "jsdom": "^24.0.0",
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@types/react": {
+      "optional": true
+    },
+    "jsdom": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neurectomy/neurectomy.git",
+    "directory": "packages/test-config"
+  },
+  "license": "MIT"
+}

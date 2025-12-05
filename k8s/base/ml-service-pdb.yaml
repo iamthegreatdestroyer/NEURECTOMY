@@ -1,0 +1,18 @@
+# ============================================================================
+# NEURECTOMY ML Service - Pod Disruption Budget
+# Ensures high availability during node maintenance/upgrades
+# ============================================================================
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: ml-service
+  namespace: neurectomy
+  labels:
+    app.kubernetes.io/name: ml-service
+    app.kubernetes.io/component: availability
+    app.kubernetes.io/part-of: neurectomy-platform
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ml-service

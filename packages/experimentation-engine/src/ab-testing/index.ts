@@ -61,3 +61,13 @@ export {
   type BanditState,
   type AssignmentManagerEvents,
 } from "./assignment";
+
+// =============================================================================
+// Backwards compatibility aliases
+// =============================================================================
+
+/** @deprecated Use ABTestingEngine instead */
+export { ABTestingEngine as ABTestManager } from "./engine";
+
+/** @deprecated Use ABExperimentConfig instead */
+export type { ABExperimentConfig as ABTestConfig } from "./engine";

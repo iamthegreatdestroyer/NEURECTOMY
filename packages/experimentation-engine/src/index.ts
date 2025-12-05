@@ -6,42 +6,6 @@
  * Provides hypothesis testing, A/B testing, chaos engineering, and
  * swarm intelligence capabilities.
  *
- * @example
- * ```typescript
- * import {
- *   // Hypothesis Testing
- *   HypothesisLab,
- *   ExperimentRunner,
- *   StatisticalAnalyzer,
- *
- *   // A/B Testing
- *   ABTestManager,
- *   VariantAllocator,
- *   MetricsCollector,
- *
- *   // Chaos Engineering
- *   ChaosSimulator,
- *   ChaosScheduler,
- *   FaultRegistry,
- *
- *   // Swarm Intelligence
- *   SwarmArena,
- *   AgentSpawner,
- *   Tournament,
- * } from '@neurectomy/experimentation-engine';
- *
- * // Create a complete experiment pipeline
- * const lab = new HypothesisLab();
- * const chaos = new ChaosSimulator();
- * const arena = new SwarmArena();
- *
- * // Run experiments with chaos injection
- * await lab.runExperiment(myHypothesis, {
- *   chaosEnabled: true,
- *   chaosSimulator: chaos,
- * });
- * ```
- *
  * @packageDocumentation
  */
 
@@ -50,33 +14,57 @@
 // =============================================================================
 
 export {
-  // Core classes
+  // Lab
   HypothesisLab,
-  ExperimentRunner,
-  StatisticalAnalyzer,
-
-  // Types and schemas
+  createHypothesisLab,
+  defineHypothesis,
+  defineParameterSpace,
+  type HypothesisConfig,
+  type Parameter,
+  type ParameterSpace,
+  type ParameterConstraint,
+  type TrialConfig,
+  type TrialResult,
   type Hypothesis,
-  HypothesisSchema,
+  type Trial,
+  type LabConfig,
+  type StorageBackend,
+  type LabEvents,
+  // Tracker
+  ExperimentTracker,
+  createTracker,
+  withRun,
+  type RunConfig,
+  type Run,
+  type RunStatus,
+  type MetricLog,
+  type Artifact,
+  type ArtifactType,
   type Experiment,
-  ExperimentSchema,
-  type ExperimentResult,
-  ExperimentResultSchema,
-  type StatisticalTest,
-  type TestResult,
-  TestResultSchema,
-  type HypothesisLabConfig,
-  HypothesisLabConfigSchema,
-
-  // Utilities
-  calculatePValue,
-  calculateConfidenceInterval,
-  calculateEffectSize,
-  calculateSampleSize,
-  tTest,
-  chiSquareTest,
-  anovaTest,
-  mannWhitneyTest,
+  type TrackerConfig,
+  type TrackerEvents,
+  type ComparisonResult,
+  type MetricComparison,
+  type ParameterComparison,
+  type RunRanking,
+  // Versioning
+  ModelRegistry,
+  createRegistry,
+  defineSignature,
+  defineArtifact,
+  type ModelVersion,
+  type ModelStage,
+  type ModelArtifact,
+  type ModelSignature,
+  type SignatureField,
+  type ModelLineage,
+  type RegisteredModel,
+  type VersioningConfig,
+  type VersioningEvents,
+  type VersionComparison,
+  type MetricDiff,
+  type ParameterDiff,
+  type StructuralChange,
 } from "./hypothesis";
 
 // =============================================================================
@@ -84,40 +72,55 @@ export {
 // =============================================================================
 
 export {
-  // Core classes
-  ABTestManager,
-  VariantAllocator,
-  MetricsCollector,
-  TrafficRouter,
-
-  // Types and schemas
-  type ABTest,
-  ABTestSchema,
-  type Variant,
-  VariantSchema,
-  type Allocation,
-  AllocationSchema,
-  type ABTestResult,
-  ABTestResultSchema,
-  type Metric,
-  MetricSchema,
-  type MetricValue,
-  MetricValueSchema,
-  type ABTestConfig,
-  ABTestConfigSchema,
-
-  // Allocation strategies
-  type AllocationStrategy,
-  RandomAllocator,
-  WeightedAllocator,
-  StickyAllocator,
-  MultiArmedBanditAllocator,
-
-  // Statistical utilities
-  calculateSignificance,
-  calculateLift,
-  calculateMDE,
-  isStatisticallySignificant,
+  // Engine
+  ABTestingEngine,
+  type ABExperimentConfig,
+  type VariantConfig,
+  type MetricConfig,
+  type TargetingConfig,
+  type TargetingRule,
+  type ScheduleConfig,
+  type ExperimentSettings,
+  type ABExperiment,
+  type VariantState,
+  type MetricState,
+  type ExperimentResult as ABExperimentResult,
+  type ABTestingEvents,
+  // Statistics
+  proportionZTest,
+  twoSampleTTest,
+  chiSquaredTest,
+  mannWhitneyUTest,
+  bayesianABTest,
+  calculateSampleSize as abCalculateSampleSize,
+  calculatePower,
+  sequentialTest,
+  calculateEffectSize as abCalculateEffectSize,
+  calculateConfidenceInterval as abCalculateConfidenceInterval,
+  multipleTestingCorrection,
+  type StatisticalTestResult,
+  type BayesianResult,
+  type SampleSizeResult,
+  type SequentialTestResult,
+  type MultipleTesting,
+  // Assignment
+  AssignmentManager,
+  RandomAssignment,
+  DeterministicAssignment,
+  WeightedAssignment,
+  EpsilonGreedyAssignment,
+  ThompsonSamplingAssignment,
+  UCB1Assignment,
+  ContextualAssignment,
+  type AssignmentStrategy,
+  type AssignmentStrategyType,
+  type VariantWeight,
+  type AssignmentContext,
+  type BanditState,
+  type AssignmentManagerEvents,
+  // Backwards compatibility
+  ABTestingEngine as ABTestManager,
+  type ABExperimentConfig as ABTestConfig,
 } from "./ab-testing";
 
 // =============================================================================
@@ -125,15 +128,30 @@ export {
 // =============================================================================
 
 export {
-  // Core classes
+  // Core simulator
   ChaosSimulator,
-  ChaosScheduler,
-
-  // Fault injectors
   type FaultInjector,
+  type ChaosExperiment,
+  type ChaosExperimentConfig,
+  type ChaosResults,
+  type AffectedTarget,
+  type FaultConfig,
+  type FaultType,
+  type FaultSeverity,
+  type ExperimentState,
+  FaultTypeSchema,
+  FaultSeveritySchema,
+  ExperimentStateSchema,
+  FaultConfigSchema,
+  TargetSelectorSchema,
+  BlastRadiusConfigSchema,
+  SafetyConfigSchema,
+  HealthCheckConfigSchema,
+  ChaosExperimentConfigSchema,
   LatencyInjector,
   ErrorInjector,
   TimeoutInjector,
+  // Extended faults
   NetworkPartitionInjector,
   PacketLossInjector,
   BandwidthLimitInjector,
@@ -144,35 +162,44 @@ export {
   ProcessKillInjector,
   ContainerActionInjector,
   NodeDrainInjector,
-
-  // Registry and scenarios
   FaultRegistry,
   ChaosScenarios,
-
-  // Types and schemas
-  type ChaosConfig,
-  ChaosConfigSchema,
-  type FaultConfig,
-  FaultConfigSchema,
-  type ChaosExperiment,
-  ChaosExperimentSchema,
-  type ChaosResult,
-  ChaosResultSchema,
-  type ScheduledExperiment,
-  ScheduledExperimentSchema,
-  type GamedayConfig,
+  NetworkPartitionConfigSchema,
+  PacketLossConfigSchema,
+  BandwidthLimitConfigSchema,
+  DNSFailureConfigSchema,
+  CPUStressConfigSchema,
+  MemoryStressConfigSchema,
+  DiskStressConfigSchema,
+  IOStressConfigSchema,
+  ProcessKillConfigSchema,
+  ContainerActionConfigSchema,
+  NodeDrainConfigSchema,
+  type NetworkPartitionConfig,
+  type PacketLossConfig,
+  type BandwidthLimitConfig,
+  type DNSFailureConfig,
+  type CPUStressConfig,
+  type MemoryStressConfig,
+  type DiskStressConfig,
+  type IOStressConfig,
+  type ProcessKillConfig,
+  type ContainerActionConfig,
+  type NodeDrainConfig,
+  // Scheduler
+  ChaosScheduler,
+  CronExpressionSchema,
+  ScheduleWindowSchema,
+  ExperimentScheduleSchema,
   GamedayConfigSchema,
-  type ExecutionWindow,
-  ExecutionWindowSchema,
-
-  // Targeting
-  type TargetSelector,
-  TargetSelectorSchema,
-  type TargetType,
-
-  // Blast radius
-  type BlastRadius,
-  BlastRadiusSchema,
+  type ExperimentSchedule,
+  type GamedayConfig,
+  type ScheduleWindow,
+  type SchedulerEvents,
+  type SchedulerConfig,
+  type ScheduledExecution,
+  type GamedayResults,
+  type SchedulerStatistics,
 } from "./chaos";
 
 // =============================================================================
@@ -180,21 +207,8 @@ export {
 // =============================================================================
 
 export {
-  // Core classes
+  // Arena
   SwarmArena,
-  AgentSpawner,
-  Tournament,
-
-  // Behavior engines
-  type BehaviorEngine,
-  RandomBehaviorEngine,
-  RuleBasedBehaviorEngine,
-  ScriptedBehaviorEngine,
-
-  // Templates
-  PredefinedTemplates,
-
-  // Arena types
   type SwarmArenaConfig,
   SwarmArenaConfigSchema,
   type AgentState,
@@ -206,11 +220,15 @@ export {
   type Velocity,
   VelocitySchema,
   type ArenaStats,
+  type BehaviorEngine,
+  RandomBehaviorEngine,
+  RuleBasedBehaviorEngine,
+  ScriptedBehaviorEngine,
   type EmergentPattern,
   EmergentPatternSchema,
   type PatternType,
-
-  // Spawner types
+  // Agents
+  AgentSpawner,
   type AgentTemplate,
   AgentTemplateSchema,
   type SpawnConfig,
@@ -220,8 +238,9 @@ export {
   SpawnResultSchema,
   type PopulationSnapshot,
   PopulationSnapshotSchema,
-
-  // Tournament types
+  PredefinedTemplates,
+  // Tournament
+  Tournament,
   type TournamentConfig,
   TournamentConfigSchema,
   type Genome,
@@ -238,7 +257,6 @@ export {
   type MutationMethod,
   type EvolutionStats,
   EvolutionStatsSchema,
-
   // Evolution operators
   topNSelection,
   tournamentSelection,
@@ -252,13 +270,11 @@ export {
   gaussianMutation,
   uniformMutation,
   polynomialMutation,
-
   // Factory functions
   createQuickArena,
   createArenaWithSpawner,
   createQuickTournament,
   runSwarmExperiment,
-
   // Metadata
   SWARM_VERSION,
   SWARM_CAPABILITIES,
@@ -274,9 +290,13 @@ export * from "./types";
 // FACTORY FUNCTIONS
 // =============================================================================
 
-import { HypothesisLab, type HypothesisLabConfig } from "./hypothesis";
-import { ABTestManager, type ABTestConfig } from "./ab-testing";
-import { ChaosSimulator, ChaosScheduler, type ChaosConfig } from "./chaos";
+import { HypothesisLab, type LabConfig } from "./hypothesis";
+import { ABTestingEngine, type ABExperimentConfig } from "./ab-testing";
+import {
+  ChaosSimulator,
+  ChaosScheduler,
+  type ChaosExperimentConfig,
+} from "./chaos";
 import {
   SwarmArena,
   AgentSpawner,
@@ -289,9 +309,9 @@ import {
  * Configuration for the complete experimentation engine
  */
 export interface ExperimentationEngineConfig {
-  hypothesis?: Partial<HypothesisLabConfig>;
-  abTesting?: Partial<ABTestConfig>;
-  chaos?: Partial<ChaosConfig>;
+  hypothesis?: Partial<LabConfig>;
+  abTesting?: Partial<ABExperimentConfig>;
+  chaos?: Partial<ChaosExperimentConfig>;
   swarm?: Partial<SwarmArenaConfig>;
   tournament?: Partial<TournamentConfig>;
 }
@@ -301,7 +321,7 @@ export interface ExperimentationEngineConfig {
  */
 export interface ExperimentationEngine {
   hypothesis: HypothesisLab;
-  abTesting: ABTestManager;
+  abTesting: ABTestingEngine;
   chaos: ChaosSimulator;
   scheduler: ChaosScheduler;
   arena: SwarmArena;
@@ -311,7 +331,6 @@ export interface ExperimentationEngine {
   // Lifecycle methods
   start(): Promise<void>;
   stop(): Promise<void>;
-  reset(): void;
 
   // Status
   getStatus(): EngineStatus;
@@ -343,36 +362,14 @@ export interface EngineStatus {
 
 /**
  * Create a complete experimentation engine with all components
- *
- * @example
- * ```typescript
- * const engine = createExperimentationEngine({
- *   chaos: { defaultBlastRadius: 'small' },
- *   swarm: { maxAgents: 1000 },
- * });
- *
- * await engine.start();
- *
- * // Use individual components
- * await engine.hypothesis.runExperiment(myHypothesis);
- * await engine.chaos.runExperiment(myFaults);
- * engine.arena.start();
- *
- * // Get overall status
- * console.log(engine.getStatus());
- *
- * await engine.stop();
- * ```
  */
 export function createExperimentationEngine(
   config: ExperimentationEngineConfig = {}
 ): ExperimentationEngine {
   // Initialize all components
-  const hypothesis = new HypothesisLab(
-    config.hypothesis as HypothesisLabConfig
-  );
-  const abTesting = new ABTestManager(config.abTesting as ABTestConfig);
-  const chaos = new ChaosSimulator(config.chaos as ChaosConfig);
+  const hypothesis = new HypothesisLab(config.hypothesis as LabConfig);
+  const abTesting = new ABTestingEngine(config.abTesting as ABExperimentConfig);
+  const chaos = new ChaosSimulator(config.chaos as ChaosExperimentConfig);
   const scheduler = new ChaosScheduler(chaos);
   const arena = new SwarmArena({
     gridSize: { width: 100, height: 100 },
@@ -408,44 +405,32 @@ export function createExperimentationEngine(
     async start(): Promise<void> {
       // Start all engines that have start methods
       arena.start();
-      scheduler.start?.();
     },
 
     async stop(): Promise<void> {
       // Stop all running components
       arena.stop();
-      scheduler.stop?.();
-      await chaos.stopAll?.();
-    },
-
-    reset(): void {
-      // Reset all components to initial state
-      hypothesis.reset?.();
-      abTesting.reset?.();
-      chaos.reset?.();
-      arena.reset?.();
-      tournament.reset?.();
     },
 
     getStatus(): EngineStatus {
       return {
         hypothesis: {
-          activeExperiments: hypothesis.getActiveCount?.() ?? 0,
-          completedExperiments: hypothesis.getCompletedCount?.() ?? 0,
+          activeExperiments: 0,
+          completedExperiments: 0,
         },
         abTesting: {
-          activeTests: abTesting.getActiveCount?.() ?? 0,
-          totalAllocations: abTesting.getTotalAllocations?.() ?? 0,
+          activeTests: 0,
+          totalAllocations: 0,
         },
         chaos: {
-          activeExperiments: chaos.getActiveCount?.() ?? 0,
-          scheduledExperiments: scheduler.getScheduledCount?.() ?? 0,
-          totalFaultsInjected: chaos.getTotalFaults?.() ?? 0,
+          activeExperiments: 0,
+          scheduledExperiments: 0,
+          totalFaultsInjected: 0,
         },
         swarm: {
-          activeAgents: arena.getAgentCount?.() ?? 0,
+          activeAgents: arena.getAgents?.()?.length ?? 0,
           currentGeneration: tournament.getCurrentGeneration?.() ?? 0,
-          patternsDetected: arena.getDetectedPatterns?.()?.length ?? 0,
+          patternsDetected: 0,
         },
       };
     },
@@ -461,7 +446,7 @@ export function createLightweightEngine(): Pick<
 > {
   return {
     hypothesis: new HypothesisLab(),
-    abTesting: new ABTestManager(),
+    abTesting: new ABTestingEngine(),
     chaos: new ChaosSimulator(),
   };
 }
@@ -504,9 +489,9 @@ export function createSwarmEngine(config?: {
  * Create an engine focused on chaos engineering
  */
 export function createChaosEngine(
-  config?: Partial<ChaosConfig>
+  config?: Partial<ChaosExperimentConfig>
 ): Pick<ExperimentationEngine, "chaos" | "scheduler"> {
-  const chaos = new ChaosSimulator(config as ChaosConfig);
+  const chaos = new ChaosSimulator(config as ChaosExperimentConfig);
   const scheduler = new ChaosScheduler(chaos);
 
   return { chaos, scheduler };

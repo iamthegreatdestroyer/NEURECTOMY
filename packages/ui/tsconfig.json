@@ -1,15 +1,12 @@
 {
-  "extends": "../../tsconfig.json",
+  "extends": "@neurectomy/typescript-config/react-library",
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",
+    "composite": false,
     "declaration": true,
-    "declarationMap": true,
-    "composite": true,
-    "jsx": "react-jsx",
-    "noEmit": false,
-    "allowImportingTsExtensions": false
+    "declarationMap": true
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.test.tsx"]
 }

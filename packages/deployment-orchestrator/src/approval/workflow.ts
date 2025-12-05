@@ -572,3 +572,11 @@ export function createApprovalWorkflow(
 ): ApprovalWorkflowManager {
   return new ApprovalWorkflowManager(config);
 }
+
+// =============================================================================
+// Type Alias for backwards compatibility
+// =============================================================================
+
+/** @deprecated Use ApprovalWorkflowManager instead */
+export type ApprovalWorkflow = ApprovalWorkflowManager;
+export { ApprovalWorkflowManager as ApprovalWorkflow };
