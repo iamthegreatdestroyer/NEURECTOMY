@@ -1,0 +1,74 @@
+{
+  "name": "@neurectomy/continuous-intelligence",
+  "version": "0.1.0",
+  "description": "Self-improving AI systems with predictive maintenance and ML-based auto-optimization for NEURECTOMY",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./self-improvement": {
+      "import": "./dist/self-improvement/index.js",
+      "types": "./dist/self-improvement/index.d.ts"
+    },
+    "./predictive": {
+      "import": "./dist/predictive/index.js",
+      "types": "./dist/predictive/index.d.ts"
+    },
+    "./optimization": {
+      "import": "./dist/optimization/index.js",
+      "types": "./dist/optimization/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "clean": "rimraf dist",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src --ext .ts,.tsx",
+    "prepublishOnly": "pnpm run build"
+  },
+  "dependencies": {
+    "eventemitter3": "^5.0.1",
+    "simple-statistics": "^7.8.3",
+    "ml-regression": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "rimraf": "^5.0.5",
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.2",
+    "vitest": "^1.0.4"
+  },
+  "peerDependencies": {
+    "@neurectomy/types": "workspace:*"
+  },
+  "keywords": [
+    "neurectomy",
+    "continuous-intelligence",
+    "self-improvement",
+    "predictive-maintenance",
+    "ml-optimization",
+    "auto-tuning",
+    "machine-learning",
+    "ai"
+  ],
+  "author": "NEURECTOMY Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neurectomy/neurectomy.git",
+    "directory": "packages/continuous-intelligence"
+  }
+}
