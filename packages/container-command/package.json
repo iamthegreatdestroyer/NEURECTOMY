@@ -1,0 +1,62 @@
+{
+  "name": "@neurectomy/container-command",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Container orchestration and management for NEURECTOMY - Docker, K8s, Firecracker, Wasmtime",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts",
+      "types": "./src/index.ts"
+    },
+    "./docker": {
+      "import": "./src/docker/index.ts",
+      "types": "./src/docker/index.ts"
+    },
+    "./kubernetes": {
+      "import": "./src/kubernetes/index.ts",
+      "types": "./src/kubernetes/index.ts"
+    },
+    "./firecracker": {
+      "import": "./src/firecracker/index.ts",
+      "types": "./src/firecracker/index.ts"
+    },
+    "./wasm": {
+      "import": "./src/wasm/index.ts",
+      "types": "./src/wasm/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "lint": "eslint src --ext ts,tsx",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
+    "clean": "rimraf dist .turbo"
+  },
+  "dependencies": {
+    "@kubernetes/client-node": "^0.20.0",
+    "@neurectomy/core": "workspace:*",
+    "@neurectomy/types": "workspace:*",
+    "dockerode": "^4.0.2",
+    "eventemitter3": "^5.0.1",
+    "pino": "^8.17.0",
+    "stream-buffers": "^3.0.2",
+    "tar": "^6.2.0",
+    "uuid": "^9.0.0",
+    "yaml": "^2.3.4",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@types/dockerode": "^3.3.23",
+    "@types/stream-buffers": "^3.0.7",
+    "@types/tar": "^6.1.10",
+    "@types/tar-stream": "^3.1.4",
+    "@types/uuid": "^9.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.1.0"
+  }
+}

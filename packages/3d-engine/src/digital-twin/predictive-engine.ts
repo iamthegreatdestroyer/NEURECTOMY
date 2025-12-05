@@ -11,8 +11,6 @@
 
 import type {
   TwinId,
-  AgentId,
-  TwinState,
   AgentStateSnapshot,
   PredictionConfig,
   PredictionResult,
@@ -21,10 +19,6 @@ import type {
   Scenario,
   ScenarioInput,
   PredictionMetrics,
-  AgentMetrics,
-  TimeSeriesMetric,
-  TwinError,
-  IOHistoryEntry,
 } from "./types";
 
 // ============================================================================
@@ -186,7 +180,7 @@ export class TwinPredictiveEngine {
     }
 
     engine.state = "running";
-    const startTime = Date.now();
+    const _startTime = Date.now();
 
     try {
       const config = { ...engine.config, ...overrideConfig };
@@ -577,7 +571,7 @@ export class TwinPredictiveEngine {
 
     for (let i = 0; i <= steps; i++) {
       const timestamp = Date.now() + i * config.stepMs;
-      const progressRatio = i / steps;
+      const _progressRatio = i / steps;
 
       // Apply trends to metrics
       predictedState = this.applyTrends(
@@ -594,10 +588,8 @@ export class TwinPredictiveEngine {
       );
 
       // Calculate confidence (decreases over time)
-      const confidence = Math.max(
-        0.1,
-        config.confidenceLevel * Math.pow(0.99, i)
-      );
+      const baseConfidence = config.confidenceLevel ?? 0.95;
+      const confidence = Math.max(0.1, baseConfidence * Math.pow(0.99, i));
 
       // Calculate bounds if uncertainty quantification is enabled
       const bounds = config.quantifyUncertainty
@@ -617,6 +609,7 @@ export class TwinPredictiveEngine {
       endTime: Date.now() + config.horizonMs,
       stepMs: config.stepMs,
       points,
+      branches: [], // No branches in simple timeline
     };
   }
 
@@ -806,7 +799,7 @@ export class TwinPredictiveEngine {
    * Simulate a single scenario
    */
   private async simulateScenario(
-    twinId: TwinId,
+    _twinId: TwinId,
     currentState: AgentStateSnapshot,
     input: ScenarioInput,
     index: number
@@ -943,7 +936,7 @@ export class TwinPredictiveEngine {
 
     // Calculate scenario coverage
     const scenarioCoverage = scenarios.reduce(
-      (sum, s) => sum + s.probability,
+      (sum, s) => sum + (s.probability ?? 0),
       0
     );
 

@@ -1,0 +1,98 @@
+{
+  "name": "@neurectomy/github-universe",
+  "version": "1.0.0",
+  "description": "Comprehensive GitHub integration layer for NEURECTOMY - repository management, PR workflows, and agent import",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./repository": {
+      "import": "./dist/repository/index.mjs",
+      "require": "./dist/repository/index.js",
+      "types": "./dist/repository/index.d.ts"
+    },
+    "./branch": {
+      "import": "./dist/branch/index.mjs",
+      "require": "./dist/branch/index.js",
+      "types": "./dist/branch/index.d.ts"
+    },
+    "./pr": {
+      "import": "./dist/pr/index.mjs",
+      "require": "./dist/pr/index.js",
+      "types": "./dist/pr/index.d.ts"
+    },
+    "./issues": {
+      "import": "./dist/issues/index.mjs",
+      "require": "./dist/issues/index.js",
+      "types": "./dist/issues/index.d.ts"
+    },
+    "./actions": {
+      "import": "./dist/actions/index.mjs",
+      "require": "./dist/actions/index.js",
+      "types": "./dist/actions/index.d.ts"
+    },
+    "./webhooks": {
+      "import": "./dist/webhooks/index.mjs",
+      "require": "./dist/webhooks/index.js",
+      "types": "./dist/webhooks/index.d.ts"
+    },
+    "./agents": {
+      "import": "./dist/agents/index.mjs",
+      "require": "./dist/agents/index.js",
+      "types": "./dist/agents/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "eslint src/",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@octokit/core": "^5.0.0",
+    "@octokit/graphql": "^7.0.0",
+    "@octokit/plugin-paginate-rest": "^9.0.0",
+    "@octokit/plugin-retry": "^6.0.0",
+    "@octokit/plugin-throttling": "^8.0.0",
+    "@octokit/rest": "^20.0.0",
+    "@octokit/webhooks": "^12.0.0",
+    "eventemitter3": "^5.0.1",
+    "semver": "^7.5.4",
+    "simple-git": "^3.20.0",
+    "tar": "^6.2.0",
+    "uuid": "^9.0.0",
+    "yaml": "^2.3.4",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.25",
+    "@types/semver": "^7.5.0",
+    "@types/tar": "^6.1.0",
+    "@types/uuid": "^9.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0"
+  },
+  "peerDependencies": {
+    "@neurectomy/core": "workspace:*",
+    "@neurectomy/types": "workspace:*"
+  },
+  "keywords": [
+    "github",
+    "graphql",
+    "repository",
+    "pull-request",
+    "actions",
+    "webhooks",
+    "neurectomy"
+  ],
+  "author": "NEURECTOMY",
+  "license": "MIT"
+}

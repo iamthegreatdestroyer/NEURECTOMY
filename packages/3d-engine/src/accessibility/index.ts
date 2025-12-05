@@ -75,15 +75,15 @@ export {
 // Convenience Functions
 // ============================================================================
 
-import type {
-  AccessibilityPreferences,
-  ColorBlindnessType,
-  DescriptionLevel,
-} from "./types";
+import type { AccessibilityPreferences } from "./types";
 import { getAriaDescriptionGenerator } from "./aria-descriptions";
 import { getScreenReaderManager } from "./screen-reader";
 import { getKeyboardNavigationManager } from "./keyboard-navigation";
-import { getPaletteForType, getHighContrastTheme } from "./color-palettes";
+// Import from color-palettes for internal use (already re-exported above)
+import {
+  getPaletteForType as getPaletteForTypeInternal,
+  getHighContrastTheme as getHighContrastThemeInternal,
+} from "./color-palettes";
 
 /**
  * Default accessibility preferences
@@ -139,7 +139,7 @@ export function initializeAccessibility(
   descriptionGenerator: ReturnType<typeof getAriaDescriptionGenerator>;
   screenReader: ReturnType<typeof getScreenReaderManager>;
   keyboardNavigation: ReturnType<typeof getKeyboardNavigationManager>;
-  currentPalette: ReturnType<typeof getPaletteForType>;
+  currentPalette: ReturnType<typeof getPaletteForTypeInternal>;
   preferences: AccessibilityPreferences;
 } {
   // Merge with detected system preferences
@@ -174,8 +174,8 @@ export function initializeAccessibility(
 
   // Get appropriate color palette
   const currentPalette = finalPrefs.highContrast
-    ? getHighContrastTheme("dark")
-    : getPaletteForType(finalPrefs.colorBlindnessMode);
+    ? getHighContrastThemeInternal("dark")
+    : getPaletteForTypeInternal(finalPrefs.colorBlindnessMode);
 
   return {
     descriptionGenerator,
@@ -193,7 +193,7 @@ export function updateAccessibilityPreferences(
   preferences: Partial<AccessibilityPreferences>
 ): {
   descriptionGenerator: ReturnType<typeof getAriaDescriptionGenerator>;
-  palette: ReturnType<typeof getPaletteForType>;
+  palette: ReturnType<typeof getPaletteForTypeInternal>;
 } {
   const descriptionGenerator = getAriaDescriptionGenerator();
 
@@ -204,8 +204,8 @@ export function updateAccessibilityPreferences(
 
   // Get updated palette
   const palette = preferences.highContrast
-    ? getHighContrastTheme("dark")
-    : getPaletteForType(preferences.colorBlindnessMode || "normal");
+    ? getHighContrastThemeInternal("dark")
+    : getPaletteForTypeInternal(preferences.colorBlindnessMode || "normal");
 
   return {
     descriptionGenerator,

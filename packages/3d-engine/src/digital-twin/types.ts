@@ -83,6 +83,10 @@ export interface AgentStateSnapshot {
   metrics: AgentMetrics;
   /** Component graph */
   componentGraph: ComponentGraphSnapshot;
+  /** Agent capabilities */
+  capabilities?: string[];
+  /** Agent connections to other agents/systems */
+  connections?: string[];
 }
 
 /**
@@ -229,11 +233,20 @@ export interface SyncResult {
  * Sync conflict details
  */
 export interface SyncConflict {
-  field: string;
-  sourceValue: unknown;
-  twinValue: unknown;
-  resolution?: "source" | "twin" | "merged";
+  /** Path to the conflicting field */
+  path?: string;
+  field?: string;
+  /** Source/local value */
+  sourceValue?: unknown;
+  localValue?: unknown;
+  /** Twin/remote value */
+  twinValue?: unknown;
+  remoteValue?: unknown;
+  /** How the conflict was resolved */
+  resolution?: ConflictResolution | "source" | "twin" | "merged";
+  /** The value after merging */
   mergedValue?: unknown;
+  resolvedValue?: unknown;
 }
 
 /**
@@ -295,12 +308,30 @@ export interface PredictedInput {
  * Prediction result
  */
 export interface PredictionResult {
+  /** Unique identifier for this prediction result */
+  id?: string;
+  /** Associated twin ID */
   twinId: TwinId;
-  config: PredictionConfig;
-  startTime: number;
-  endTime: number;
-  scenarios: ScenarioResult[];
-  summary: PredictionSummary;
+  /** Configuration used for prediction */
+  config?: PredictionConfig;
+  /** Start time of prediction (legacy) */
+  startTime?: number;
+  /** End time of prediction (legacy) */
+  endTime?: number;
+  /** Timestamp when prediction was made */
+  timestamp?: number;
+  /** Prediction horizon in milliseconds */
+  horizonMs?: number;
+  /** Prediction timeline with points and branches */
+  timeline?: PredictionTimeline;
+  /** Scenario results (detailed) */
+  scenarioResults?: ScenarioResult[];
+  /** Scenarios (simplified) */
+  scenarios?: Scenario[] | ScenarioResult[];
+  /** Prediction metrics */
+  metrics?: PredictionMetrics | AgentMetrics;
+  /** Summary of prediction */
+  summary?: PredictionSummary;
 }
 
 /**
@@ -520,4 +551,265 @@ export interface TwinStatistics {
   totalSyncs: number;
   totalPredictions: number;
   storageUsedBytes: number;
+}
+
+// ============================================================================
+// Additional Type Aliases (for export consistency)
+// ============================================================================
+
+/**
+ * Time series metric for tracking values over time
+ */
+export interface TimeSeriesMetric {
+  name: string;
+  timestamps: number[];
+  values: number[];
+  unit?: string;
+  aggregationType?: "sum" | "average" | "max" | "min" | "last";
+}
+
+/**
+ * Resource utilization snapshot
+ */
+export interface ResourceUtilization {
+  cpu: number;
+  memory: number;
+  gpu?: number;
+  disk?: number;
+  network?: number;
+  timestamp: number;
+}
+
+/**
+ * Synchronization mode type
+ */
+export type SyncMode = "realtime" | "periodic" | "manual" | "on-demand";
+
+/**
+ * Conflict resolution strategy type
+ */
+export type ConflictResolution =
+  | "source-wins"
+  | "twin-wins"
+  | "merge"
+  | "manual"
+  | "last-write-wins"
+  | "latest-wins";
+
+/**
+ * Scenario input for prediction simulations
+ */
+export interface ScenarioInput {
+  id?: string;
+  name?: string;
+  description?: string;
+  inputs?: Array<{
+    timestamp: number;
+    data: unknown;
+    probability?: number;
+  }>;
+  weight?: number;
+  tags?: string[];
+  /** Configuration overrides for this scenario */
+  configOverrides?: Record<string, unknown>;
+  /** Parameter changes to apply */
+  parameterChanges?: Record<string, number>;
+  /** Load multiplier (e.g., 2x traffic) */
+  loadMultiplier?: number;
+  /** Inject failures into the scenario */
+  failureInjection?: boolean;
+  /** Probability of this scenario input (0-1) */
+  probability?: number;
+}
+
+/**
+ * Twin sync result (alias for SyncResult for API consistency)
+ */
+export type TwinSyncResult = SyncResult;
+
+/**
+ * Prediction timeline for visualization
+ */
+export interface PredictionTimeline {
+  startTime: number;
+  endTime: number;
+  points: TimelinePoint[];
+  branches: TimelineBranch[];
+  /** Step size in milliseconds between points */
+  stepMs?: number;
+}
+
+/**
+ * Single point in a prediction timeline
+ */
+export interface TimelinePoint {
+  timestamp: number;
+  state: Partial<AgentStateSnapshot>;
+  confidence: number;
+  scenarioId?: string;
+  metadata?: Record<string, unknown>;
+  /** Confidence bounds - can be simple numeric or full state snapshots */
+  bounds?: {
+    lower: number | AgentStateSnapshot;
+    upper: number | AgentStateSnapshot;
+  };
+}
+
+/**
+ * Branch in a prediction timeline (for divergent scenarios)
+ */
+export interface TimelineBranch {
+  id: string;
+  parentPointIndex: number;
+  points: TimelinePoint[];
+  probability: number;
+}
+
+/**
+ * Scenario definition for prediction
+ */
+export interface Scenario {
+  id: string;
+  name: string;
+  description?: string;
+  /** Array of inputs for batch scenarios */
+  inputs?: ScenarioInput[];
+  /** Single input for simple scenarios */
+  input?: Partial<ScenarioInput>;
+  constraints?: ScenarioConstraint[];
+  weight?: number;
+  tags?: string[];
+  /** Probability of this scenario occurring (0-1) */
+  probability?: number;
+  /** Predicted state after applying this scenario */
+  predictedState?: AgentStateSnapshot;
+  /** Key metrics extracted from the predicted state */
+  keyMetrics?: Record<string, number>;
+}
+
+/**
+ * Constraint for a scenario
+ */
+export interface ScenarioConstraint {
+  type: "min" | "max" | "range" | "exact";
+  field: string;
+  value: number | [number, number];
+}
+
+/**
+ * Prediction performance metrics
+ */
+export interface PredictionMetrics {
+  accuracy: number;
+  confidence?: number;
+  computeTimeMs?: number;
+  scenariosEvaluated?: number;
+  convergenceRate?: number;
+  memoryUsedMB?: number;
+  /** Precision metric (TP / (TP + FP)) */
+  precision?: number;
+  /** Recall metric (TP / (TP + FN)) */
+  recall?: number;
+  /** F1 score (harmonic mean of precision and recall) */
+  f1Score?: number;
+  /** Percentage of scenarios covered */
+  coveragePercent?: number;
+  /** Number of data points used in prediction */
+  dataPointsUsed?: number;
+}
+
+// ============================================================================
+// Diff Types
+// ============================================================================
+
+/**
+ * Delta representing changes between two twin states
+ */
+export interface TwinDelta {
+  twinId: TwinId;
+  fromTimestamp: number;
+  toTimestamp: number;
+  changes: TwinDiffEntry[];
+  summary: DeltaSummary;
+}
+
+/**
+ * Summary of a delta
+ */
+export interface DeltaSummary {
+  totalChanges: number;
+  addedFields: number;
+  removedFields: number;
+  modifiedFields: number;
+  significanceScore: number;
+}
+
+/**
+ * Full diff between two twins or versions
+ */
+export interface TwinDiff {
+  /** Twin ID (for single-twin version diffs) */
+  twinId?: TwinId;
+  /** Source twin ID (for cross-twin diffs) */
+  sourceTwinId?: TwinId;
+  /** Target twin ID (for cross-twin diffs) */
+  targetTwinId?: TwinId;
+  /** Starting version number */
+  fromVersion?: number;
+  /** Ending version number */
+  toVersion?: number;
+  timestamp: number;
+  entries: TwinDiffEntry[];
+  similarity?: number;
+  divergenceScore?: number;
+}
+
+/**
+ * Single entry in a twin diff
+ */
+export interface TwinDiffEntry {
+  path: string;
+  type: "add" | "remove" | "modify" | "added" | "removed" | "changed" | "moved";
+  oldValue?: unknown;
+  newValue?: unknown;
+  sourceValue?: unknown;
+  targetValue?: unknown;
+  conflict?: boolean;
+  significance?: "low" | "medium" | "high" | "critical";
+  category?: string;
+}
+
+// ============================================================================
+// Error Types
+// ============================================================================
+
+/**
+ * Error codes for twin operations
+ */
+export type TwinErrorCode =
+  | "TWIN_NOT_FOUND"
+  | "TWIN_ALREADY_EXISTS"
+  | "SYNC_FAILED"
+  | "SYNC_CONFLICT"
+  | "PREDICTION_FAILED"
+  | "INVALID_STATE"
+  | "INVALID_CONFIG"
+  | "STORAGE_ERROR"
+  | "NETWORK_ERROR"
+  | "TIMEOUT"
+  | "PERMISSION_DENIED"
+  | "QUOTA_EXCEEDED"
+  | "INVALID_OPERATION";
+
+/**
+ * Twin-specific error
+ */
+export interface TwinError {
+  code: TwinErrorCode;
+  message: string;
+  twinId?: TwinId;
+  operation?: string;
+  timestamp: number;
+  details?: Record<string, unknown>;
+  cause?: Error;
 }

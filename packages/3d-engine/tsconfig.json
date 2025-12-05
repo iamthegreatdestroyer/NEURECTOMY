@@ -22,6 +22,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src/**/*", "src/r3f-globals.d.ts"],
+  "include": ["src/**/*", "src/r3f-globals.d.ts", "src/three-examples.d.ts"],
   "exclude": ["node_modules", "dist"]
 }

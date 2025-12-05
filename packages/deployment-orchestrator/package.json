@@ -1,0 +1,78 @@
+{
+  "name": "@neurectomy/deployment-orchestrator",
+  "version": "0.1.0",
+  "description": "Enterprise-grade deployment orchestration with blue-green, canary, and GitOps support",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./strategies": {
+      "types": "./dist/strategies/index.d.ts",
+      "import": "./dist/strategies/index.js"
+    },
+    "./kubernetes": {
+      "types": "./dist/kubernetes/index.d.ts",
+      "import": "./dist/kubernetes/index.js"
+    },
+    "./gitops": {
+      "types": "./dist/gitops/index.d.ts",
+      "import": "./dist/gitops/index.js"
+    },
+    "./approval": {
+      "types": "./dist/approval/index.d.ts",
+      "import": "./dist/approval/index.js"
+    },
+    "./rollback": {
+      "types": "./dist/rollback/index.d.ts",
+      "import": "./dist/rollback/index.js"
+    },
+    "./health": {
+      "types": "./dist/health/index.d.ts",
+      "import": "./dist/health/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src --ext .ts",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@kubernetes/client-node": "^0.21.0",
+    "eventemitter3": "^5.0.1",
+    "ioredis": "^5.3.2",
+    "yaml": "^2.3.4",
+    "zod": "^3.22.4",
+    "p-retry": "^6.2.0",
+    "p-queue": "^8.0.1",
+    "ms": "^2.1.3"
+  },
+  "devDependencies": {
+    "@types/ms": "^0.7.34",
+    "@types/node": "^20.10.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0"
+  },
+  "peerDependencies": {
+    "@neurectomy/github-universe": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@neurectomy/github-universe": {
+      "optional": true
+    }
+  }
+}

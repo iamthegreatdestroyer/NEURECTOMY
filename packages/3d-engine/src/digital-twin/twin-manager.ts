@@ -9,7 +9,19 @@
  * @phase Phase 3 - Dimensional Forge
  */
 
-import { v4 as uuidv4 } from "uuid";
+// Simple UUID v4 generator (crypto-based)
+function generateUUID(): string {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Fallback for environments without crypto.randomUUID
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 import type {
   TwinId,
   AgentId,
@@ -143,7 +155,7 @@ export class TwinManager {
     }
 
     const now = Date.now();
-    const twinId = uuidv4();
+    const twinId = generateUUID();
 
     const twin: TwinState = {
       id: twinId,
@@ -355,10 +367,15 @@ export class TwinManager {
       agentState: {
         ...twin.agentState,
         ...stateUpdate,
+        // Ensure required nested objects are preserved
         componentGraph:
-          stateUpdate.componentGraph || twin.agentState.componentGraph,
-        metrics: stateUpdate.metrics || twin.agentState.metrics,
-      },
+          stateUpdate.componentGraph ?? twin.agentState.componentGraph,
+        metrics: stateUpdate.metrics ?? twin.agentState.metrics,
+        config: stateUpdate.config ?? twin.agentState.config,
+        parameters: stateUpdate.parameters ?? twin.agentState.parameters,
+        capabilities: stateUpdate.capabilities ?? twin.agentState.capabilities,
+        connections: stateUpdate.connections ?? twin.agentState.connections,
+      } as AgentStateSnapshot,
       modifiedAt: Date.now(),
     };
 

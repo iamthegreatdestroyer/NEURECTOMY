@@ -1,0 +1,59 @@
+{
+  "name": "@neurectomy/experimentation-engine",
+  "version": "0.0.1",
+  "description": "NEURECTOMY Experimentation Engine - A/B testing, ML experiments, and statistical analysis for agent optimization",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src/",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@neurectomy/types": "workspace:*",
+    "eventemitter3": "^5.0.1",
+    "pino": "^9.0.0",
+    "zod": "^3.23.8",
+    "simple-statistics": "^7.8.3",
+    "jstat": "^1.9.6",
+    "ml-matrix": "^6.11.0",
+    "seedrandom": "^3.0.5",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/seedrandom": "^3.0.8",
+    "@types/uuid": "^9.0.8",
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.0"
+  },
+  "keywords": [
+    "neurectomy",
+    "experimentation",
+    "ab-testing",
+    "ml-experiments",
+    "statistics",
+    "optimization",
+    "agents"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neurectomy/neurectomy.git",
+    "directory": "packages/experimentation-engine"
+  }
+}

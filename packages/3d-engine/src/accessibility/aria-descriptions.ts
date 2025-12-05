@@ -102,7 +102,7 @@ const DESCRIPTION_TEMPLATES: Partial<
   },
 
   edge: {
-    minimal: (ctx) => "Connection",
+    minimal: (_ctx) => "Connection",
     standard: (ctx) => ctx.name || "Connection between nodes",
     verbose: (ctx) =>
       `Connection: ${ctx.name || "edge"}` + (ctx.state ? `, ${ctx.state}` : ""),

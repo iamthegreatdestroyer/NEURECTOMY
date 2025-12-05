@@ -30,6 +30,6 @@
       "@neurectomy/3d-engine": ["packages/3d-engine/src"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules", "dist", "build", ".turbo"]
+  "include": ["packages/**/*.ts", "packages/**/*.tsx", "services/**/*.ts"],
+  "exclude": ["node_modules", "dist", "build", ".turbo", "apps"]
 }

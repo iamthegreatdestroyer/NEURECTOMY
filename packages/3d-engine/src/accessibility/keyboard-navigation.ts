@@ -15,7 +15,7 @@ import type {
   NavigationMode,
   KeyboardNavigationConfig,
   FocusTrapConfig,
-} from './types';
+} from "./types";
 
 // ============================================================================
 // Default Key Bindings
@@ -26,65 +26,168 @@ import type {
  */
 export const DEFAULT_KEY_BINDINGS: KeyBinding[] = [
   // Navigation
-  { key: 'ArrowUp', action: 'Navigate up', handler: 'navigateUp', repeatable: true },
-  { key: 'ArrowDown', action: 'Navigate down', handler: 'navigateDown', repeatable: true },
-  { key: 'ArrowLeft', action: 'Navigate left', handler: 'navigateLeft', repeatable: true },
-  { key: 'ArrowRight', action: 'Navigate right', handler: 'navigateRight', repeatable: true },
-  { key: 'ArrowUp', modifiers: { shift: true }, action: 'Navigate forward (Z)', handler: 'navigateForward', repeatable: true },
-  { key: 'ArrowDown', modifiers: { shift: true }, action: 'Navigate backward (Z)', handler: 'navigateBackward', repeatable: true },
-  
+  {
+    key: "ArrowUp",
+    action: "Navigate up",
+    handler: "navigateUp",
+    repeatable: true,
+  },
+  {
+    key: "ArrowDown",
+    action: "Navigate down",
+    handler: "navigateDown",
+    repeatable: true,
+  },
+  {
+    key: "ArrowLeft",
+    action: "Navigate left",
+    handler: "navigateLeft",
+    repeatable: true,
+  },
+  {
+    key: "ArrowRight",
+    action: "Navigate right",
+    handler: "navigateRight",
+    repeatable: true,
+  },
+  {
+    key: "ArrowUp",
+    modifiers: { shift: true },
+    action: "Navigate forward (Z)",
+    handler: "navigateForward",
+    repeatable: true,
+  },
+  {
+    key: "ArrowDown",
+    modifiers: { shift: true },
+    action: "Navigate backward (Z)",
+    handler: "navigateBackward",
+    repeatable: true,
+  },
+
   // Selection
-  { key: 'Enter', action: 'Select element', handler: 'selectElement' },
-  { key: ' ', action: 'Toggle selection', handler: 'toggleSelection' },
-  { key: 'Escape', action: 'Clear selection', handler: 'clearSelection' },
-  { key: 'a', modifiers: { ctrl: true }, action: 'Select all', handler: 'selectAll' },
-  
+  { key: "Enter", action: "Select element", handler: "selectElement" },
+  { key: " ", action: "Toggle selection", handler: "toggleSelection" },
+  { key: "Escape", action: "Clear selection", handler: "clearSelection" },
+  {
+    key: "a",
+    modifiers: { ctrl: true },
+    action: "Select all",
+    handler: "selectAll",
+  },
+
   // Camera
-  { key: 'w', action: 'Pan up', handler: 'panUp', repeatable: true, context: ['viewport'] },
-  { key: 's', action: 'Pan down', handler: 'panDown', repeatable: true, context: ['viewport'] },
-  { key: 'a', action: 'Pan left', handler: 'panLeft', repeatable: true, context: ['viewport'] },
-  { key: 'd', action: 'Pan right', handler: 'panRight', repeatable: true, context: ['viewport'] },
-  { key: '+', action: 'Zoom in', handler: 'zoomIn', repeatable: true },
-  { key: '=', action: 'Zoom in', handler: 'zoomIn', repeatable: true },
-  { key: '-', action: 'Zoom out', handler: 'zoomOut', repeatable: true },
-  { key: '0', action: 'Reset view', handler: 'resetView' },
-  
+  {
+    key: "w",
+    action: "Pan up",
+    handler: "panUp",
+    repeatable: true,
+    context: ["viewport"],
+  },
+  {
+    key: "s",
+    action: "Pan down",
+    handler: "panDown",
+    repeatable: true,
+    context: ["viewport"],
+  },
+  {
+    key: "a",
+    action: "Pan left",
+    handler: "panLeft",
+    repeatable: true,
+    context: ["viewport"],
+  },
+  {
+    key: "d",
+    action: "Pan right",
+    handler: "panRight",
+    repeatable: true,
+    context: ["viewport"],
+  },
+  { key: "+", action: "Zoom in", handler: "zoomIn", repeatable: true },
+  { key: "=", action: "Zoom in", handler: "zoomIn", repeatable: true },
+  { key: "-", action: "Zoom out", handler: "zoomOut", repeatable: true },
+  { key: "0", action: "Reset view", handler: "resetView" },
+
   // Focus navigation
-  { key: 'Tab', action: 'Next element', handler: 'focusNext' },
-  { key: 'Tab', modifiers: { shift: true }, action: 'Previous element', handler: 'focusPrevious' },
-  { key: 'Home', action: 'First element', handler: 'focusFirst' },
-  { key: 'End', action: 'Last element', handler: 'focusLast' },
-  
+  { key: "Tab", action: "Next element", handler: "focusNext" },
+  {
+    key: "Tab",
+    modifiers: { shift: true },
+    action: "Previous element",
+    handler: "focusPrevious",
+  },
+  { key: "Home", action: "First element", handler: "focusFirst" },
+  { key: "End", action: "Last element", handler: "focusLast" },
+
   // Tree navigation (for graph/hierarchy)
-  { key: 'ArrowRight', modifiers: { ctrl: true }, action: 'Expand node', handler: 'expandNode', context: ['graph'] },
-  { key: 'ArrowLeft', modifiers: { ctrl: true }, action: 'Collapse node', handler: 'collapseNode', context: ['graph'] },
-  
+  {
+    key: "ArrowRight",
+    modifiers: { ctrl: true },
+    action: "Expand node",
+    handler: "expandNode",
+    context: ["graph"],
+  },
+  {
+    key: "ArrowLeft",
+    modifiers: { ctrl: true },
+    action: "Collapse node",
+    handler: "collapseNode",
+    context: ["graph"],
+  },
+
   // Timeline navigation
-  { key: 'ArrowLeft', action: 'Previous time point', handler: 'previousTimePoint', context: ['timeline'] },
-  { key: 'ArrowRight', action: 'Next time point', handler: 'nextTimePoint', context: ['timeline'] },
-  { key: 'Home', action: 'Start of timeline', handler: 'timelineStart', context: ['timeline'] },
-  { key: 'End', action: 'End of timeline', handler: 'timelineEnd', context: ['timeline'] },
-  { key: ' ', action: 'Play/pause timeline', handler: 'togglePlayback', context: ['timeline'] },
-  
+  {
+    key: "ArrowLeft",
+    action: "Previous time point",
+    handler: "previousTimePoint",
+    context: ["timeline"],
+  },
+  {
+    key: "ArrowRight",
+    action: "Next time point",
+    handler: "nextTimePoint",
+    context: ["timeline"],
+  },
+  {
+    key: "Home",
+    action: "Start of timeline",
+    handler: "timelineStart",
+    context: ["timeline"],
+  },
+  {
+    key: "End",
+    action: "End of timeline",
+    handler: "timelineEnd",
+    context: ["timeline"],
+  },
+  {
+    key: " ",
+    action: "Play/pause timeline",
+    handler: "togglePlayback",
+    context: ["timeline"],
+  },
+
   // Quick actions
-  { key: 'f', action: 'Focus on selection', handler: 'focusOnSelection' },
-  { key: '/', action: 'Open search', handler: 'openSearch' },
-  { key: '?', action: 'Show keyboard shortcuts', handler: 'showShortcuts' },
-  { key: 'i', action: 'Show element info', handler: 'showInfo' },
+  { key: "f", action: "Focus on selection", handler: "focusOnSelection" },
+  { key: "/", action: "Open search", handler: "openSearch" },
+  { key: "?", action: "Show keyboard shortcuts", handler: "showShortcuts" },
+  { key: "i", action: "Show element info", handler: "showInfo" },
 ];
 
 /**
  * Default navigation configuration
  */
 const DEFAULT_CONFIG: KeyboardNavigationConfig = {
-  mode: 'spatial',
+  mode: "spatial",
   bindings: DEFAULT_KEY_BINDINGS,
   rovingTabindex: true,
   skipHidden: true,
   skipDisabled: true,
   announceOnFocus: true,
-  focusIndicator: 'outline',
-  focusIndicatorColor: '#4F46E5',
+  focusIndicator: "outline",
+  focusIndicatorColor: "#4F46E5",
   focusIndicatorSize: 3,
 };
 
@@ -128,7 +231,7 @@ export class KeyboardNavigationManager {
   private focusedElementId: AccessibleElementId | null = null;
   private selectedElementIds: Set<AccessibleElementId> = new Set();
   private handlers: Map<string, KeyHandler> = new Map();
-  private activeContexts: Set<string> = new Set(['viewport']);
+  private activeContexts: Set<string> = new Set(["viewport"]);
   private focusTrap: FocusTrapConfig | null = null;
   private listeners: Set<(event: NavigationEvent) => void> = new Set();
   private keydownHandler: ((e: KeyboardEvent) => void) | null = null;
@@ -150,11 +253,11 @@ export class KeyboardNavigationManager {
       this.handleKeyDown(event);
     };
 
-    container.addEventListener('keydown', this.keydownHandler);
-    
+    container.addEventListener("keydown", this.keydownHandler);
+
     // Make container focusable
-    if (!container.hasAttribute('tabindex')) {
-      container.setAttribute('tabindex', '0');
+    if (!container.hasAttribute("tabindex")) {
+      container.setAttribute("tabindex", "0");
     }
   }
 
@@ -163,107 +266,161 @@ export class KeyboardNavigationManager {
    */
   private registerDefaultHandlers(): void {
     // Navigation handlers
-    this.handlers.set('navigateUp', (event, ctx) => {
-      this.navigateSpatial('up', ctx);
+    this.handlers.set("navigateUp", (_event, ctx) => {
+      this.navigateSpatial("up", ctx);
       return true;
     });
-    
-    this.handlers.set('navigateDown', (event, ctx) => {
-      this.navigateSpatial('down', ctx);
+
+    this.handlers.set("navigateDown", (_event, ctx) => {
+      this.navigateSpatial("down", ctx);
       return true;
     });
-    
-    this.handlers.set('navigateLeft', (event, ctx) => {
-      this.navigateSpatial('left', ctx);
+
+    this.handlers.set("navigateLeft", (_event, ctx) => {
+      this.navigateSpatial("left", ctx);
       return true;
     });
-    
-    this.handlers.set('navigateRight', (event, ctx) => {
-      this.navigateSpatial('right', ctx);
+
+    this.handlers.set("navigateRight", (_event, ctx) => {
+      this.navigateSpatial("right", ctx);
       return true;
     });
-    
-    this.handlers.set('navigateForward', (event, ctx) => {
-      this.navigateSpatial('forward', ctx);
+
+    this.handlers.set("navigateForward", (_event, ctx) => {
+      this.navigateSpatial("forward", ctx);
       return true;
     });
-    
-    this.handlers.set('navigateBackward', (event, ctx) => {
-      this.navigateSpatial('backward', ctx);
+
+    this.handlers.set("navigateBackward", (_event, ctx) => {
+      this.navigateSpatial("backward", ctx);
       return true;
     });
 
     // Selection handlers
-    this.handlers.set('selectElement', () => {
+    this.handlers.set("selectElement", () => {
       if (this.focusedElementId) {
         this.selectElement(this.focusedElementId);
       }
       return true;
     });
-    
-    this.handlers.set('toggleSelection', () => {
+
+    this.handlers.set("toggleSelection", () => {
       if (this.focusedElementId) {
         this.toggleSelection(this.focusedElementId);
       }
       return true;
     });
-    
-    this.handlers.set('clearSelection', () => {
+
+    this.handlers.set("clearSelection", () => {
       this.clearSelection();
       return true;
     });
-    
-    this.handlers.set('selectAll', () => {
+
+    this.handlers.set("selectAll", () => {
       this.selectAll();
       return true;
     });
 
     // Focus handlers
-    this.handlers.set('focusNext', () => {
+    this.handlers.set("focusNext", () => {
       this.focusNext();
       return true;
     });
-    
-    this.handlers.set('focusPrevious', () => {
+
+    this.handlers.set("focusPrevious", () => {
       this.focusPrevious();
       return true;
     });
-    
-    this.handlers.set('focusFirst', () => {
+
+    this.handlers.set("focusFirst", () => {
       this.focusFirst();
       return true;
     });
-    
-    this.handlers.set('focusLast', () => {
+
+    this.handlers.set("focusLast", () => {
       this.focusLast();
       return true;
     });
 
     // Placeholder handlers for camera/view actions
-    this.handlers.set('panUp', () => { this.emit('camera-pan', { direction: 'up' }); return true; });
-    this.handlers.set('panDown', () => { this.emit('camera-pan', { direction: 'down' }); return true; });
-    this.handlers.set('panLeft', () => { this.emit('camera-pan', { direction: 'left' }); return true; });
-    this.handlers.set('panRight', () => { this.emit('camera-pan', { direction: 'right' }); return true; });
-    this.handlers.set('zoomIn', () => { this.emit('camera-zoom', { direction: 'in' }); return true; });
-    this.handlers.set('zoomOut', () => { this.emit('camera-zoom', { direction: 'out' }); return true; });
-    this.handlers.set('resetView', () => { this.emit('camera-reset', {}); return true; });
-    
+    this.handlers.set("panUp", () => {
+      this.emit("camera-pan", { direction: "up" });
+      return true;
+    });
+    this.handlers.set("panDown", () => {
+      this.emit("camera-pan", { direction: "down" });
+      return true;
+    });
+    this.handlers.set("panLeft", () => {
+      this.emit("camera-pan", { direction: "left" });
+      return true;
+    });
+    this.handlers.set("panRight", () => {
+      this.emit("camera-pan", { direction: "right" });
+      return true;
+    });
+    this.handlers.set("zoomIn", () => {
+      this.emit("camera-zoom", { direction: "in" });
+      return true;
+    });
+    this.handlers.set("zoomOut", () => {
+      this.emit("camera-zoom", { direction: "out" });
+      return true;
+    });
+    this.handlers.set("resetView", () => {
+      this.emit("camera-reset", {});
+      return true;
+    });
+
     // Graph handlers
-    this.handlers.set('expandNode', () => { this.emit('node-expand', { id: this.focusedElementId }); return true; });
-    this.handlers.set('collapseNode', () => { this.emit('node-collapse', { id: this.focusedElementId }); return true; });
-    
+    this.handlers.set("expandNode", () => {
+      this.emit("node-expand", { id: this.focusedElementId });
+      return true;
+    });
+    this.handlers.set("collapseNode", () => {
+      this.emit("node-collapse", { id: this.focusedElementId });
+      return true;
+    });
+
     // Timeline handlers
-    this.handlers.set('previousTimePoint', () => { this.emit('timeline-step', { direction: 'backward' }); return true; });
-    this.handlers.set('nextTimePoint', () => { this.emit('timeline-step', { direction: 'forward' }); return true; });
-    this.handlers.set('timelineStart', () => { this.emit('timeline-jump', { position: 'start' }); return true; });
-    this.handlers.set('timelineEnd', () => { this.emit('timeline-jump', { position: 'end' }); return true; });
-    this.handlers.set('togglePlayback', () => { this.emit('timeline-toggle', {}); return true; });
-    
+    this.handlers.set("previousTimePoint", () => {
+      this.emit("timeline-step", { direction: "backward" });
+      return true;
+    });
+    this.handlers.set("nextTimePoint", () => {
+      this.emit("timeline-step", { direction: "forward" });
+      return true;
+    });
+    this.handlers.set("timelineStart", () => {
+      this.emit("timeline-jump", { position: "start" });
+      return true;
+    });
+    this.handlers.set("timelineEnd", () => {
+      this.emit("timeline-jump", { position: "end" });
+      return true;
+    });
+    this.handlers.set("togglePlayback", () => {
+      this.emit("timeline-toggle", {});
+      return true;
+    });
+
     // Action handlers
-    this.handlers.set('focusOnSelection', () => { this.emit('focus-selection', {}); return true; });
-    this.handlers.set('openSearch', () => { this.emit('open-search', {}); return true; });
-    this.handlers.set('showShortcuts', () => { this.emit('show-shortcuts', {}); return true; });
-    this.handlers.set('showInfo', () => { this.emit('show-info', { id: this.focusedElementId }); return true; });
+    this.handlers.set("focusOnSelection", () => {
+      this.emit("focus-selection", {});
+      return true;
+    });
+    this.handlers.set("openSearch", () => {
+      this.emit("open-search", {});
+      return true;
+    });
+    this.handlers.set("showShortcuts", () => {
+      this.emit("show-shortcuts", {});
+      return true;
+    });
+    this.handlers.set("showInfo", () => {
+      this.emit("show-info", { id: this.focusedElementId });
+      return true;
+    });
   }
 
   // ==========================================================================
@@ -279,7 +436,10 @@ export class KeyboardNavigationManager {
     if (!binding) return;
 
     // Check context
-    if (binding.context && !binding.context.some((ctx) => this.activeContexts.has(ctx))) {
+    if (
+      binding.context &&
+      !binding.context.some((ctx) => this.activeContexts.has(ctx))
+    ) {
       return;
     }
 
@@ -297,7 +457,7 @@ export class KeyboardNavigationManager {
 
     // Execute handler
     const handled = handler(event, context);
-    
+
     if (handled) {
       event.preventDefault();
       event.stopPropagation();
@@ -368,12 +528,12 @@ export class KeyboardNavigationManager {
    */
   unregisterElement(id: AccessibleElementId): void {
     this.elements.delete(id);
-    
+
     if (this.focusedElementId === id) {
       this.focusedElementId = null;
       this.focusFirst();
     }
-    
+
     this.selectedElementIds.delete(id);
     this.updateTabIndices();
   }
@@ -415,25 +575,27 @@ export class KeyboardNavigationManager {
    */
   private getFocusableElements(): FocusableElement[] {
     const elements: FocusableElement[] = [];
-    
+
     for (const element of this.elements.values()) {
       if (this.config.skipHidden && element.hidden) continue;
       if (this.config.skipDisabled && element.disabled) continue;
-      
+
       // Check focus trap
       if (this.focusTrap?.enabled) {
-        if (this.focusTrap.includedElements && 
-            !this.focusTrap.includedElements.includes(element.id)) {
+        if (
+          this.focusTrap.includedElements &&
+          !this.focusTrap.includedElements.includes(element.id)
+        ) {
           continue;
         }
         if (this.focusTrap.excludedElements?.includes(element.id)) {
           continue;
         }
       }
-      
+
       elements.push(element);
     }
-    
+
     return elements;
   }
 
@@ -445,7 +607,8 @@ export class KeyboardNavigationManager {
 
     for (const element of this.elements.values()) {
       if (element.element) {
-        element.element.tabIndex = element.id === this.focusedElementId ? 0 : -1;
+        element.element.tabIndex =
+          element.id === this.focusedElementId ? 0 : -1;
       }
     }
   }
@@ -456,7 +619,7 @@ export class KeyboardNavigationManager {
   focusElement(id: AccessibleElementId): void {
     const element = this.elements.get(id);
     if (!element) return;
-    
+
     if (this.config.skipHidden && element.hidden) return;
     if (this.config.skipDisabled && element.disabled) return;
 
@@ -470,7 +633,7 @@ export class KeyboardNavigationManager {
     }
 
     // Emit event
-    this.emit('focus-changed', {
+    this.emit("focus-changed", {
       previousId,
       currentId: id,
       element,
@@ -484,7 +647,9 @@ export class KeyboardNavigationManager {
     const elements = this.getFocusableElements();
     if (elements.length === 0) return;
 
-    const currentIndex = elements.findIndex((e) => e.id === this.focusedElementId);
+    const currentIndex = elements.findIndex(
+      (e) => e.id === this.focusedElementId
+    );
     let nextIndex = currentIndex + 1;
 
     // Wrap around
@@ -509,7 +674,9 @@ export class KeyboardNavigationManager {
     const elements = this.getFocusableElements();
     if (elements.length === 0) return;
 
-    const currentIndex = elements.findIndex((e) => e.id === this.focusedElementId);
+    const currentIndex = elements.findIndex(
+      (e) => e.id === this.focusedElementId
+    );
     let prevIndex = currentIndex - 1;
 
     // Wrap around
@@ -564,8 +731,8 @@ export class KeyboardNavigationManager {
    * Navigate spatially in 3D space
    */
   private navigateSpatial(
-    direction: 'up' | 'down' | 'left' | 'right' | 'forward' | 'backward',
-    context: NavigationContext
+    direction: "up" | "down" | "left" | "right" | "forward" | "backward",
+    _context: NavigationContext
   ): void {
     if (!this.focusedElementId) {
       this.focusFirst();
@@ -591,10 +758,10 @@ export class KeyboardNavigationManager {
   private findBestCandidate(
     current: FocusableElement,
     candidates: FocusableElement[],
-    direction: 'up' | 'down' | 'left' | 'right' | 'forward' | 'backward'
+    direction: "up" | "down" | "left" | "right" | "forward" | "backward"
   ): FocusableElement | null {
     const directionVector = this.getDirectionVector(direction);
-    
+
     let best: FocusableElement | null = null;
     let bestScore = Infinity;
 
@@ -618,7 +785,7 @@ export class KeyboardNavigationManager {
       const distance = Math.sqrt(
         delta.x * delta.x + delta.y * delta.y + delta.z * delta.z
       );
-      
+
       // Score: prefer closer elements more aligned with direction
       const alignment = dot / distance;
       const score = distance / (alignment * alignment);
@@ -636,15 +803,21 @@ export class KeyboardNavigationManager {
    * Get direction vector
    */
   private getDirectionVector(
-    direction: 'up' | 'down' | 'left' | 'right' | 'forward' | 'backward'
+    direction: "up" | "down" | "left" | "right" | "forward" | "backward"
   ): { x: number; y: number; z: number } {
     switch (direction) {
-      case 'up': return { x: 0, y: 1, z: 0 };
-      case 'down': return { x: 0, y: -1, z: 0 };
-      case 'left': return { x: -1, y: 0, z: 0 };
-      case 'right': return { x: 1, y: 0, z: 0 };
-      case 'forward': return { x: 0, y: 0, z: 1 };
-      case 'backward': return { x: 0, y: 0, z: -1 };
+      case "up":
+        return { x: 0, y: 1, z: 0 };
+      case "down":
+        return { x: 0, y: -1, z: 0 };
+      case "left":
+        return { x: -1, y: 0, z: 0 };
+      case "right":
+        return { x: 1, y: 0, z: 0 };
+      case "forward":
+        return { x: 0, y: 0, z: 1 };
+      case "backward":
+        return { x: 0, y: 0, z: -1 };
     }
   }
 
@@ -658,7 +831,7 @@ export class KeyboardNavigationManager {
   selectElement(id: AccessibleElementId): void {
     this.selectedElementIds.clear();
     this.selectedElementIds.add(id);
-    this.emit('selection-changed', { selected: [id] });
+    this.emit("selection-changed", { selected: [id] });
   }
 
   /**
@@ -670,7 +843,9 @@ export class KeyboardNavigationManager {
     } else {
       this.selectedElementIds.add(id);
     }
-    this.emit('selection-changed', { selected: Array.from(this.selectedElementIds) });
+    this.emit("selection-changed", {
+      selected: Array.from(this.selectedElementIds),
+    });
   }
 
   /**
@@ -678,7 +853,7 @@ export class KeyboardNavigationManager {
    */
   clearSelection(): void {
     this.selectedElementIds.clear();
-    this.emit('selection-changed', { selected: [] });
+    this.emit("selection-changed", { selected: [] });
   }
 
   /**
@@ -690,7 +865,9 @@ export class KeyboardNavigationManager {
     for (const element of elements) {
       this.selectedElementIds.add(element.id);
     }
-    this.emit('selection-changed', { selected: Array.from(this.selectedElementIds) });
+    this.emit("selection-changed", {
+      selected: Array.from(this.selectedElementIds),
+    });
   }
 
   /**
@@ -723,7 +900,7 @@ export class KeyboardNavigationManager {
    */
   setNavigationMode(mode: NavigationMode): void {
     this.config.mode = mode;
-    this.emit('mode-changed', { mode });
+    this.emit("mode-changed", { mode });
   }
 
   // ==========================================================================
@@ -783,20 +960,14 @@ export class KeyboardNavigationManager {
    * Remove key binding
    */
   removeBinding(handler: string): void {
-    this.config.bindings = this.config.bindings.filter((b) => b.handler !== handler);
+    this.config.bindings = this.config.bindings.filter(
+      (b) => b.handler !== handler
+    );
   }
 
   // ==========================================================================
   // Events
   // ==========================================================================
-
-  /**
-   * Navigation event
-   */
-  interface NavigationEvent {
-    type: string;
-    data: Record<string, unknown>;
-  }
 
   /**
    * Subscribe to navigation events
@@ -815,7 +986,7 @@ export class KeyboardNavigationManager {
       try {
         listener(event);
       } catch (error) {
-        console.error('Navigation event listener error:', error);
+        console.error("Navigation event listener error:", error);
       }
     }
   }
@@ -841,7 +1012,7 @@ export class KeyboardNavigationManager {
   } {
     return {
       style: this.config.focusIndicator,
-      color: this.config.focusIndicatorColor || '#4F46E5',
+      color: this.config.focusIndicatorColor || "#4F46E5",
       size: this.config.focusIndicatorSize || 3,
     };
   }

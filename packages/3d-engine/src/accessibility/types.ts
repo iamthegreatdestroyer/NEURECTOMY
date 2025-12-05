@@ -53,6 +53,7 @@ export type AriaRole =
   | "button"
   | "slider"
   | "listbox"
+  | "listitem"
   | "option"
   | "tree"
   | "treeitem"
