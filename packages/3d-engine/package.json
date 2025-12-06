@@ -50,7 +50,6 @@
   "devDependencies": {
     "@react-three/drei": "^9.88.0",
     "@react-three/fiber": "^8.15.0",
-    "@react-three/postprocessing": "^3.0.4",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@types/three": "^0.160.0",
@@ -65,9 +64,9 @@
   },
   "peerDependencies": {
     "@react-three/fiber": ">=8.0.0",
-    "immer": ">=10.0.0",
+    "@react-three/postprocessing": ">=3.0.0",
     "react": ">=18.0.0",
-    "zustand": ">=4.0.0"
+    "zustand": ">=4.0.0",
+    "immer": ">=10.0.0"
   }
 }
-
