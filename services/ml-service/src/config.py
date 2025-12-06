@@ -39,6 +39,12 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     anthropic_model: str = "claude-3-opus-20240229"
     
+    # vLLM - Production inference server
+    # @TENSOR @VELOCITY - vLLM provides 2-4x throughput vs Ollama
+    vllm_url: str = "http://localhost:8000"  # vLLM OpenAI-compatible endpoint
+    vllm_model: str = "meta-llama/Llama-3.2-8B-Instruct"
+    vllm_api_key: str = ""  # Optional API key for vLLM
+    
     # Embeddings
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     embedding_dim: int = 384
@@ -46,10 +52,20 @@ class Settings(BaseSettings):
     # MLflow
     mlflow_tracking_uri: str = "http://localhost:5000"
     
+    # Inference optimization settings
+    # @VELOCITY - Performance tuning for real-time agent intelligence
+    inference_max_batch_size: int = 8  # Max requests to batch together
+    inference_batch_timeout_ms: int = 50  # Max wait time for batch fill
+    inference_max_concurrent: int = 16  # Max concurrent LLM requests
+    ollama_connection_pool_size: int = 10  # HTTP connection pool
+    ollama_keepalive_timeout: int = 30  # Keep-alive seconds
+    ollama_max_retries: int = 3  # Retry failed requests
+    
     # Feature flags
     enable_openai: bool = False
     enable_anthropic: bool = False
     enable_ollama: bool = True
+    enable_vllm: bool = False  # Enable for production high-throughput
 
 
 @lru_cache()

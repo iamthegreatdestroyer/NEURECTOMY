@@ -10,6 +10,17 @@ from src.services.training import TrainingOrchestrator
 from src.services.mlflow_tracker import MLflowTracker
 from src.services.agent_intelligence import AgentIntelligenceService
 from src.services.analytics import PredictiveAnalyticsService
+from src.services.inference_optimizer import (
+    InferenceMetrics,
+    InferenceBatcher,
+    OptimizedHttpClient,
+    ConcurrentExecutor,
+    get_inference_metrics,
+    create_ollama_client,
+    create_vllm_client,
+    create_executor,
+    parallel_memory_and_llm,
+)
 
 __all__ = [
     "LLMService",
@@ -19,4 +30,14 @@ __all__ = [
     "MLflowTracker",
     "AgentIntelligenceService",
     "PredictiveAnalyticsService",
+    # Inference optimization
+    "InferenceMetrics",
+    "InferenceBatcher",
+    "OptimizedHttpClient",
+    "ConcurrentExecutor",
+    "get_inference_metrics",
+    "create_ollama_client",
+    "create_vllm_client",
+    "create_executor",
+    "parallel_memory_and_llm",
 ]

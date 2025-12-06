@@ -104,3 +104,25 @@ async def metrics():
         "embeddings_generated": 0,
         "training_jobs_total": 0,
     }
+
+
+@router.get("/inference-metrics")
+async def inference_metrics():
+    """
+    Inference performance metrics endpoint.
+    
+    @VELOCITY @SENTRY - Real-time inference optimization metrics.
+    
+    Returns:
+        - avg_latency_ms: Average inference latency
+        - min/max_latency_ms: Latency bounds
+        - batches_processed: Total batches processed
+        - avg_batch_size: Average requests per batch
+        - cache_hit_rate: Cache efficiency
+        - total_errors: Error count
+        - retries: Retry count
+    """
+    from src.services.inference_optimizer import get_inference_metrics
+    
+    metrics = get_inference_metrics()
+    return metrics.to_dict()

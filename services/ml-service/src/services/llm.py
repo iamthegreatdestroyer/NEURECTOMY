@@ -125,6 +125,19 @@ class ModelRouter:
                 output_price=15.0,
                 description="Claude 3 Sonnet - Balanced",
             )
+        
+        # vLLM models (production inference)
+        # @TENSOR @VELOCITY - vLLM provides PagedAttention for 2-4x throughput
+        if settings.enable_vllm:
+            self.models["vllm-llama"] = ModelInfo(
+                name=settings.vllm_model,
+                provider=ModelProvider.VLLM,
+                context_length=128000,
+                supports_tools=True,
+                is_default=False,  # Set True when vLLM is primary
+                description="vLLM - High-throughput production inference",
+                tags=["production", "high-throughput"],
+            )
     
     def select_model(
         self,
@@ -308,6 +321,9 @@ class LLMService:
         elif model_info.provider == ModelProvider.ANTHROPIC:
             async for chunk in self._stream_anthropic(request, model_info):
                 yield chunk
+        elif model_info.provider == ModelProvider.VLLM:
+            async for chunk in self._stream_vllm(request, model_info):
+                yield chunk
     
     # =========================================================================
     # Provider Implementations
@@ -325,6 +341,8 @@ class LLMService:
             return await self._call_openai(request, model_info)
         elif model_info.provider == ModelProvider.ANTHROPIC:
             return await self._call_anthropic(request, model_info)
+        elif model_info.provider == ModelProvider.VLLM:
+            return await self._call_vllm(request, model_info)
         else:
             raise ValueError(f"Unsupported provider: {model_info.provider}")
     
@@ -485,6 +503,72 @@ class LLMService:
             finish_reason=response.stop_reason,
         )
     
+    async def _call_vllm(
+        self,
+        request: ChatRequest,
+        model_info: ModelInfo,
+    ) -> ChatResponse:
+        """
+        Call vLLM inference server via OpenAI-compatible API.
+        
+        @TENSOR @VELOCITY - vLLM provides:
+        - PagedAttention for efficient KV cache management
+        - Continuous batching for high throughput
+        - Tensor parallelism for large models
+        - 2-4x throughput vs standard inference
+        
+        vLLM must be started with: vllm serve <model> --api-key <key>
+        """
+        import uuid
+        
+        # vLLM uses OpenAI-compatible API format
+        headers = {"Content-Type": "application/json"}
+        if settings.vllm_api_key:
+            headers["Authorization"] = f"Bearer {settings.vllm_api_key}"
+        
+        payload = {
+            "model": model_info.name,
+            "messages": [
+                {"role": m.role.value, "content": m.content}
+                for m in request.messages
+            ],
+            "temperature": request.temperature,
+            "max_tokens": request.max_tokens or 4096,
+            "top_p": request.top_p,
+            "stream": False,
+        }
+        
+        if request.stop:
+            payload["stop"] = request.stop
+        
+        response = await self.http_client.post(
+            f"{settings.vllm_url}/v1/chat/completions",
+            json=payload,
+            headers=headers,
+        )
+        response.raise_for_status()
+        data = response.json()
+        
+        choice = data["choices"][0]
+        usage = data.get("usage", {})
+        
+        return ChatResponse(
+            id=data.get("id", str(uuid.uuid4())),
+            model=model_info.name,
+            provider=ModelProvider.VLLM,
+            message=ChatMessage(
+                role=Role.ASSISTANT,
+                content=choice["message"]["content"],
+            ),
+            usage=Usage(
+                prompt_tokens=usage.get("prompt_tokens", 0),
+                completion_tokens=usage.get("completion_tokens", 0),
+                total_tokens=usage.get("total_tokens", 0),
+            ),
+            latency_ms=0,  # Will be set by caller
+            finish_reason=choice.get("finish_reason", "stop"),
+        )
+    
     # =========================================================================
     # Streaming Implementations
     # =========================================================================
@@ -576,6 +660,54 @@ class LLMService:
         ) as stream:
             async for text in stream.text_stream:
                 yield text
+    
+    async def _stream_vllm(
+        self,
+        request: ChatRequest,
+        model_info: ModelInfo,
+    ) -> AsyncGenerator[str, None]:
+        """
+        Stream from vLLM using OpenAI-compatible SSE streaming.
+        
+        @TENSOR @VELOCITY - vLLM streaming with continuous batching.
+        """
+        headers = {"Content-Type": "application/json"}
+        if settings.vllm_api_key:
+            headers["Authorization"] = f"Bearer {settings.vllm_api_key}"
+        
+        payload = {
+            "model": model_info.name,
+            "messages": [
+                {"role": m.role.value, "content": m.content}
+                for m in request.messages
+            ],
+            "temperature": request.temperature,
+            "max_tokens": request.max_tokens or 4096,
+            "top_p": request.top_p,
+            "stream": True,
+        }
+        
+        if request.stop:
+            payload["stop"] = request.stop
+        
+        async with self.http_client.stream(
+            "POST",
+            f"{settings.vllm_url}/v1/chat/completions",
+            json=payload,
+            headers=headers,
+        ) as response:
+            async for line in response.aiter_lines():
+                if line.startswith("data: "):
+                    data_str = line[6:]
+                    if data_str.strip() == "[DONE]":
+                        break
+                    import json
+                    try:
+                        data = json.loads(data_str)
+                        if data.get("choices") and data["choices"][0].get("delta", {}).get("content"):
+                            yield data["choices"][0]["delta"]["content"]
+                    except json.JSONDecodeError:
+                        continue
     
     # =========================================================================
     # Utilities
