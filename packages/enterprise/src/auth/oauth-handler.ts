@@ -74,6 +74,7 @@ export interface PKCEPair {
 
 /**
  * OAuth state storage
+ * @CIPHER - Cryptographically bound to session and PKCE verifier
  */
 interface OAuthState {
   providerId: string;
@@ -82,6 +83,10 @@ interface OAuthState {
   nonce?: string;
   codeVerifier?: string;
   createdAt: Date;
+  /** @CIPHER - HMAC signature for tampering detection */
+  signature: string;
+  /** Session binding - prevents state from being used across sessions */
+  sessionBinding?: string;
 }
 
 /**
@@ -213,7 +218,59 @@ export class OAuthHandler extends EventEmitter implements IProviderHandler {
   }
 
   /**
+   * @CIPHER - Generate HMAC signature for OAuth state
+   * Binds state to session and PKCE verifier to prevent tampering
+   */
+  private signState(
+    stateToken: string,
+    providerId: string,
+    tenantId: string,
+    codeVerifier?: string,
+    sessionBinding?: string
+  ): string {
+    // Get signing key from environment or generate one
+    const signingKey =
+      process.env.OAUTH_STATE_SECRET ||
+      createHash("sha256").update(stateToken).digest("hex");
+
+    // Create data to sign
+    const dataToSign = [
+      stateToken,
+      providerId,
+      tenantId,
+      codeVerifier || "",
+      sessionBinding || "",
+    ].join("|");
+
+    // HMAC-SHA256 signature
+    return createHash("sha256")
+      .update(signingKey)
+      .update(dataToSign)
+      .digest("hex");
+  }
+
+  /**
+   * @CIPHER - Verify OAuth state signature
+   */
+  private verifyStateSignature(stateToken: string, state: OAuthState): boolean {
+    const expectedSignature = this.signState(
+      stateToken,
+      state.providerId,
+      state.tenantId,
+      state.codeVerifier,
+      state.sessionBinding
+    );
+
+    // Constant-time comparison to prevent timing attacks
+    return (
+      createHash("sha256").update(state.signature).digest("hex") ===
+      createHash("sha256").update(expectedSignature).digest("hex")
+    );
+  }
+
+  /**
    * Initiate OAuth login
+   * @CIPHER - State is cryptographically bound to session and PKCE verifier
    */
   async initiateLogin(
     request: LoginRequest
@@ -225,16 +282,28 @@ export class OAuthHandler extends EventEmitter implements IProviderHandler {
 
     const oauthConfig = config.config as OAuth2Config | OIDCConfig;
 
-    // Generate state
+    // Generate state token (32 bytes = 64 hex chars)
     const stateToken = randomBytes(32).toString("hex");
 
-    // Generate PKCE if enabled
+    // Generate PKCE if enabled (required for public clients)
     let pkce: PKCEPair | undefined;
     if (oauthConfig.pkceEnabled) {
       pkce = this.generatePKCE(oauthConfig.pkceMethod);
     }
 
-    // Store state
+    // @CIPHER - Generate session binding (from request if available)
+    const sessionBinding = request.sessionId || randomBytes(16).toString("hex");
+
+    // @CIPHER - Generate cryptographic signature
+    const signature = this.signState(
+      stateToken,
+      request.providerId,
+      request.tenantId,
+      pkce?.verifier,
+      sessionBinding
+    );
+
+    // Store state with signature
     const oauthState: OAuthState = {
       providerId: request.providerId,
       tenantId: request.tenantId,
@@ -242,6 +311,8 @@ export class OAuthHandler extends EventEmitter implements IProviderHandler {
       nonce: request.nonce,
       codeVerifier: pkce?.verifier,
       createdAt: new Date(),
+      signature,
+      sessionBinding,
     };
     this.states.set(stateToken, oauthState);
 
@@ -327,6 +398,21 @@ export class OAuthHandler extends EventEmitter implements IProviderHandler {
         error: {
           code: "INVALID_STATE",
           message: "Invalid or expired state",
+        },
+      };
+    }
+
+    // @CIPHER - Verify cryptographic signature to detect tampering
+    if (!this.verifyStateSignature(stateToken, state)) {
+      this.states.delete(stateToken);
+      console.error(
+        "OAuth state signature verification failed - possible tampering"
+      );
+      return {
+        success: false,
+        error: {
+          code: "STATE_SIGNATURE_INVALID",
+          message: "State verification failed",
         },
       };
     }

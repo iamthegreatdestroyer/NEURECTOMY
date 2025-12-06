@@ -62,15 +62,18 @@ pub struct TokenPair {
 }
 
 /// JWT service configuration
+///
+/// @CIPHER - SECURITY: No hardcoded secrets. All secrets must come from environment.
 #[derive(Debug, Clone)]
 pub struct JwtConfig {
     /// Secret key for HS256 (development) or private key path for RS256
+    /// REQUIRED: Must be at least 64 characters for HS256
     pub secret: String,
     /// Public key path for RS256 (optional)
     pub public_key: Option<String>,
-    /// Access token expiration in seconds
+    /// Access token expiration in seconds (default: 15 minutes)
     pub access_token_expiry: i64,
-    /// Refresh token expiration in seconds
+    /// Refresh token expiration in seconds (default: 24 hours)
     pub refresh_token_expiry: i64,
     /// Token issuer
     pub issuer: String,
@@ -80,19 +83,104 @@ pub struct JwtConfig {
     pub algorithm: Algorithm,
 }
 
-impl Default for JwtConfig {
-    fn default() -> Self {
-        Self {
-            secret: "neurectomy-development-secret-key-change-in-production".to_string(),
-            public_key: None,
-            access_token_expiry: 3600,    // 1 hour
-            refresh_token_expiry: 604800, // 7 days
-            issuer: "neurectomy".to_string(),
-            audience: "neurectomy-api".to_string(),
-            algorithm: Algorithm::HS256,
+impl JwtConfig {
+    /// Create JWT config from environment variables
+    ///
+    /// # Errors
+    /// Returns error if JWT_SECRET is not set or is too short
+    ///
+    /// # Environment Variables
+    /// - JWT_SECRET: Required, minimum 64 characters for HS256
+    /// - JWT_PUBLIC_KEY: Optional, required for RS256/EdDSA
+    /// - JWT_ALGORITHM: Optional, defaults to HS256
+    /// - JWT_ISSUER: Optional, defaults to "neurectomy"
+    /// - JWT_AUDIENCE: Optional, defaults to "neurectomy-api"
+    /// - JWT_ACCESS_EXPIRY: Optional, defaults to 900 (15 minutes)
+    /// - JWT_REFRESH_EXPIRY: Optional, defaults to 86400 (24 hours)
+    pub fn from_env() -> Result<Self, AuthError> {
+        let secret = std::env::var("JWT_SECRET").map_err(|_| {
+            AuthError::Configuration(
+                "JWT_SECRET environment variable is required. \
+                 Generate with: openssl rand -base64 64"
+                    .to_string(),
+            )
+        })?;
+
+        // Validate secret length for symmetric algorithms
+        let algorithm = std::env::var("JWT_ALGORITHM")
+            .map(|a| Self::parse_algorithm(&a))
+            .unwrap_or(Ok(Algorithm::HS256))?;
+
+        if matches!(
+            algorithm,
+            Algorithm::HS256 | Algorithm::HS384 | Algorithm::HS512
+        ) {
+            if secret.len() < 64 {
+                return Err(AuthError::Configuration(format!(
+                    "JWT_SECRET must be at least 64 characters for {algorithm:?}. \
+                         Current length: {}. Generate with: openssl rand -base64 64",
+                    secret.len()
+                )));
+            }
+        }
+
+        let public_key = std::env::var("JWT_PUBLIC_KEY").ok();
+
+        // Validate public key for asymmetric algorithms
+        if matches!(
+            algorithm,
+            Algorithm::RS256
+                | Algorithm::RS384
+                | Algorithm::RS512
+                | Algorithm::ES256
+                | Algorithm::ES384
+                | Algorithm::EdDSA
+        ) {
+            if public_key.is_none() {
+                return Err(AuthError::Configuration(format!(
+                    "JWT_PUBLIC_KEY is required for {algorithm:?}"
+                )));
+            }
+        }
+
+        Ok(Self {
+            secret,
+            public_key,
+            access_token_expiry: std::env::var("JWT_ACCESS_EXPIRY")
+                .ok()
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(900), // 15 minutes (reduced from 1 hour)
+            refresh_token_expiry: std::env::var("JWT_REFRESH_EXPIRY")
+                .ok()
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(86400), // 24 hours (reduced from 7 days)
+            issuer: std::env::var("JWT_ISSUER").unwrap_or_else(|_| "neurectomy".to_string()),
+            audience: std::env::var("JWT_AUDIENCE")
+                .unwrap_or_else(|_| "neurectomy-api".to_string()),
+            algorithm,
+        })
+    }
+
+    fn parse_algorithm(s: &str) -> Result<Algorithm, AuthError> {
+        match s.to_uppercase().as_str() {
+            "HS256" => Ok(Algorithm::HS256),
+            "HS384" => Ok(Algorithm::HS384),
+            "HS512" => Ok(Algorithm::HS512),
+            "RS256" => Ok(Algorithm::RS256),
+            "RS384" => Ok(Algorithm::RS384),
+            "RS512" => Ok(Algorithm::RS512),
+            "ES256" => Ok(Algorithm::ES256),
+            "ES384" => Ok(Algorithm::ES384),
+            "EDDSA" => Ok(Algorithm::EdDSA),
+            _ => Err(AuthError::Configuration(format!(
+                "Unsupported JWT algorithm: {s}"
+            ))),
         }
     }
 }
+
+// Remove Default impl - force explicit configuration
+// This prevents accidental use of insecure defaults
 
 /// JWT service for token operations
 #[derive(Clone)]
@@ -168,11 +256,32 @@ impl JwtService {
         })
     }
 
-    /// Create with default HS256 configuration
-    pub fn with_secret(secret: &str) -> Self {
+    /// Create JWT service from environment configuration
+    ///
+    /// @CIPHER - Secure factory method that validates configuration
+    pub fn from_env() -> AuthResult<Self> {
+        let config = JwtConfig::from_env()?;
+        Self::new(config)
+    }
+
+    /// Create with explicit secret for testing only
+    ///
+    /// # Panics
+    /// Panics if used in release builds without TEST_MODE=true
+    #[cfg(any(test, feature = "test-utils"))]
+    pub fn with_secret_for_testing(secret: &str) -> Self {
+        if !cfg!(test) && std::env::var("TEST_MODE").is_err() {
+            panic!("with_secret_for_testing() can only be used in tests");
+        }
+
         let config = JwtConfig {
             secret: secret.to_string(),
-            ..Default::default()
+            public_key: None,
+            access_token_expiry: 900,
+            refresh_token_expiry: 86400,
+            issuer: "neurectomy-test".to_string(),
+            audience: "neurectomy-api-test".to_string(),
+            algorithm: Algorithm::HS256,
         };
 
         Self {

@@ -5,286 +5,385 @@
 name: Security Scanning
 
 on:
-    workflow_call:
-        inputs:
-            image-ref:
-                description: "Container image reference to scan"
-                required: true
-                type: string
-            service-path:
-                description: "Path to service directory"
-                required: true
-                type: string
-            fail-on-critical:
-                description: "Fail build on critical vulnerabilities"
-                required: false
-                default: true
-                type: boolean
-            upload-sarif:
-                description: "Upload SARIF results to GitHub Security"
-                required: false
-                default: true
-                type: boolean
-        outputs:
-            vulnerability-count:
-                description: "Number of vulnerabilities found"
-                value: ${{ jobs.scan.outputs.vuln-count }}
-            critical-count:
-                description: "Number of critical vulnerabilities"
-                value: ${{ jobs.scan.outputs.critical-count }}
-            scan-passed:
-                description: "Whether security scan passed"
-                value: ${{ jobs.scan.outputs.passed }}
+  workflow_call:
+    inputs:
+      image-ref:
+        description: "Container image reference to scan"
+        required: true
+        type: string
+      service-path:
+        description: "Path to service directory"
+        required: true
+        type: string
+      fail-on-critical:
+        description: "Fail build on critical vulnerabilities"
+        required: false
+        default: true
+        type: boolean
+      upload-sarif:
+        description: "Upload SARIF results to GitHub Security"
+        required: false
+        default: true
+        type: boolean
+    outputs:
+      vulnerability-count:
+        description: "Number of vulnerabilities found"
+        value: ${{ jobs.scan.outputs.vuln-count }}
+      critical-count:
+        description: "Number of critical vulnerabilities"
+        value: ${{ jobs.scan.outputs.critical-count }}
+      scan-passed:
+        description: "Whether security scan passed"
+        value: ${{ jobs.scan.outputs.passed }}
 
 jobs:
-    # ===========================================================================
-    # Container Image Scanning
-    # ===========================================================================
-    scan:
-        name: Container Security Scan
-        runs-on: ubuntu-latest
-        permissions:
-            contents: read
-            security-events: write
-            packages: read
+  # ===========================================================================
+  # Container Image Scanning
+  # ===========================================================================
+  scan:
+    name: Container Security Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      packages: read
 
-        outputs:
-            vuln-count: ${{ steps.trivy-count.outputs.total }}
-            critical-count: ${{ steps.trivy-count.outputs.critical }}
-            passed: ${{ steps.gate.outputs.passed }}
+    outputs:
+      vuln-count: ${{ steps.trivy-count.outputs.total }}
+      critical-count: ${{ steps.trivy-count.outputs.critical }}
+      passed: ${{ steps.gate.outputs.passed }}
 
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-            # -----------------------------------------------------------------
-            # Trivy Container Scanning
-            # -----------------------------------------------------------------
-            - name: Run Trivy vulnerability scanner (SARIF)
-              uses: aquasecurity/trivy-action@0.28.0
-              with:
-                  image-ref: ${{ inputs.image-ref }}
-                  format: "sarif"
-                  output: "trivy-results.sarif"
-                  severity: "CRITICAL,HIGH,MEDIUM"
-                  ignore-unfixed: true
-                  vuln-type: "os,library"
-                  timeout: "15m"
+      # -----------------------------------------------------------------
+      # Trivy Container Scanning
+      # -----------------------------------------------------------------
+      - name: Run Trivy vulnerability scanner (SARIF)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ inputs.image-ref }}
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH,MEDIUM"
+          ignore-unfixed: true
+          vuln-type: "os,library"
+          timeout: "15m"
 
-            - name: Run Trivy for JSON output
-              uses: aquasecurity/trivy-action@0.28.0
-              with:
-                  image-ref: ${{ inputs.image-ref }}
-                  format: "json"
-                  output: "trivy-results.json"
-                  severity: "CRITICAL,HIGH,MEDIUM,LOW"
-                  ignore-unfixed: false
-                  vuln-type: "os,library"
-                  timeout: "15m"
+      - name: Run Trivy for JSON output
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ inputs.image-ref }}
+          format: "json"
+          output: "trivy-results.json"
+          severity: "CRITICAL,HIGH,MEDIUM,LOW"
+          ignore-unfixed: false
+          vuln-type: "os,library"
+          timeout: "15m"
 
-            - name: Count vulnerabilities
-              id: trivy-count
-              run: |
-                  if [ -f trivy-results.json ]; then
-                    CRITICAL=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "CRITICAL")] | length' trivy-results.json 2>/dev/null || echo "0")
-                    HIGH=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "HIGH")] | length' trivy-results.json 2>/dev/null || echo "0")
-                    MEDIUM=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "MEDIUM")] | length' trivy-results.json 2>/dev/null || echo "0")
-                    LOW=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "LOW")] | length' trivy-results.json 2>/dev/null || echo "0")
-                    TOTAL=$((CRITICAL + HIGH + MEDIUM + LOW))
-                    
-                    echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
-                    echo "high=$HIGH" >> $GITHUB_OUTPUT
-                    echo "medium=$MEDIUM" >> $GITHUB_OUTPUT
-                    echo "low=$LOW" >> $GITHUB_OUTPUT
-                    echo "total=$TOTAL" >> $GITHUB_OUTPUT
-                    
-                    echo "## 🔒 Vulnerability Summary" >> $GITHUB_STEP_SUMMARY
-                    echo "" >> $GITHUB_STEP_SUMMARY
-                    echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
-                    echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
-                    echo "| 🔴 Critical | $CRITICAL |" >> $GITHUB_STEP_SUMMARY
-                    echo "| 🟠 High | $HIGH |" >> $GITHUB_STEP_SUMMARY
-                    echo "| 🟡 Medium | $MEDIUM |" >> $GITHUB_STEP_SUMMARY
-                    echo "| 🟢 Low | $LOW |" >> $GITHUB_STEP_SUMMARY
-                    echo "| **Total** | **$TOTAL** |" >> $GITHUB_STEP_SUMMARY
-                  else
-                    echo "critical=0" >> $GITHUB_OUTPUT
-                    echo "high=0" >> $GITHUB_OUTPUT
-                    echo "medium=0" >> $GITHUB_OUTPUT
-                    echo "low=0" >> $GITHUB_OUTPUT
-                    echo "total=0" >> $GITHUB_OUTPUT
-                  fi
+      - name: Count vulnerabilities
+        id: trivy-count
+        run: |
+          if [ -f trivy-results.json ]; then
+            CRITICAL=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "CRITICAL")] | length' trivy-results.json 2>/dev/null || echo "0")
+            HIGH=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "HIGH")] | length' trivy-results.json 2>/dev/null || echo "0")
+            MEDIUM=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "MEDIUM")] | length' trivy-results.json 2>/dev/null || echo "0")
+            LOW=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "LOW")] | length' trivy-results.json 2>/dev/null || echo "0")
+            TOTAL=$((CRITICAL + HIGH + MEDIUM + LOW))
+            
+            echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
+            echo "high=$HIGH" >> $GITHUB_OUTPUT
+            echo "medium=$MEDIUM" >> $GITHUB_OUTPUT
+            echo "low=$LOW" >> $GITHUB_OUTPUT
+            echo "total=$TOTAL" >> $GITHUB_OUTPUT
+            
+            echo "## 🔒 Vulnerability Summary" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
+            echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| 🔴 Critical | $CRITICAL |" >> $GITHUB_STEP_SUMMARY
+            echo "| 🟠 High | $HIGH |" >> $GITHUB_STEP_SUMMARY
+            echo "| 🟡 Medium | $MEDIUM |" >> $GITHUB_STEP_SUMMARY
+            echo "| 🟢 Low | $LOW |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Total** | **$TOTAL** |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "critical=0" >> $GITHUB_OUTPUT
+            echo "high=0" >> $GITHUB_OUTPUT
+            echo "medium=0" >> $GITHUB_OUTPUT
+            echo "low=0" >> $GITHUB_OUTPUT
+            echo "total=0" >> $GITHUB_OUTPUT
+          fi
 
-            - name: Upload Trivy SARIF results
-              if: ${{ inputs.upload-sarif }}
-              uses: github/codeql-action/upload-sarif@v3
-              with:
-                  sarif_file: trivy-results.sarif
-                  category: trivy-container
+      - name: Upload Trivy SARIF results
+        if: ${{ inputs.upload-sarif }}
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif
+          category: trivy-container
 
-            # -----------------------------------------------------------------
-            # Grype Scanning (Second Opinion)
-            # -----------------------------------------------------------------
-            - name: Run Grype vulnerability scanner
-              uses: anchore/scan-action@v5
-              id: grype
-              with:
-                  image: ${{ inputs.image-ref }}
-                  fail-build: false
-                  severity-cutoff: critical
-                  output-format: sarif
+      # -----------------------------------------------------------------
+      # Grype Scanning (Second Opinion)
+      # -----------------------------------------------------------------
+      - name: Run Grype vulnerability scanner
+        uses: anchore/scan-action@v5
+        id: grype
+        with:
+          image: ${{ inputs.image-ref }}
+          fail-build: false
+          severity-cutoff: critical
+          output-format: sarif
 
-            - name: Upload Grype SARIF results
-              if: ${{ inputs.upload-sarif }}
-              uses: github/codeql-action/upload-sarif@v3
-              with:
-                  sarif_file: ${{ steps.grype.outputs.sarif }}
-                  category: grype-container
+      - name: Upload Grype SARIF results
+        if: ${{ inputs.upload-sarif }}
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ steps.grype.outputs.sarif }}
+          category: grype-container
 
-            # -----------------------------------------------------------------
-            # SBOM Generation
-            # -----------------------------------------------------------------
-            - name: Generate SBOM with Syft
-              uses: anchore/sbom-action@v0
-              with:
-                  image: ${{ inputs.image-ref }}
-                  format: spdx-json
-                  output-file: sbom.spdx.json
-                  artifact-name: sbom-${{ github.sha }}
+      # -----------------------------------------------------------------
+      # SBOM Generation
+      # -----------------------------------------------------------------
+      - name: Generate SBOM with Syft
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ inputs.image-ref }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+          artifact-name: sbom-${{ github.sha }}
 
-            - name: Upload SBOM artifact
-              uses: actions/upload-artifact@v4
-              with:
-                  name: container-sbom-${{ github.sha }}
-                  path: sbom.spdx.json
-                  retention-days: 90
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: container-sbom-${{ github.sha }}
+          path: sbom.spdx.json
+          retention-days: 90
 
-            # -----------------------------------------------------------------
-            # Container Configuration Analysis
-            # -----------------------------------------------------------------
-            - name: Run Dockle (container linting)
-              uses: erzz/dockle-action@v1
-              with:
-                  image: ${{ inputs.image-ref }}
-                  exit-code: 0
-                  failure-threshold: warn
-                  report-format: sarif
-                  report-name: dockle-results
+      # -----------------------------------------------------------------
+      # Container Configuration Analysis
+      # -----------------------------------------------------------------
+      - name: Run Dockle (container linting)
+        uses: erzz/dockle-action@v1
+        with:
+          image: ${{ inputs.image-ref }}
+          exit-code: 0
+          failure-threshold: warn
+          report-format: sarif
+          report-name: dockle-results
 
-            - name: Upload Dockle SARIF results
-              if: ${{ inputs.upload-sarif }}
-              uses: github/codeql-action/upload-sarif@v3
-              with:
-                  sarif_file: dockle-results.sarif
-                  category: dockle
+      - name: Upload Dockle SARIF results
+        if: ${{ inputs.upload-sarif }}
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: dockle-results.sarif
+          category: dockle
 
-            # -----------------------------------------------------------------
-            # Security Gate
-            # -----------------------------------------------------------------
-            - name: Security gate check
-              id: gate
-              run: |
-                  CRITICAL=${{ steps.trivy-count.outputs.critical }}
-                  FAIL_ON_CRITICAL=${{ inputs.fail-on-critical }}
+      # -----------------------------------------------------------------
+      # Security Gate
+      # -----------------------------------------------------------------
+      - name: Security gate check
+        id: gate
+        run: |
+          CRITICAL=${{ steps.trivy-count.outputs.critical }}
+          FAIL_ON_CRITICAL=${{ inputs.fail-on-critical }}
 
-                  if [ "$FAIL_ON_CRITICAL" = "true" ] && [ "$CRITICAL" -gt "0" ]; then
-                    echo "❌ Security gate FAILED: $CRITICAL critical vulnerabilities found"
-                    echo "passed=false" >> $GITHUB_OUTPUT
-                    exit 1
-                  else
-                    echo "✅ Security gate PASSED"
-                    echo "passed=true" >> $GITHUB_OUTPUT
-                  fi
+          if [ "$FAIL_ON_CRITICAL" = "true" ] && [ "$CRITICAL" -gt "0" ]; then
+            echo "❌ Security gate FAILED: $CRITICAL critical vulnerabilities found"
+            echo "passed=false" >> $GITHUB_OUTPUT
+            exit 1
+          else
+            echo "✅ Security gate PASSED"
+            echo "passed=true" >> $GITHUB_OUTPUT
+          fi
 
-    # ===========================================================================
-    # Code Security Scanning
-    # ===========================================================================
-    code-scan:
-        name: Code Security Scan
-        runs-on: ubuntu-latest
-        permissions:
-            contents: read
-            security-events: write
+  # ===========================================================================
+  # Code Security Scanning
+  # ===========================================================================
+  code-scan:
+    name: Code Security Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
 
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-            # -----------------------------------------------------------------
-            # Secret Detection
-            # -----------------------------------------------------------------
-            - name: Run Gitleaks
-              uses: gitleaks/gitleaks-action@v2
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # -----------------------------------------------------------------
+      # Dependency Vulnerability Scanning
+      # @CIPHER @FORTRESS - LOW-004: Automated dependency audit
+      # -----------------------------------------------------------------
+      - name: Setup Python for pip-audit
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
-            # -----------------------------------------------------------------
-            # IaC Security
-            # -----------------------------------------------------------------
-            - name: Run Checkov (IaC scanning)
-              uses: bridgecrewio/checkov-action@v12
-              with:
-                  directory: ${{ inputs.service-path }}
-                  framework: kubernetes,dockerfile,github_actions
-                  output_format: cli,sarif
-                  output_file_path: console,checkov-results.sarif
-                  soft_fail: true
-                  skip_check: CKV_K8S_40 # OpenShift-specific checks
+      - name: Install pip-audit
+        run: pip install pip-audit
 
-            - name: Upload Checkov SARIF results
-              if: ${{ inputs.upload-sarif }}
-              uses: github/codeql-action/upload-sarif@v3
-              with:
-                  sarif_file: checkov-results.sarif
-                  category: checkov
+      - name: Run pip-audit (Python dependencies)
+        id: pip-audit
+        continue-on-error: true
+        run: |
+          echo "## 🐍 Python Dependency Audit" >> $GITHUB_STEP_SUMMARY
 
-            # -----------------------------------------------------------------
-            # Kubernetes Manifest Security
-            # -----------------------------------------------------------------
-            - name: Run Kubescape
-              uses: kubescape/github-action@main
-              with:
-                  format: sarif
-                  outputFile: kubescape-results.sarif
-                  files: "k8s/,services/"
-              continue-on-error: true
+          # Scan ML service requirements
+          if [ -f "services/ml-service/requirements.txt" ]; then
+            echo "### ML Service Dependencies" >> $GITHUB_STEP_SUMMARY
+            pip-audit -r services/ml-service/requirements.txt --format json --output pip-audit-ml.json || true
+            
+            if [ -f pip-audit-ml.json ]; then
+              VULNS=$(jq 'length' pip-audit-ml.json)
+              echo "Found $VULNS vulnerable packages" >> $GITHUB_STEP_SUMMARY
+              
+              if [ "$VULNS" -gt "0" ]; then
+                echo "| Package | Vulnerability | Fix Version |" >> $GITHUB_STEP_SUMMARY
+                echo "|---------|---------------|-------------|" >> $GITHUB_STEP_SUMMARY
+                jq -r '.[] | "| \(.name) | \(.vulns[0].id) | \(.vulns[0].fix_versions // "N/A" | if type == "array" then .[0] else . end) |"' pip-audit-ml.json >> $GITHUB_STEP_SUMMARY
+              fi
+            fi
+          fi
 
-            - name: Upload Kubescape SARIF results
-              if: ${{ inputs.upload-sarif }}
-              uses: github/codeql-action/upload-sarif@v3
-              with:
-                  sarif_file: kubescape-results.sarif
-                  category: kubescape
-              continue-on-error: true
+      - name: Setup Rust for cargo-audit
+        uses: dtolnay/rust-toolchain@stable
 
-    # ===========================================================================
-    # Compliance Report
-    # ===========================================================================
-    compliance:
-        name: Generate Compliance Report
-        runs-on: ubuntu-latest
-        needs: [scan, code-scan]
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
 
-        steps:
-            - name: Download all artifacts
-              uses: actions/download-artifact@v4
+      - name: Run cargo-audit (Rust dependencies)
+        id: cargo-audit
+        continue-on-error: true
+        run: |
+          echo "## 🦀 Rust Dependency Audit" >> $GITHUB_STEP_SUMMARY
 
-            - name: Generate compliance summary
-              run: |
-                  echo "# 📋 Security Compliance Report" >> $GITHUB_STEP_SUMMARY
-                  echo "" >> $GITHUB_STEP_SUMMARY
-                  echo "**Image:** \`${{ inputs.image-ref }}\`" >> $GITHUB_STEP_SUMMARY
-                  echo "**Scan Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> $GITHUB_STEP_SUMMARY
-                  echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
-                  echo "" >> $GITHUB_STEP_SUMMARY
-                  echo "## 🛡️ Security Tools Used" >> $GITHUB_STEP_SUMMARY
-                  echo "- Trivy (Aqua Security)" >> $GITHUB_STEP_SUMMARY
-                  echo "- Grype (Anchore)" >> $GITHUB_STEP_SUMMARY
-                  echo "- Dockle (Container Linting)" >> $GITHUB_STEP_SUMMARY
-                  echo "- Gitleaks (Secret Detection)" >> $GITHUB_STEP_SUMMARY
-                  echo "- Checkov (IaC Security)" >> $GITHUB_STEP_SUMMARY
-                  echo "- Kubescape (K8s Security)" >> $GITHUB_STEP_SUMMARY
-                  echo "" >> $GITHUB_STEP_SUMMARY
-                  echo "## ✅ Compliance Status" >> $GITHUB_STEP_SUMMARY
-                  echo "- SBOM generated and archived" >> $GITHUB_STEP_SUMMARY
-                  echo "- Results uploaded to GitHub Security tab" >> $GITHUB_STEP_SUMMARY
+          if [ -f "services/rust-core/Cargo.toml" ]; then
+            cd services/rust-core
+            echo "### Rust Core Dependencies" >> $GITHUB_STEP_SUMMARY
+            cargo audit --json > cargo-audit.json 2>/dev/null || true
+            
+            if [ -f cargo-audit.json ]; then
+              VULNS=$(jq '.vulnerabilities.count' cargo-audit.json)
+              echo "Found $VULNS vulnerabilities" >> $GITHUB_STEP_SUMMARY
+              
+              if [ "$VULNS" -gt "0" ]; then
+                echo "| Crate | Advisory | Severity |" >> $GITHUB_STEP_SUMMARY
+                echo "|-------|----------|----------|" >> $GITHUB_STEP_SUMMARY
+                jq -r '.vulnerabilities.list[]? | "| \(.package.name) | \(.advisory.id) | \(.advisory.severity // "unknown") |"' cargo-audit.json >> $GITHUB_STEP_SUMMARY
+              fi
+            fi
+            cd ../..
+          fi
+
+      - name: Run npm audit (Node.js dependencies)
+        continue-on-error: true
+        run: |
+          echo "## 📦 Node.js Dependency Audit" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f "package.json" ]; then
+            npm audit --json > npm-audit.json 2>/dev/null || true
+            
+            if [ -f npm-audit.json ]; then
+              CRITICAL=$(jq '.metadata.vulnerabilities.critical // 0' npm-audit.json)
+              HIGH=$(jq '.metadata.vulnerabilities.high // 0' npm-audit.json)
+              MODERATE=$(jq '.metadata.vulnerabilities.moderate // 0' npm-audit.json)
+              LOW=$(jq '.metadata.vulnerabilities.low // 0' npm-audit.json)
+              
+              echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
+              echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+              echo "| Critical | $CRITICAL |" >> $GITHUB_STEP_SUMMARY
+              echo "| High | $HIGH |" >> $GITHUB_STEP_SUMMARY
+              echo "| Moderate | $MODERATE |" >> $GITHUB_STEP_SUMMARY
+              echo "| Low | $LOW |" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+
+      - name: Upload dependency audit artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-audit-${{ github.sha }}
+          path: |
+            pip-audit-*.json
+            cargo-audit.json
+            npm-audit.json
+          retention-days: 30
+          if-no-files-found: ignore
+
+      # -----------------------------------------------------------------
+      # Secret Detection
+      # -----------------------------------------------------------------
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # -----------------------------------------------------------------
+      # IaC Security
+      # -----------------------------------------------------------------
+      - name: Run Checkov (IaC scanning)
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: ${{ inputs.service-path }}
+          framework: kubernetes,dockerfile,github_actions
+          output_format: cli,sarif
+          output_file_path: console,checkov-results.sarif
+          soft_fail: true
+          skip_check: CKV_K8S_40 # OpenShift-specific checks
+
+      - name: Upload Checkov SARIF results
+        if: ${{ inputs.upload-sarif }}
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: checkov-results.sarif
+          category: checkov
+
+      # -----------------------------------------------------------------
+      # Kubernetes Manifest Security
+      # -----------------------------------------------------------------
+      - name: Run Kubescape
+        uses: kubescape/github-action@main
+        with:
+          format: sarif
+          outputFile: kubescape-results.sarif
+          files: "k8s/,services/"
+        continue-on-error: true
+
+      - name: Upload Kubescape SARIF results
+        if: ${{ inputs.upload-sarif }}
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: kubescape-results.sarif
+          category: kubescape
+        continue-on-error: true
+
+  # ===========================================================================
+  # Compliance Report
+  # ===========================================================================
+  compliance:
+    name: Generate Compliance Report
+    runs-on: ubuntu-latest
+    needs: [scan, code-scan]
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Generate compliance summary
+        run: |
+          echo "# 📋 Security Compliance Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`${{ inputs.image-ref }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Scan Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🛡️ Security Tools Used" >> $GITHUB_STEP_SUMMARY
+          echo "- Trivy (Aqua Security)" >> $GITHUB_STEP_SUMMARY
+          echo "- Grype (Anchore)" >> $GITHUB_STEP_SUMMARY
+          echo "- Dockle (Container Linting)" >> $GITHUB_STEP_SUMMARY
+          echo "- Gitleaks (Secret Detection)" >> $GITHUB_STEP_SUMMARY
+          echo "- Checkov (IaC Security)" >> $GITHUB_STEP_SUMMARY
+          echo "- Kubescape (K8s Security)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## ✅ Compliance Status" >> $GITHUB_STEP_SUMMARY
+          echo "- SBOM generated and archived" >> $GITHUB_STEP_SUMMARY
+          echo "- Results uploaded to GitHub Security tab" >> $GITHUB_STEP_SUMMARY
