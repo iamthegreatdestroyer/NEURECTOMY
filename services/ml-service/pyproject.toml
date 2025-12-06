@@ -41,6 +41,10 @@ tiktoken = "^0.8.0"
 # vllm = "^0.6.0"
 
 # MLOps
+# @CIPHER - SECURITY NOTE: MLflow has CVE-2024-37059 (unsafe deserialization)
+# All versions 0.5.0-3.4.0 are affected. No patch available as of Dec 2024.
+# MITIGATION: Only load models from trusted sources. See src/services/mlflow_tracker.py
+# for safe_load_model() implementation with model verification.
 mlflow = "^2.17.0"
 optuna = "^4.0.0"
 optuna-dashboard = "^0.16.0"

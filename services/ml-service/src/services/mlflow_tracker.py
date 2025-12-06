@@ -2,8 +2,19 @@
 MLflow Experiment Tracker for ML operations.
 
 @TENSOR @SENTRY - MLflow integration for experiment tracking and model registry.
+
+@CIPHER - SECURITY ADVISORY: CVE-2024-37059
+MLflow versions 0.5.0 - 3.4.0 have an unsafe deserialization vulnerability
+when loading PyTorch models. A malicious model can execute arbitrary code.
+
+MITIGATION:
+1. Only load models from trusted sources (internal registry only)
+2. Use safe_load_model() which verifies model origin
+3. Never load models from untrusted users or external URLs
+4. All models must be registered through official pipelines
 """
 
+import hashlib
 import os
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -24,6 +35,30 @@ from src.models.training import (
 )
 
 logger = structlog.get_logger()
+
+
+# @CIPHER - Allowlisted model sources (CVE-2024-37059 mitigation)
+TRUSTED_MODEL_SOURCES: set[str] = {
+    "neurectomy-internal",
+    "neurectomy-production",
+    "neurectomy-staging",
+}
+
+# @CIPHER - Required tags for verified models
+REQUIRED_MODEL_TAGS: set[str] = {
+    "verified_by",
+    "security_scan_date",
+}
+
+
+class SecurityError(Exception):
+    """
+    Security-related error for CVE mitigations.
+    
+    @CIPHER - Raised when security checks fail, particularly for
+    CVE-2024-37059 (MLflow unsafe deserialization).
+    """
+    pass
 
 
 class AutologMode(Enum):
@@ -432,6 +467,10 @@ class MLflowTracker:
         Load a model from the registry.
         
         @TENSOR - Model loading with version/stage support.
+        
+        WARNING: This method does not verify model safety.
+        For production use, prefer safe_load_model() which includes
+        CVE-2024-37059 mitigations.
         """
         if version:
             model_uri = f"models:/{model_name}/{version}"
@@ -441,6 +480,143 @@ class MLflowTracker:
             model_uri = f"models:/{model_name}/latest"
         
         return mlflow.pyfunc.load_model(model_uri)
+    
+    def safe_load_model(
+        self,
+        model_name: str,
+        version: Optional[str] = None,
+        stage: Optional[str] = None,
+        require_verification: bool = True,
+    ) -> Any:
+        """
+        Safely load a model with CVE-2024-37059 mitigations.
+        
+        @CIPHER @TENSOR - Secure model loading:
+        1. Verifies model source is in TRUSTED_MODEL_SOURCES allowlist
+        2. Checks required security tags are present
+        3. Logs all model load operations for audit
+        
+        Args:
+            model_name: Name of registered model
+            version: Specific version to load
+            stage: Stage to load from (Production, Staging, etc.)
+            require_verification: If True, requires security tags (default: True)
+        
+        Returns:
+            Loaded model
+        
+        Raises:
+            SecurityError: If model fails security checks
+            ValueError: If model not found
+        """
+        # Get model metadata for verification
+        try:
+            if version:
+                model_version = self.client.get_model_version(model_name, version)
+            else:
+                versions = self.client.get_latest_versions(
+                    model_name,
+                    stages=[stage] if stage else ["Production"]
+                )
+                if not versions:
+                    raise ValueError(
+                        f"No model found: {model_name} "
+                        f"(stage={stage or 'Production'})"
+                    )
+                model_version = versions[0]
+        except Exception as e:
+            logger.error(
+                "Model lookup failed",
+                model_name=model_name,
+                version=version,
+                error=str(e)
+            )
+            raise
+        
+        # @CIPHER - Security verification
+        model_tags = model_version.tags or {}
+        model_source = model_tags.get("source", "unknown")
+        
+        # Check trusted source
+        if model_source not in TRUSTED_MODEL_SOURCES:
+            logger.error(
+                "SECURITY: Model source not in allowlist",
+                model_name=model_name,
+                version=model_version.version,
+                source=model_source,
+                allowed=list(TRUSTED_MODEL_SOURCES),
+            )
+            raise SecurityError(
+                f"Model source '{model_source}' not in trusted sources. "
+                f"CVE-2024-37059 mitigation: Only models from "
+                f"{TRUSTED_MODEL_SOURCES} can be loaded."
+            )
+        
+        # Check required tags
+        if require_verification:
+            missing_tags = REQUIRED_MODEL_TAGS - set(model_tags.keys())
+            if missing_tags:
+                logger.error(
+                    "SECURITY: Model missing required security tags",
+                    model_name=model_name,
+                    version=model_version.version,
+                    missing_tags=list(missing_tags),
+                )
+                raise SecurityError(
+                    f"Model missing required security tags: {missing_tags}. "
+                    "Models must be security-scanned before production use."
+                )
+        
+        # Audit log
+        logger.info(
+            "Loading verified model",
+            model_name=model_name,
+            version=model_version.version,
+            source=model_source,
+            verified_by=model_tags.get("verified_by"),
+            scan_date=model_tags.get("security_scan_date"),
+        )
+        
+        # Load model
+        model_uri = f"models:/{model_name}/{model_version.version}"
+        return mlflow.pyfunc.load_model(model_uri)
+    
+    def mark_model_verified(
+        self,
+        model_name: str,
+        version: str,
+        verified_by: str,
+        source: str = "neurectomy-internal",
+    ) -> None:
+        """
+        Mark a model as security-verified.
+        
+        @CIPHER - Only call this after security review/scanning.
+        
+        Args:
+            model_name: Name of registered model
+            version: Version to mark
+            verified_by: ID of person/system that verified
+            source: Model source identifier (must be in TRUSTED_MODEL_SOURCES)
+        """
+        if source not in TRUSTED_MODEL_SOURCES:
+            raise ValueError(f"Source must be one of: {TRUSTED_MODEL_SOURCES}")
+        
+        self.client.set_model_version_tag(model_name, version, "source", source)
+        self.client.set_model_version_tag(model_name, version, "verified_by", verified_by)
+        self.client.set_model_version_tag(
+            model_name, version,
+            "security_scan_date",
+            datetime.now().isoformat()
+        )
+        
+        logger.info(
+            "Model marked as verified",
+            model_name=model_name,
+            version=version,
+            verified_by=verified_by,
+            source=source,
+        )
     
     # =========================================================================
     # Utilities
@@ -487,4 +663,6 @@ __all__ = [
     "MLflowTracker",
     "AutologMode",
     "AutologConfig",
+    "SecurityError",
+    "TRUSTED_MODEL_SOURCES",
 ]

@@ -23,7 +23,8 @@ async-graphql-axum = "7.0"
 async-stream = "0.3"
 
 # Database
-sqlx = { version = "0.7", features = ["runtime-tokio", "postgres", "chrono", "uuid", "json"] }
+# @CIPHER - Updated to 0.8.1+ to fix RUSTSEC-2024-0363 (Binary Protocol Misinterpretation)
+sqlx = { version = "0.8.1", features = ["runtime-tokio", "postgres", "chrono", "uuid", "json"] }
 neo4rs = "0.7"
 redis = { version = "0.24", features = ["tokio-comp", "connection-manager"] }
 
