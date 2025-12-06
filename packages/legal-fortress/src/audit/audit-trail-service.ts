@@ -212,7 +212,11 @@ export interface IntegrityReport {
 export interface IntegrityIssue {
   sequenceNumber: number;
   eventId: string;
-  issue: "missing_event" | "hash_mismatch" | "sequence_gap" | "timestamp_anomaly";
+  issue:
+    | "missing_event"
+    | "hash_mismatch"
+    | "sequence_gap"
+    | "timestamp_anomaly";
   expected?: string;
   actual?: string;
 }
@@ -301,10 +305,7 @@ export interface IAuditStorage {
   getEventBySequence(sequence: number): Promise<AuditEvent | null>;
 
   /** Get events in range */
-  getEvents(
-    from: number,
-    to: number
-  ): Promise<AuditEvent[]>;
+  getEvents(from: number, to: number): Promise<AuditEvent[]>;
 
   /** Search events */
   searchEvents(query: AuditSearchQuery): Promise<AuditSearchResult>;
@@ -435,7 +436,8 @@ export class InMemoryAuditStorage implements IAuditStorage {
     // Sort
     const sortOrder = query.sortOrder === "desc" ? -1 : 1;
     results.sort((a, b) => {
-      const field = query.sortBy === "sequenceNumber" ? "sequenceNumber" : "timestamp";
+      const field =
+        query.sortBy === "sequenceNumber" ? "sequenceNumber" : "timestamp";
       if (field === "timestamp") {
         return sortOrder * (a.timestamp.getTime() - b.timestamp.getTime());
       }
@@ -499,9 +501,16 @@ export class InMemoryAuditStorage implements IAuditStorage {
     return result;
   }
 
-  private calculateRetentionCutoff(policy: RetentionPolicy, _now: Date): number {
+  private calculateRetentionCutoff(
+    policy: RetentionPolicy,
+    _now: Date
+  ): number {
     const { value, unit } = policy.retentionPeriod;
-    const multipliers = { days: 86400000, months: 2592000000, years: 31536000000 };
+    const multipliers = {
+      days: 86400000,
+      months: 2592000000,
+      years: 31536000000,
+    };
     return value * multipliers[unit];
   }
 
@@ -547,7 +556,10 @@ export interface AuditTrailEvents {
 export class AuditTrailService extends EventEmitter<AuditTrailEvents> {
   private storage: IAuditStorage;
   private config: AuditTrailConfig;
-  private buffer: Omit<AuditEvent, "sequenceNumber" | "previousHash" | "eventHash">[] = [];
+  private buffer: Omit<
+    AuditEvent,
+    "sequenceNumber" | "previousHash" | "eventHash"
+  >[] = [];
   private flushTimer: NodeJS.Timeout | null = null;
   private legalHolds: Map<string, LegalHold> = new Map();
   private retentionPolicies: Map<string, RetentionPolicy> = new Map();
@@ -591,7 +603,10 @@ export class AuditTrailService extends EventEmitter<AuditTrailEvents> {
    * Log an audit event
    */
   async logEvent(
-    event: Omit<AuditEvent, "id" | "sequenceNumber" | "previousHash" | "eventHash" | "timestamp">
+    event: Omit<
+      AuditEvent,
+      "id" | "sequenceNumber" | "previousHash" | "eventHash" | "timestamp"
+    >
   ): Promise<string> {
     const eventWithDefaults = {
       id: uuidv4(),
@@ -626,7 +641,10 @@ export class AuditTrailService extends EventEmitter<AuditTrailEvents> {
    * Log multiple events efficiently
    */
   async logEvents(
-    events: Omit<AuditEvent, "id" | "sequenceNumber" | "previousHash" | "eventHash" | "timestamp">[]
+    events: Omit<
+      AuditEvent,
+      "id" | "sequenceNumber" | "previousHash" | "eventHash" | "timestamp"
+    >[]
   ): Promise<string[]> {
     const ids: string[] = [];
     for (const event of events) {
@@ -695,7 +713,10 @@ export class AuditTrailService extends EventEmitter<AuditTrailEvents> {
    * Compute hash for event integrity
    */
   private computeEventHash(
-    event: Omit<AuditEvent, "eventHash"> & { sequenceNumber: number; previousHash: string }
+    event: Omit<AuditEvent, "eventHash"> & {
+      sequenceNumber: number;
+      previousHash: string;
+    }
   ): string {
     const canonical = JSON.stringify({
       id: event.id,
@@ -731,7 +752,7 @@ export class AuditTrailService extends EventEmitter<AuditTrailEvents> {
       sortOrder: "asc",
       limit: 100000,
     };
-    
+
     if (from && to) {
       searchQuery.dateRange = { start: from, end: to };
     }
@@ -746,14 +767,17 @@ export class AuditTrailService extends EventEmitter<AuditTrailEvents> {
     for (let i = 0; i < searchResult.events.length; i++) {
       const event = searchResult.events[i];
       if (!event) continue;
-      
+
       if (!firstTimestamp) firstTimestamp = event.timestamp;
       lastTimestamp = event.timestamp;
 
       // Check sequence continuity
       if (i > 0) {
         const prevEvent = searchResult.events[i - 1];
-        if (prevEvent && event.sequenceNumber !== prevEvent.sequenceNumber + 1) {
+        if (
+          prevEvent &&
+          event.sequenceNumber !== prevEvent.sequenceNumber + 1
+        ) {
           issues.push({
             sequenceNumber: event.sequenceNumber,
             eventId: event.id,
@@ -900,26 +924,27 @@ export class AuditTrailService extends EventEmitter<AuditTrailEvents> {
 
   private async findEventsForHold(hold: LegalHold): Promise<AuditEvent[]> {
     const query: AuditSearchQuery = {};
-    
+
     // Build date range if both dates are present
     if (hold.scope.dateRange?.start && hold.scope.dateRange?.end) {
-      query.dateRange = { 
-        start: hold.scope.dateRange.start, 
-        end: hold.scope.dateRange.end 
+      query.dateRange = {
+        start: hold.scope.dateRange.start,
+        end: hold.scope.dateRange.end,
       };
     }
-    
+
     // Build filters only with defined values
     const filters: AuditFilters = {};
     if (hold.scope.actorIds) filters.actorIds = hold.scope.actorIds;
-    if (hold.scope.resourceTypes) filters.resourceTypes = hold.scope.resourceTypes;
+    if (hold.scope.resourceTypes)
+      filters.resourceTypes = hold.scope.resourceTypes;
     if (hold.scope.categories) filters.categories = hold.scope.categories;
     if (hold.scope.searchQuery) filters.searchText = hold.scope.searchQuery;
-    
+
     if (Object.keys(filters).length > 0) {
       query.filters = filters;
     }
-    
+
     const result = await this.storage.searchEvents(query);
     return result.events;
   }
@@ -1062,7 +1087,9 @@ export class AuditTrailService extends EventEmitter<AuditTrailEvents> {
 
     // In production, implement actual SIEM connector
     // This is a placeholder for the integration point
-    console.log(`[SIEM] Would send ${formatted.length} events to ${this.config.siemConfig.type}`);
+    console.log(
+      `[SIEM] Would send ${formatted.length} events to ${this.config.siemConfig.type}`
+    );
 
     this.emit("siem:sent", events.length);
   }
@@ -1088,22 +1115,28 @@ export class AuditTrailService extends EventEmitter<AuditTrailEvents> {
   private formatCEF(event: AuditEvent): string {
     // CEF: Common Event Format
     const severity = this.mapOutcomeToSeverity(event.outcome);
-    return `CEF:0|NEURECTOMY|LegalFortress|1.0|${event.category}|${event.action}|${severity}|` +
+    return (
+      `CEF:0|NEURECTOMY|LegalFortress|1.0|${event.category}|${event.action}|${severity}|` +
       `rt=${event.timestamp.getTime()} src=${event.actor.ipAddress || "unknown"} ` +
-      `suser=${event.actor.id} act=${event.action} outcome=${event.outcome}`;
+      `suser=${event.actor.id} act=${event.action} outcome=${event.outcome}`
+    );
   }
 
   private formatLEEF(event: AuditEvent): string {
     // LEEF: Log Event Extended Format (IBM QRadar)
-    return `LEEF:1.0|NEURECTOMY|LegalFortress|1.0|${event.category}|` +
+    return (
+      `LEEF:1.0|NEURECTOMY|LegalFortress|1.0|${event.category}|` +
       `devTime=${event.timestamp.toISOString()}\tsrc=${event.actor.ipAddress || "unknown"}\t` +
-      `usrName=${event.actor.id}\taction=${event.action}\toutcome=${event.outcome}`;
+      `usrName=${event.actor.id}\taction=${event.action}\toutcome=${event.outcome}`
+    );
   }
 
   private formatSyslog(event: AuditEvent): string {
     const priority = 14; // facility=user, severity=info
-    return `<${priority}>${event.timestamp.toISOString()} neurectomy legal-fortress: ` +
-      `[${event.category}] ${event.action} by ${event.actor.id} - ${event.outcome}`;
+    return (
+      `<${priority}>${event.timestamp.toISOString()} neurectomy legal-fortress: ` +
+      `[${event.category}] ${event.action} by ${event.actor.id} - ${event.outcome}`
+    );
   }
 
   private mapOutcomeToSeverity(outcome: string): number {
@@ -1123,7 +1156,9 @@ export class AuditTrailService extends EventEmitter<AuditTrailEvents> {
 
   private shouldAnchor(sequenceNumber: number): boolean {
     if (!this.config.enableBlockchainAnchoring) return false;
-    return sequenceNumber - this.lastAnchorSequence >= this.config.anchorInterval;
+    return (
+      sequenceNumber - this.lastAnchorSequence >= this.config.anchorInterval
+    );
   }
 
   private async createBlockchainAnchor(): Promise<void> {
@@ -1132,10 +1167,16 @@ export class AuditTrailService extends EventEmitter<AuditTrailEvents> {
     const latestHash = await this.storage.getLatestHash();
 
     // In production, call TimestampingService here
-    console.log(`[Anchor] Would anchor sequence ${latestSequence} with hash ${latestHash}`);
+    console.log(
+      `[Anchor] Would anchor sequence ${latestSequence} with hash ${latestHash}`
+    );
 
     this.lastAnchorSequence = latestSequence;
-    this.emit("anchor:created", latestHash, latestSequence - this.lastAnchorSequence);
+    this.emit(
+      "anchor:created",
+      latestHash,
+      latestSequence - this.lastAnchorSequence
+    );
   }
 
   // ============================================================================

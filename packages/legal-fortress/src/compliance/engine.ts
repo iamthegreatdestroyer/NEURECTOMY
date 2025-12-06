@@ -107,7 +107,12 @@ export interface ControlAssessment {
   controlId: string;
   controlName: string;
   framework: ComplianceStandard;
-  status: "compliant" | "non_compliant" | "partial" | "not_applicable" | "not_assessed";
+  status:
+    | "compliant"
+    | "non_compliant"
+    | "partial"
+    | "not_applicable"
+    | "not_assessed";
   score: number; // 0-100
   evidence: ComplianceEvidence[];
   findings: ComplianceFinding[];
@@ -221,7 +226,8 @@ export const SOC2_CONTROLS: ComplianceControl[] = [
   {
     id: "CC3.1",
     name: "Risk Identification",
-    description: "The entity identifies objectives and risk to achieving those objectives.",
+    description:
+      "The entity identifies objectives and risk to achieving those objectives.",
     framework: "soc2_type2",
     category: "CC3 - Risk Assessment",
     requiredEvidence: ["policy_document", "scan_result"],
@@ -231,7 +237,8 @@ export const SOC2_CONTROLS: ComplianceControl[] = [
   {
     id: "CC3.2",
     name: "Risk Analysis",
-    description: "The entity identifies and assesses risks to the achievement of its objectives.",
+    description:
+      "The entity identifies and assesses risks to the achievement of its objectives.",
     framework: "soc2_type2",
     category: "CC3 - Risk Assessment",
     requiredEvidence: ["policy_document", "scan_result"],
@@ -242,7 +249,8 @@ export const SOC2_CONTROLS: ComplianceControl[] = [
   {
     id: "CC4.1",
     name: "Ongoing Monitoring",
-    description: "The entity selects, develops, and performs ongoing evaluations.",
+    description:
+      "The entity selects, develops, and performs ongoing evaluations.",
     framework: "soc2_type2",
     category: "CC4 - Monitoring",
     requiredEvidence: ["audit_log", "api_response", "scan_result"],
@@ -252,7 +260,8 @@ export const SOC2_CONTROLS: ComplianceControl[] = [
   {
     id: "CC4.2",
     name: "Deficiency Communication",
-    description: "The entity evaluates and communicates internal control deficiencies.",
+    description:
+      "The entity evaluates and communicates internal control deficiencies.",
     framework: "soc2_type2",
     category: "CC4 - Monitoring",
     requiredEvidence: ["audit_log", "screenshot"],
@@ -263,7 +272,8 @@ export const SOC2_CONTROLS: ComplianceControl[] = [
   {
     id: "CC5.1",
     name: "Selection of Control Activities",
-    description: "The entity selects and develops control activities that mitigate risks.",
+    description:
+      "The entity selects and develops control activities that mitigate risks.",
     framework: "soc2_type2",
     category: "CC5 - Control Activities",
     requiredEvidence: ["policy_document", "configuration"],
@@ -272,7 +282,8 @@ export const SOC2_CONTROLS: ComplianceControl[] = [
   {
     id: "CC5.2",
     name: "Technology Controls",
-    description: "The entity selects and develops general control activities over technology.",
+    description:
+      "The entity selects and develops general control activities over technology.",
     framework: "soc2_type2",
     category: "CC5 - Control Activities",
     requiredEvidence: ["configuration", "api_response"],
@@ -292,14 +303,23 @@ export const SOC2_CONTROLS: ComplianceControl[] = [
     automationLevel: "full",
     checkFunction: "checkLogicalAccessControls",
     crossReferences: [
-      { framework: "iso_27001", controlId: "A.9.2.1", relationship: "equivalent" },
-      { framework: "hipaa", controlId: "164.312(a)(1)", relationship: "related" },
+      {
+        framework: "iso_27001",
+        controlId: "A.9.2.1",
+        relationship: "equivalent",
+      },
+      {
+        framework: "hipaa",
+        controlId: "164.312(a)(1)",
+        relationship: "related",
+      },
     ],
   },
   {
     id: "CC6.2",
     name: "User Registration and Authorization",
-    description: "The entity registers and authorizes new internal and external users.",
+    description:
+      "The entity registers and authorizes new internal and external users.",
     framework: "soc2_type2",
     category: "CC6 - Access Controls",
     requiredEvidence: ["audit_log", "configuration"],
@@ -319,7 +339,8 @@ export const SOC2_CONTROLS: ComplianceControl[] = [
   {
     id: "CC6.6",
     name: "System Boundaries",
-    description: "The entity implements logical access security within system boundaries.",
+    description:
+      "The entity implements logical access security within system boundaries.",
     framework: "soc2_type2",
     category: "CC6 - Access Controls",
     requiredEvidence: ["configuration", "scan_result"],
@@ -329,7 +350,8 @@ export const SOC2_CONTROLS: ComplianceControl[] = [
   {
     id: "CC6.7",
     name: "Information Transmission",
-    description: "The entity restricts the transmission of information to authorized parties.",
+    description:
+      "The entity restricts the transmission of information to authorized parties.",
     framework: "soc2_type2",
     category: "CC6 - Access Controls",
     requiredEvidence: ["configuration", "scan_result"],
@@ -351,7 +373,8 @@ export const SOC2_CONTROLS: ComplianceControl[] = [
   {
     id: "CC7.2",
     name: "Security Incident Detection",
-    description: "The entity monitors system components for anomalies and security incidents.",
+    description:
+      "The entity monitors system components for anomalies and security incidents.",
     framework: "soc2_type2",
     category: "CC7 - Operations",
     requiredEvidence: ["audit_log", "configuration", "api_response"],
@@ -372,7 +395,8 @@ export const SOC2_CONTROLS: ComplianceControl[] = [
   {
     id: "CC8.1",
     name: "Change Management Process",
-    description: "The entity authorizes, designs, and implements changes to infrastructure.",
+    description:
+      "The entity authorizes, designs, and implements changes to infrastructure.",
     framework: "soc2_type2",
     category: "CC8 - Change Management",
     requiredEvidence: ["audit_log", "configuration", "api_response"],
@@ -384,7 +408,8 @@ export const SOC2_CONTROLS: ComplianceControl[] = [
   {
     id: "CC9.1",
     name: "Risk Mitigation",
-    description: "The entity identifies, selects, and develops risk mitigation activities.",
+    description:
+      "The entity identifies, selects, and develops risk mitigation activities.",
     framework: "soc2_type2",
     category: "CC9 - Risk Mitigation",
     requiredEvidence: ["policy_document", "scan_result"],
@@ -393,7 +418,8 @@ export const SOC2_CONTROLS: ComplianceControl[] = [
   {
     id: "CC9.2",
     name: "Vendor Risk Management",
-    description: "The entity assesses and manages risks associated with vendors.",
+    description:
+      "The entity assesses and manages risks associated with vendors.",
     framework: "soc2_type2",
     category: "CC9 - Risk Mitigation",
     requiredEvidence: ["policy_document", "attestation"],
@@ -412,7 +438,8 @@ export const GDPR_CONTROLS: ComplianceControl[] = [
   {
     id: "GDPR-5",
     name: "Principles of Processing",
-    description: "Personal data shall be processed lawfully, fairly and transparently.",
+    description:
+      "Personal data shall be processed lawfully, fairly and transparently.",
     framework: "gdpr",
     category: "Processing Principles",
     requiredEvidence: ["policy_document", "audit_log"],
@@ -421,7 +448,8 @@ export const GDPR_CONTROLS: ComplianceControl[] = [
   {
     id: "GDPR-6",
     name: "Lawfulness of Processing",
-    description: "Processing shall be lawful based on consent or other legal basis.",
+    description:
+      "Processing shall be lawful based on consent or other legal basis.",
     framework: "gdpr",
     category: "Lawful Basis",
     requiredEvidence: ["audit_log", "configuration"],
@@ -440,7 +468,8 @@ export const GDPR_CONTROLS: ComplianceControl[] = [
   {
     id: "GDPR-15",
     name: "Right of Access",
-    description: "Data subject has the right to obtain confirmation of processing.",
+    description:
+      "Data subject has the right to obtain confirmation of processing.",
     framework: "gdpr",
     category: "Data Subject Rights",
     requiredEvidence: ["audit_log", "api_response"],
@@ -493,7 +522,8 @@ export const GDPR_CONTROLS: ComplianceControl[] = [
   {
     id: "GDPR-33",
     name: "Breach Notification",
-    description: "Notification of personal data breach to supervisory authority.",
+    description:
+      "Notification of personal data breach to supervisory authority.",
     framework: "gdpr",
     category: "Incident Response",
     requiredEvidence: ["policy_document", "audit_log"],
@@ -593,7 +623,8 @@ export class ComplianceEngine extends EventEmitter<ComplianceEngineEvents> {
     // Start assessment timer if configured
     if (this.config.assessmentInterval > 0) {
       this.assessmentTimer = setInterval(
-        () => this.runAutomatedAssessments().catch((e) => this.emit("error", e)),
+        () =>
+          this.runAutomatedAssessments().catch((e) => this.emit("error", e)),
         this.config.assessmentInterval
       );
     }
@@ -712,8 +743,8 @@ export class ComplianceEngine extends EventEmitter<ComplianceEngineEvents> {
         compliantControls === assessments.length
           ? "compliant"
           : compliantControls > assessments.length / 2
-          ? "partial"
-          : "non_compliant",
+            ? "partial"
+            : "non_compliant",
       controlAssessments: assessments,
       totalControls: assessments.length,
       compliantControls,
@@ -769,8 +800,12 @@ export class ComplianceEngine extends EventEmitter<ComplianceEngineEvents> {
       }
     }
 
-    const passed = allAssessments.filter((a) => a.status === "compliant").length;
-    const failed = allAssessments.filter((a) => a.status === "non_compliant").length;
+    const passed = allAssessments.filter(
+      (a) => a.status === "compliant"
+    ).length;
+    const failed = allAssessments.filter(
+      (a) => a.status === "non_compliant"
+    ).length;
 
     const report: ComplianceReport = {
       id: uuidv4(),
@@ -788,8 +823,9 @@ export class ComplianceEngine extends EventEmitter<ComplianceEngineEvents> {
         passed,
         failed,
         warnings: allAssessments.filter((a) => a.status === "partial").length,
-        notApplicable: allAssessments.filter((a) => a.status === "not_applicable")
-          .length,
+        notApplicable: allAssessments.filter(
+          (a) => a.status === "not_applicable"
+        ).length,
       },
       violations: allViolations,
       recommendations: this.generateRecommendations(allAssessments),
@@ -831,7 +867,11 @@ export class ComplianceEngine extends EventEmitter<ComplianceEngineEvents> {
 
   private async runControlCheck(
     control: ComplianceControl
-  ): Promise<{ status: ControlAssessment["status"]; score: number; findings: ComplianceFinding[] }> {
+  ): Promise<{
+    status: ControlAssessment["status"];
+    score: number;
+    findings: ComplianceFinding[];
+  }> {
     const findings: ComplianceFinding[] = [];
 
     // In production, implement specific checks for each control
@@ -857,7 +897,11 @@ export class ComplianceEngine extends EventEmitter<ComplianceEngineEvents> {
   private async checkLogicalAccessControls(
     _control: ComplianceControl,
     findings: ComplianceFinding[]
-  ): Promise<{ status: ControlAssessment["status"]; score: number; findings: ComplianceFinding[] }> {
+  ): Promise<{
+    status: ControlAssessment["status"];
+    score: number;
+    findings: ComplianceFinding[];
+  }> {
     // Implementation would check actual access controls
     return { status: "compliant", score: 100, findings };
   }
@@ -865,7 +909,11 @@ export class ComplianceEngine extends EventEmitter<ComplianceEngineEvents> {
   private async checkEncryption(
     _control: ComplianceControl,
     findings: ComplianceFinding[]
-  ): Promise<{ status: ControlAssessment["status"]; score: number; findings: ComplianceFinding[] }> {
+  ): Promise<{
+    status: ControlAssessment["status"];
+    score: number;
+    findings: ComplianceFinding[];
+  }> {
     // Implementation would verify encryption configuration
     return { status: "compliant", score: 100, findings };
   }
@@ -873,7 +921,11 @@ export class ComplianceEngine extends EventEmitter<ComplianceEngineEvents> {
   private async checkVulnerabilityManagement(
     _control: ComplianceControl,
     findings: ComplianceFinding[]
-  ): Promise<{ status: ControlAssessment["status"]; score: number; findings: ComplianceFinding[] }> {
+  ): Promise<{
+    status: ControlAssessment["status"];
+    score: number;
+    findings: ComplianceFinding[];
+  }> {
     // Implementation would check vulnerability scan results
     return { status: "partial", score: 75, findings };
   }
@@ -881,7 +933,11 @@ export class ComplianceEngine extends EventEmitter<ComplianceEngineEvents> {
   private async checkChangeManagement(
     _control: ComplianceControl,
     findings: ComplianceFinding[]
-  ): Promise<{ status: ControlAssessment["status"]; score: number; findings: ComplianceFinding[] }> {
+  ): Promise<{
+    status: ControlAssessment["status"];
+    score: number;
+    findings: ComplianceFinding[];
+  }> {
     // Implementation would verify change management processes
     return { status: "compliant", score: 90, findings };
   }
@@ -982,9 +1038,7 @@ export class ComplianceEngine extends EventEmitter<ComplianceEngineEvents> {
     }
   }
 
-  private generateRecommendations(
-    assessments: ControlAssessment[]
-  ): Array<{
+  private generateRecommendations(assessments: ControlAssessment[]): Array<{
     priority: ViolationSeverity;
     title: string;
     description: string;
