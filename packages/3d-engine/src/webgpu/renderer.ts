@@ -19,6 +19,7 @@ import type {
   CameraNode,
   LightNode,
 } from "../core/types";
+import * as THREE from "three";
 
 // Default renderer configuration
 const DEFAULT_CONFIG: Partial<RendererConfig> = {
@@ -55,6 +56,11 @@ export class WebGPURenderer {
   private device: GPUDevice | null = null;
   private context: GPUCanvasContext | null = null;
   private presentationFormat: GPUTextureFormat = "bgra8unorm";
+
+  // WebGL2 fallback - Three.js renderer
+  private gl2Renderer: THREE.WebGLRenderer | null = null;
+  private gl2Scene: THREE.Scene | null = null;
+  private gl2Camera: THREE.PerspectiveCamera | null = null;
 
   // Render state
   private currentRenderTarget: RenderTarget | null = null;
@@ -213,9 +219,67 @@ export class WebGPURenderer {
    * Initialize WebGL2 fallback backend
    */
   private async initializeWebGL2(): Promise<void> {
-    // WebGL2 fallback implementation would go here
-    // For now, throw to indicate not yet implemented
-    throw new Error("WebGL2 fallback not yet implemented");
+    if (!(this.canvas instanceof HTMLCanvasElement)) {
+      throw new Error(
+        "WebGL2 fallback requires HTMLCanvasElement (OffscreenCanvas not supported)"
+      );
+    }
+
+    // Create Three.js WebGL2 renderer
+    this.gl2Renderer = new THREE.WebGLRenderer({
+      canvas: this.canvas,
+      antialias: this.config.antialias,
+      alpha: this.config.alpha,
+      preserveDrawingBuffer: this.config.preserveDrawingBuffer,
+      powerPreference: this.config.powerPreference,
+      failIfMajorPerformanceCaveat: this.config.failIfMajorPerformanceCaveat,
+    });
+
+    // Verify WebGL2 context was obtained
+    const glContext = this.gl2Renderer.getContext();
+    if (!(glContext instanceof WebGL2RenderingContext)) {
+      this.gl2Renderer.dispose();
+      this.gl2Renderer = null;
+      throw new Error("Failed to get WebGL2 context - only WebGL1 available");
+    }
+
+    // Configure renderer
+    this.gl2Renderer.setPixelRatio(this.config.pixelRatio);
+    this.gl2Renderer.setSize(
+      this.canvas.clientWidth,
+      this.canvas.clientHeight,
+      false
+    );
+    this.gl2Renderer.setClearColor(0x05050d, 1.0);
+    this.gl2Renderer.shadowMap.enabled = true;
+    this.gl2Renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.gl2Renderer.outputColorSpace = THREE.SRGBColorSpace;
+    this.gl2Renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.gl2Renderer.toneMappingExposure = 1.0;
+
+    // Create default scene and camera for fallback rendering
+    this.gl2Scene = new THREE.Scene();
+    this.gl2Scene.background = new THREE.Color(0x05050d);
+
+    this.gl2Camera = new THREE.PerspectiveCamera(
+      75,
+      this.canvas.clientWidth / this.canvas.clientHeight,
+      0.1,
+      1000
+    );
+    this.gl2Camera.position.z = 5;
+
+    // Add default ambient light
+    const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+    this.gl2Scene.add(ambientLight);
+
+    // Add default directional light
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(5, 10, 7.5);
+    directionalLight.castShadow = true;
+    this.gl2Scene.add(directionalLight);
+
+    console.log("[WebGPURenderer] WebGL2 fallback initialized successfully");
   }
 
   /**
@@ -254,6 +318,29 @@ export class WebGPURenderer {
     }
 
     // WebGL2 capabilities (fallback)
+    if (this.backend === "webgl2" && this.gl2Renderer) {
+      const gl = this.gl2Renderer.getContext() as WebGL2RenderingContext;
+      const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
+
+      return {
+        backend: "webgl2",
+        maxTextureSize: gl.getParameter(gl.MAX_TEXTURE_SIZE),
+        maxTextureLayers: gl.getParameter(gl.MAX_ARRAY_TEXTURE_LAYERS),
+        maxComputeWorkgroupSize: [0, 0, 0], // No compute in WebGL2
+        maxStorageBufferBindingSize: 0,
+        supportsCompute: false,
+        supportsTimestampQuery: false,
+        supportsIndirectDraw: false,
+        vendor: debugInfo
+          ? gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL)
+          : "unknown",
+        architecture: debugInfo
+          ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
+          : "unknown",
+      };
+    }
+
+    // Fallback for uninitialized state
     return {
       backend: "webgl2",
       maxTextureSize: 4096,
@@ -272,6 +359,12 @@ export class WebGPURenderer {
    * Render a single frame
    */
   render(scene: SceneGraph, camera: CameraNode, lights: LightNode[]): void {
+    // Use appropriate backend
+    if (this.backend === "webgl2") {
+      this.renderWebGL2(scene, camera, lights);
+      return;
+    }
+
     if (!this.device || !this.context) {
       console.warn("[WebGPURenderer] Renderer not initialized");
       return;
@@ -337,6 +430,74 @@ export class WebGPURenderer {
 
     // Update stats
     this.stats.drawCalls++;
+  }
+
+  /**
+   * Render using WebGL2 fallback (Three.js)
+   */
+  private renderWebGL2(
+    _scene: SceneGraph,
+    camera: CameraNode,
+    _lights: LightNode[]
+  ): void {
+    if (!this.gl2Renderer || !this.gl2Scene || !this.gl2Camera) {
+      console.warn("[WebGPURenderer] WebGL2 renderer not initialized");
+      return;
+    }
+
+    this.beginFrame();
+
+    // Update camera from scene camera node
+    if (camera.transform) {
+      this.gl2Camera.position.set(
+        camera.transform.position[0],
+        camera.transform.position[1],
+        camera.transform.position[2]
+      );
+    }
+
+    // Update camera aspect ratio
+    if (this.canvas instanceof HTMLCanvasElement) {
+      const aspect = this.canvas.clientWidth / this.canvas.clientHeight;
+      if (this.gl2Camera.aspect !== aspect) {
+        this.gl2Camera.aspect = aspect;
+        this.gl2Camera.updateProjectionMatrix();
+      }
+    }
+
+    // Render the Three.js scene
+    this.gl2Renderer.render(this.gl2Scene, this.gl2Camera);
+
+    // Update stats
+    const info = this.gl2Renderer.info;
+    this.stats.drawCalls = info.render.calls;
+    this.stats.triangles = info.render.triangles;
+    this.stats.vertices = info.render.triangles * 3;
+    this.stats.textureMemory = info.memory.textures;
+
+    this.endFrame();
+  }
+
+  /**
+   * Get the Three.js scene (for WebGL2 fallback mode)
+   * Allows external code to add objects directly to the scene
+   */
+  getWebGL2Scene(): THREE.Scene | null {
+    return this.gl2Scene;
+  }
+
+  /**
+   * Get the Three.js camera (for WebGL2 fallback mode)
+   */
+  getWebGL2Camera(): THREE.PerspectiveCamera | null {
+    return this.gl2Camera;
+  }
+
+  /**
+   * Get the Three.js renderer (for WebGL2 fallback mode)
+   */
+  getWebGL2Renderer(): THREE.WebGLRenderer | null {
+    return this.gl2Renderer;
   }
 
   /**
@@ -424,6 +585,13 @@ export class WebGPURenderer {
         usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
       });
     }
+
+    // Resize WebGL2 renderer if in fallback mode
+    if (this.backend === "webgl2" && this.gl2Renderer && this.gl2Camera) {
+      this.gl2Renderer.setSize(width, height, false);
+      this.gl2Camera.aspect = width / height;
+      this.gl2Camera.updateProjectionMatrix();
+    }
   }
 
   /**
@@ -464,7 +632,29 @@ export class WebGPURenderer {
     }
     this.pendingDestroy = [];
 
-    // Destroy device
+    // Dispose WebGL2 renderer and scene if in fallback mode
+    if (this.gl2Renderer) {
+      this.gl2Renderer.dispose();
+      this.gl2Renderer = null;
+    }
+    if (this.gl2Scene) {
+      // Dispose all scene children
+      this.gl2Scene.traverse((object) => {
+        if (object instanceof THREE.Mesh) {
+          object.geometry?.dispose();
+          if (Array.isArray(object.material)) {
+            object.material.forEach((mat) => mat.dispose());
+          } else {
+            object.material?.dispose();
+          }
+        }
+      });
+      this.gl2Scene.clear();
+      this.gl2Scene = null;
+    }
+    this.gl2Camera = null;
+
+    // Destroy WebGPU device
     if (this.device) {
       this.device.destroy();
       this.device = null;

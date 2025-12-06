@@ -21,6 +21,15 @@ export * as webgpu from "./webgpu";
 // Physics exports - re-export as namespace
 export * as physics from "./physics";
 
+// UI Components - Loading skeletons, error boundaries, etc.
+export { LoadingSkeleton, ErrorBoundary } from "./components";
+
+export type {
+  LoadingSkeletonProps,
+  ErrorBoundaryProps,
+  ErrorBoundaryState,
+} from "./components";
+
 // Graph3D Visualization - our main completed component
 export {
   Graph3D,

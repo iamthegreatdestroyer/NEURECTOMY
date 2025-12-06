@@ -13,6 +13,10 @@ import React, {
   Suspense,
   forwardRef,
   useImperativeHandle,
+  useTransition,
+  useDeferredValue,
+  useState,
+  useOptimistic,
 } from "react";
 import { Canvas, useFrame, useThree, ThreeEvent } from "@react-three/fiber";
 import {
@@ -93,15 +97,15 @@ export interface Graph3DProps {
 export interface Graph3DRef {
   /** Get the internal store state */
   getStore: () => GraphStore;
-  /** Add nodes */
+  /** Add nodes (wrapped in transition for smooth updates) */
   addNodes: (nodes: GraphNode[]) => void;
-  /** Add edges */
+  /** Add edges (wrapped in transition for smooth updates) */
   addEdges: (edges: GraphEdge[]) => void;
-  /** Remove nodes */
+  /** Remove nodes (wrapped in transition for smooth updates) */
   removeNodes: (ids: string[]) => void;
-  /** Remove edges */
+  /** Remove edges (wrapped in transition for smooth updates) */
   removeEdges: (ids: string[]) => void;
-  /** Clear the graph */
+  /** Clear the graph (wrapped in transition for smooth updates) */
   clear: () => void;
   /** Start simulation */
   startSimulation: () => void;
@@ -119,6 +123,8 @@ export interface Graph3DRef {
   exportPNG: () => Promise<string>;
   /** Export graph data */
   exportData: () => { nodes: GraphNode[]; edges: GraphEdge[] };
+  /** Check if graph updates are pending (React 19 transition) */
+  isPending: () => boolean;
 }
 
 // ============================================================================
@@ -182,13 +188,85 @@ const SceneContent: React.FC<SceneContentProps> = ({
   const showLabels = store((s) => s.showLabels);
   const showEdges = store((s) => s.showEdges);
 
+  // Optimistic selection state for instant visual feedback
+  // This shows selection immediately while store update propagates
+  type OptimisticSelectionAction =
+    | { type: "select-node"; nodeId: string; additive: boolean }
+    | { type: "deselect-node"; nodeId: string }
+    | { type: "select-edge"; edgeId: string; additive: boolean }
+    | { type: "deselect-edge"; edgeId: string }
+    | { type: "clear" };
+
+  const [optimisticSelection, addOptimisticSelection] = useOptimistic(
+    selection,
+    (state, action: OptimisticSelectionAction) => {
+      switch (action.type) {
+        case "select-node": {
+          const newNodeIds = action.additive
+            ? new Set([...state.nodeIds, action.nodeId])
+            : new Set([action.nodeId]);
+          return { ...state, nodeIds: newNodeIds };
+        }
+        case "deselect-node": {
+          const newNodeIds = new Set(state.nodeIds);
+          newNodeIds.delete(action.nodeId);
+          return { ...state, nodeIds: newNodeIds };
+        }
+        case "select-edge": {
+          const newEdgeIds = action.additive
+            ? new Set([...state.edgeIds, action.edgeId])
+            : new Set([action.edgeId]);
+          return { ...state, edgeIds: newEdgeIds };
+        }
+        case "deselect-edge": {
+          const newEdgeIds = new Set(state.edgeIds);
+          newEdgeIds.delete(action.edgeId);
+          return { ...state, edgeIds: newEdgeIds };
+        }
+        case "clear":
+          return { nodeIds: new Set<string>(), edgeIds: new Set<string>() };
+        default:
+          return state;
+      }
+    }
+  );
+
+  // Optimistic hover state for instant hover feedback
+  const [optimisticHover, addOptimisticHover] = useOptimistic(
+    hover,
+    (
+      state,
+      action: { type: "node" | "edge" | "clear"; id?: string | null }
+    ) => {
+      switch (action.type) {
+        case "node":
+          return { ...state, nodeId: action.id ?? null };
+        case "edge":
+          return { ...state, edgeId: action.id ?? null };
+        case "clear":
+          return { nodeId: null, edgeId: null };
+        default:
+          return state;
+      }
+    }
+  );
+
   // Convert maps to arrays
   const nodesArray = useMemo(() => Array.from(nodes.values()), [nodes]);
   const edgesArray = useMemo(() => Array.from(edges.values()), [edges]);
 
-  // Resolve edges with their nodes
+  // Use deferred values for expensive node/edge rendering
+  // This allows the UI to remain responsive during large graph updates
+  const deferredNodesArray = useDeferredValue(nodesArray);
+  const deferredEdgesArray = useDeferredValue(edgesArray);
+
+  // Track if we're showing stale data during transition
+  const isStale =
+    deferredNodesArray !== nodesArray || deferredEdgesArray !== edgesArray;
+
+  // Resolve edges with their nodes (using deferred values)
   const resolvedEdges = useMemo(() => {
-    return edgesArray
+    return deferredEdgesArray
       .map((edge) => ({
         edge,
         source: nodes.get(edge.sourceId),
@@ -198,7 +276,7 @@ const SceneContent: React.FC<SceneContentProps> = ({
         (e): e is { edge: GraphEdge; source: GraphNode; target: GraphNode } =>
           e.source !== undefined && e.target !== undefined
       );
-  }, [edgesArray, nodes]);
+  }, [deferredEdgesArray, nodes]);
 
   // Simulation tick
   useFrame((_, delta) => {
@@ -219,20 +297,29 @@ const SceneContent: React.FC<SceneContentProps> = ({
     camera.lookAt(camState.target.x, camState.target.y, camState.target.z);
   }, []);
 
-  // Node event handlers
+  // Node event handlers with optimistic updates
   const handleNodeClick = useCallback(
     (nodeId: string, event: ThreeEvent<MouseEvent>) => {
       const node = nodes.get(nodeId);
       if (!node) return;
 
-      // Update selection
-      if (event.nativeEvent.shiftKey || event.nativeEvent.ctrlKey) {
-        if (selection.nodeIds.has(nodeId)) {
-          store.getState().deselectNode(nodeId);
-        } else {
-          store.getState().selectNode(nodeId, true);
-        }
+      const isAdditive =
+        event.nativeEvent.shiftKey || event.nativeEvent.ctrlKey;
+      const isCurrentlySelected = selection.nodeIds.has(nodeId);
+
+      // Optimistic update for instant visual feedback
+      if (isAdditive && isCurrentlySelected) {
+        addOptimisticSelection({ type: "deselect-node", nodeId });
+        store.getState().deselectNode(nodeId);
+      } else if (isAdditive) {
+        addOptimisticSelection({ type: "select-node", nodeId, additive: true });
+        store.getState().selectNode(nodeId, true);
       } else {
+        addOptimisticSelection({
+          type: "select-node",
+          nodeId,
+          additive: false,
+        });
         store.getState().selectNode(nodeId, false);
       }
 
@@ -249,7 +336,7 @@ const SceneContent: React.FC<SceneContentProps> = ({
         },
       });
     },
-    [nodes, selection, store, onNodeClick]
+    [nodes, selection, store, onNodeClick, addOptimisticSelection]
   );
 
   const handleNodeDoubleClick = useCallback(
@@ -280,6 +367,8 @@ const SceneContent: React.FC<SceneContentProps> = ({
       const node = nodes.get(nodeId);
       if (!node) return;
 
+      // Optimistic hover update for instant feedback
+      addOptimisticHover({ type: "node", id: nodeId });
       store.getState().setHoveredNode(nodeId);
 
       onNodeHover?.({
@@ -295,15 +384,17 @@ const SceneContent: React.FC<SceneContentProps> = ({
         },
       });
     },
-    [nodes, store, onNodeHover]
+    [nodes, store, onNodeHover, addOptimisticHover]
   );
 
   const handleNodePointerLeave = useCallback(
     (nodeId: string) => {
+      // Optimistic hover clear for instant feedback
+      addOptimisticHover({ type: "node", id: null });
       store.getState().setHoveredNode(null);
       onNodeHover?.(null);
     },
-    [store, onNodeHover]
+    [store, onNodeHover, addOptimisticHover]
   );
 
   const handleNodeDragStart = useCallback(
@@ -382,7 +473,7 @@ const SceneContent: React.FC<SceneContentProps> = ({
     [nodes, store, onNodeDragEnd]
   );
 
-  // Edge event handlers
+  // Edge event handlers with optimistic updates
   const handleEdgeClick = useCallback(
     (edgeId: string, event: ThreeEvent<MouseEvent>) => {
       const edge = edges.get(edgeId);
@@ -391,13 +482,23 @@ const SceneContent: React.FC<SceneContentProps> = ({
 
       if (!edge || !source || !target) return;
 
-      if (event.nativeEvent.shiftKey || event.nativeEvent.ctrlKey) {
-        if (selection.edgeIds.has(edgeId)) {
-          store.getState().deselectEdge(edgeId);
-        } else {
-          store.getState().selectEdge(edgeId, true);
-        }
+      const isAdditive =
+        event.nativeEvent.shiftKey || event.nativeEvent.ctrlKey;
+      const isCurrentlySelected = selection.edgeIds.has(edgeId);
+
+      // Optimistic update for instant visual feedback
+      if (isAdditive && isCurrentlySelected) {
+        addOptimisticSelection({ type: "deselect-edge", edgeId });
+        store.getState().deselectEdge(edgeId);
+      } else if (isAdditive) {
+        addOptimisticSelection({ type: "select-edge", edgeId, additive: true });
+        store.getState().selectEdge(edgeId, true);
       } else {
+        addOptimisticSelection({
+          type: "select-edge",
+          edgeId,
+          additive: false,
+        });
         store.getState().selectEdge(edgeId, false);
       }
 
@@ -411,7 +512,7 @@ const SceneContent: React.FC<SceneContentProps> = ({
         targetNode: target,
       });
     },
-    [edges, nodes, selection, store, onEdgeClick]
+    [edges, nodes, selection, store, onEdgeClick, addOptimisticSelection]
   );
 
   const handleEdgePointerEnter = useCallback(
@@ -422,6 +523,8 @@ const SceneContent: React.FC<SceneContentProps> = ({
 
       if (!edge || !source || !target) return;
 
+      // Optimistic hover update for instant feedback
+      addOptimisticHover({ type: "edge", id: edgeId });
       store.getState().setHoveredEdge(edgeId);
 
       onEdgeHover?.({
@@ -434,31 +537,34 @@ const SceneContent: React.FC<SceneContentProps> = ({
         targetNode: target,
       });
     },
-    [edges, nodes, store, onEdgeHover]
+    [edges, nodes, store, onEdgeHover, addOptimisticHover]
   );
 
   const handleEdgePointerLeave = useCallback(
     (edgeId: string) => {
+      // Optimistic hover clear for instant feedback
+      addOptimisticHover({ type: "edge", id: null });
       store.getState().setHoveredEdge(null);
       onEdgeHover?.(null);
     },
-    [store, onEdgeHover]
+    [store, onEdgeHover, addOptimisticHover]
   );
 
-  // Canvas click to deselect
+  // Canvas click to deselect with optimistic update
   const handleCanvasClick = useCallback(
     (event: ThreeEvent<MouseEvent>) => {
       // Only if clicking on background
       if (event.object.type === "Scene") {
+        addOptimisticSelection({ type: "clear" });
         store.getState().clearSelection();
       }
     },
-    [store]
+    [store, addOptimisticSelection]
   );
 
   // Decide whether to use instancing
   const shouldUseInstancing =
-    useInstancing && nodesArray.length > instanceThreshold;
+    useInstancing && deferredNodesArray.length > instanceThreshold;
 
   return (
     <>
@@ -492,15 +598,23 @@ const SceneContent: React.FC<SceneContentProps> = ({
         />
       )}
 
-      {/* Edges */}
+      {/* Visual indicator for stale/transitioning state */}
+      {isStale && (
+        <mesh position={[0, 0, 0]} visible={false}>
+          {/* Invisible marker - can be used for debugging */}
+        </mesh>
+      )}
+
+      {/* Edges - using deferred resolved edges for smooth updates */}
+      {/* Uses optimistic selection/hover for instant visual feedback */}
       {showEdges && (
-        <group name="edges">
+        <group name="edges" renderOrder={1}>
           {shouldUseInstancing ? (
             <InstancedEdges
               edges={resolvedEdges}
               config={config.visual.edge}
-              selectedIds={selection.edgeIds}
-              hoveredId={hover.edgeId}
+              selectedIds={optimisticSelection.edgeIds}
+              hoveredId={optimisticHover.edgeId}
             />
           ) : (
             resolvedEdges.map(({ edge, source, target }) => (
@@ -519,18 +633,19 @@ const SceneContent: React.FC<SceneContentProps> = ({
         </group>
       )}
 
-      {/* Nodes */}
-      <group name="nodes">
+      {/* Nodes - using deferred nodes array for smooth updates */}
+      {/* Uses optimistic selection/hover for instant visual feedback */}
+      <group name="nodes" renderOrder={2}>
         {shouldUseInstancing ? (
           <InstancedNodes
-            nodes={nodesArray}
+            nodes={deferredNodesArray}
             config={config.visual.node}
-            selectedIds={selection.nodeIds}
-            hoveredId={hover.nodeId}
+            selectedIds={optimisticSelection.nodeIds}
+            hoveredId={optimisticHover.nodeId}
             onClick={handleNodeClick}
           />
         ) : (
-          nodesArray.map((node) => (
+          deferredNodesArray.map((node) => (
             <NodeMesh
               key={node.id}
               node={node}
@@ -603,6 +718,10 @@ export const Graph3D = forwardRef<Graph3DRef, Graph3DProps>(
     );
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
+    // React 19 concurrent features for smooth graph updates
+    const [isPending, startTransition] = useTransition();
+    const [isUpdating, setIsUpdating] = useState(false);
+
     // Merge config with defaults
     const config = useMemo((): GraphConfig => {
       const state = internalStore.getState();
@@ -630,10 +749,12 @@ export const Graph3D = forwardRef<Graph3DRef, Graph3DProps>(
       };
     }, [internalStore, configOverrides]);
 
-    // Initialize with data
+    // Initialize with data (wrapped in transition for smooth loading)
     useEffect(() => {
       if (initialNodes.length > 0 || initialEdges.length > 0) {
-        internalStore.getState().setGraph(initialNodes, initialEdges);
+        startTransition(() => {
+          internalStore.getState().setGraph(initialNodes, initialEdges);
+        });
       }
     }, []); // Only on mount
 
@@ -678,17 +799,38 @@ export const Graph3D = forwardRef<Graph3DRef, Graph3DProps>(
       );
     }, [internalStore, onSimulationEnd]);
 
-    // Expose ref methods
+    // Expose ref methods with transition support for expensive operations
     useImperativeHandle(
       ref,
       () => ({
         getStore: () => internalStore.getState(),
 
-        addNodes: (nodes) => internalStore.getState().addNodes(nodes),
-        addEdges: (edges) => internalStore.getState().addEdges(edges),
-        removeNodes: (ids) => internalStore.getState().removeNodes(ids),
-        removeEdges: (ids) => internalStore.getState().removeEdges(ids),
-        clear: () => internalStore.getState().clearGraph(),
+        // Wrap expensive batch operations in startTransition for smooth UI
+        addNodes: (nodes) => {
+          startTransition(() => {
+            internalStore.getState().addNodes(nodes);
+          });
+        },
+        addEdges: (edges) => {
+          startTransition(() => {
+            internalStore.getState().addEdges(edges);
+          });
+        },
+        removeNodes: (ids) => {
+          startTransition(() => {
+            internalStore.getState().removeNodes(ids);
+          });
+        },
+        removeEdges: (ids) => {
+          startTransition(() => {
+            internalStore.getState().removeEdges(ids);
+          });
+        },
+        clear: () => {
+          startTransition(() => {
+            internalStore.getState().clearGraph();
+          });
+        },
 
         startSimulation: () => internalStore.getState().startSimulation(),
         stopSimulation: () => internalStore.getState().stopSimulation(),
@@ -725,8 +867,11 @@ export const Graph3D = forwardRef<Graph3DRef, Graph3DProps>(
             edges: Array.from(state.edges.values()),
           };
         },
+
+        // New: Check if graph is currently in a transition
+        isPending: () => isPending,
       }),
-      [internalStore]
+      [internalStore, isPending, startTransition]
     );
 
     return (

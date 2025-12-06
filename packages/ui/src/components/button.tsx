@@ -40,19 +40,49 @@ export type ButtonVariant =
   | "link";
 export type ButtonSize = "default" | "sm" | "lg" | "icon";
 
+/**
+ * Enhanced ARIA props for better accessibility documentation
+ */
+export interface ButtonAriaProps {
+  /** Accessible label for the button (use when button has no visible text) */
+  "aria-label"?: string;
+  /** ID of element that describes this button */
+  "aria-describedby"?: string;
+  /** Indicates the button's pressed state (for toggle buttons) */
+  "aria-pressed"?: boolean | "mixed";
+  /** Indicates the button controls an expandable element */
+  "aria-expanded"?: boolean;
+  /** Indicates the button activates a popup (menu, listbox, dialog, etc.) */
+  "aria-haspopup"?: boolean | "menu" | "listbox" | "tree" | "grid" | "dialog";
+  /** ID of the element that this button controls */
+  "aria-controls"?: string;
+  /** Indicates if this is the currently active item in a set */
+  "aria-current"?: boolean | "page" | "step" | "location" | "date" | "time";
+  /** Indicates the button is busy/loading */
+  "aria-busy"?: boolean;
+  /** Indicates the button is disabled */
+  "aria-disabled"?: boolean;
+}
+
 export interface ButtonProps
   extends
     React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+    VariantProps<typeof buttonVariants>,
+    ButtonAriaProps {
   asChild?: boolean;
+  /** Shows loading state with aria-busy */
+  isLoading?: boolean;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, ...props }, ref) => {
+  ({ className, variant, size, isLoading, disabled, ...props }, ref) => {
     return (
       <button
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
+        disabled={disabled || isLoading}
+        aria-busy={isLoading || props["aria-busy"]}
+        aria-disabled={disabled || isLoading || props["aria-disabled"]}
         {...props}
       />
     );

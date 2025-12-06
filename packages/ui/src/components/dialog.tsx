@@ -2,7 +2,26 @@ import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { cn } from "../utils/cn";
 
+/**
+ * Enhanced ARIA props for Dialog accessibility
+ * Radix UI Dialog already provides excellent ARIA support including:
+ * - role="dialog" on content
+ * - aria-modal="true" on content
+ * - aria-labelledby pointing to DialogTitle
+ * - aria-describedby pointing to DialogDescription
+ * - Focus trapping within the dialog
+ * - Return focus on close
+ */
 export interface DialogProps extends DialogPrimitive.DialogProps {}
+
+export interface DialogContentAriaProps {
+  /** Override the accessible label (usually auto-linked to DialogTitle) */
+  "aria-label"?: string;
+  /** Override the accessible description (usually auto-linked to DialogDescription) */
+  "aria-describedby"?: string;
+  /** Override the title reference (usually auto-linked to DialogTitle) */
+  "aria-labelledby"?: string;
+}
 
 const Dialog = DialogPrimitive.Root;
 const DialogTrigger = DialogPrimitive.Trigger;
