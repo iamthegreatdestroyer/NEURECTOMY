@@ -232,6 +232,62 @@ export type {
 } from "./plagiarism";
 
 // ============================================================================
+// Audit Module (@AEGIS @CRYPTO @STREAM)
+// ============================================================================
+
+export {
+  AuditTrailService,
+  createAuditTrailService,
+  InMemoryAuditStorage,
+} from "./audit";
+
+export type {
+  AuditEventCategory,
+  AuditActor,
+  AuditResource,
+  AuditEvent,
+  RetentionPolicy,
+  LegalHold,
+  IntegrityReport,
+  IntegrityIssue,
+  AuditTrailConfig,
+  ExportFormat,
+  SIEMConfig,
+  IAuditStorage,
+  AuditSearchQuery,
+  AuditFilters,
+  AuditSearchResult,
+  RetentionResult,
+  AuditTrailEvents,
+} from "./audit";
+
+// ============================================================================
+// Compliance Module (@AEGIS @ARCHITECT @FORTRESS)
+// ============================================================================
+
+export {
+  ComplianceEngine,
+  createComplianceEngine,
+  SOC2_CONTROLS,
+  SOC2_CATEGORIES,
+  GDPR_CONTROLS,
+} from "./compliance";
+
+export type {
+  ComplianceControl,
+  EvidenceType,
+  CrossReference,
+  ComplianceEvidence,
+  ControlAssessment,
+  ComplianceFinding,
+  FrameworkAssessment,
+  RemediationTask,
+  ComplianceEngineConfig,
+  EvidenceSource,
+  ComplianceEngineEvents,
+} from "./compliance";
+
+// ============================================================================
 // Default Export - Plagiarism Detector
 // ============================================================================
 
