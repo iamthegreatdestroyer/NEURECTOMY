@@ -4,259 +4,437 @@
 name: ML Service CI
 
 on:
-    push:
-        branches: [main, develop]
-        paths:
-            - "services/ml-service/**"
-            - ".github/workflows/ml-service-ci.yml"
-    pull_request:
-        branches: [main, develop]
-        paths:
-            - "services/ml-service/**"
-            - ".github/workflows/ml-service-ci.yml"
+  push:
+    branches: [main, develop]
+    paths:
+      - "services/ml-service/**"
+      - ".github/workflows/ml-service-ci.yml"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "services/ml-service/**"
+      - ".github/workflows/ml-service-ci.yml"
 
 env:
-    PYTHON_VERSION: "3.11"
-    POETRY_VERSION: "1.7.1"
+  PYTHON_VERSION: "3.11"
+  POETRY_VERSION: "1.7.1"
 
 jobs:
-    # ===========================================================================
-    # Lint and Type Check
-    # ===========================================================================
-    lint:
-        name: Lint & Type Check
-        runs-on: ubuntu-latest
-        defaults:
-            run:
-                working-directory: services/ml-service
+  # ===========================================================================
+  # Lint and Type Check
+  # ===========================================================================
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/ml-service
 
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-            - name: Set up Python
-              uses: actions/setup-python@v5
-              with:
-                  python-version: ${{ env.PYTHON_VERSION }}
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
 
-            - name: Install Poetry
-              uses: snok/install-poetry@v1
-              with:
-                  version: ${{ env.POETRY_VERSION }}
-                  virtualenvs-create: true
-                  virtualenvs-in-project: true
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: ${{ env.POETRY_VERSION }}
+          virtualenvs-create: true
+          virtualenvs-in-project: true
 
-            - name: Load cached venv
-              id: cached-poetry-dependencies
-              uses: actions/cache@v4
-              with:
-                  path: services/ml-service/.venv
-                  key: venv-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v4
+        with:
+          path: services/ml-service/.venv
+          key: venv-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}
 
-            - name: Install dependencies
-              if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-              run: poetry install --no-interaction --no-root
+      - name: Install dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --no-interaction --no-root
 
-            - name: Install project
-              run: poetry install --no-interaction
+      - name: Install project
+        run: poetry install --no-interaction
 
-            - name: Run Ruff (linting)
-              run: poetry run ruff check src/ tests/
+      - name: Run Ruff (linting)
+        run: poetry run ruff check src/ tests/
 
-            - name: Run Ruff (formatting)
-              run: poetry run ruff format --check src/ tests/
+      - name: Run Ruff (formatting)
+        run: poetry run ruff format --check src/ tests/
 
-            - name: Run MyPy (type checking)
-              run: poetry run mypy src/ --ignore-missing-imports
-              continue-on-error: true
+      - name: Run MyPy (type checking)
+        run: poetry run mypy src/ --ignore-missing-imports
+        continue-on-error: true
 
-    # ===========================================================================
-    # Unit Tests
-    # ===========================================================================
-    test:
-        name: Unit Tests
-        runs-on: ubuntu-latest
-        needs: lint
-        defaults:
-            run:
-                working-directory: services/ml-service
+  # ===========================================================================
+  # Unit Tests
+  # ===========================================================================
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: lint
+    defaults:
+      run:
+        working-directory: services/ml-service
 
-        services:
-            postgres:
-                image: pgvector/pgvector:pg16
-                env:
-                    POSTGRES_USER: neurectomy
-                    POSTGRES_PASSWORD: neurectomy
-                    POSTGRES_DB: neurectomy_test
-                ports:
-                    - 5432:5432
-                options: >-
-                    --health-cmd pg_isready
-                    --health-interval 10s
-                    --health-timeout 5s
-                    --health-retries 5
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: neurectomy
+          POSTGRES_PASSWORD: neurectomy
+          POSTGRES_DB: neurectomy_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
-            redis:
-                image: redis:7-alpine
-                ports:
-                    - 6379:6379
-                options: >-
-                    --health-cmd "redis-cli ping"
-                    --health-interval 10s
-                    --health-timeout 5s
-                    --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-            - name: Set up Python
-              uses: actions/setup-python@v5
-              with:
-                  python-version: ${{ env.PYTHON_VERSION }}
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
 
-            - name: Install Poetry
-              uses: snok/install-poetry@v1
-              with:
-                  version: ${{ env.POETRY_VERSION }}
-                  virtualenvs-create: true
-                  virtualenvs-in-project: true
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: ${{ env.POETRY_VERSION }}
+          virtualenvs-create: true
+          virtualenvs-in-project: true
 
-            - name: Load cached venv
-              uses: actions/cache@v4
-              with:
-                  path: services/ml-service/.venv
-                  key: venv-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}
+      - name: Load cached venv
+        uses: actions/cache@v4
+        with:
+          path: services/ml-service/.venv
+          key: venv-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}
 
-            - name: Install dependencies
-              run: poetry install --no-interaction
+      - name: Install dependencies
+        run: poetry install --no-interaction
 
-            - name: Run tests with coverage
-              env:
-                  DATABASE_URL: postgresql://neurectomy:neurectomy@localhost:5432/neurectomy_test
-                  REDIS_URL: redis://localhost:6379
-                  MLFLOW_TRACKING_URI: http://localhost:5000
-                  JWT_SECRET: test-jwt-secret
-              run: |
-                  poetry run pytest tests/ \
-                    --cov=src \
-                    --cov-report=xml \
-                    --cov-report=html \
-                    --cov-fail-under=80 \
-                    -v \
-                    --tb=short
+      - name: Run tests with coverage
+        env:
+          DATABASE_URL: postgresql://neurectomy:neurectomy@localhost:5432/neurectomy_test
+          REDIS_URL: redis://localhost:6379
+          MLFLOW_TRACKING_URI: http://localhost:5000
+          JWT_SECRET: test-jwt-secret
+        run: |
+          poetry run pytest tests/ \
+            --cov=src \
+            --cov-report=xml \
+            --cov-report=html \
+            --cov-fail-under=80 \
+            -v \
+            --tb=short
 
-            - name: Upload coverage reports
-              uses: codecov/codecov-action@v4
-              with:
-                  file: services/ml-service/coverage.xml
-                  flags: ml-service
-                  name: ml-service-coverage
-              env:
-                  CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        with:
+          file: services/ml-service/coverage.xml
+          flags: ml-service
+          name: ml-service-coverage
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-            - name: Upload coverage artifacts
-              uses: actions/upload-artifact@v4
-              with:
-                  name: coverage-report
-                  path: services/ml-service/htmlcov/
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: services/ml-service/htmlcov/
 
-    # ===========================================================================
-    # Security Scan
-    # ===========================================================================
-    security:
-        name: Security Scan
-        runs-on: ubuntu-latest
-        needs: lint
-        defaults:
-            run:
-                working-directory: services/ml-service
+  # ===========================================================================
+  # Security Scan - Comprehensive Vulnerability Analysis
+  # ===========================================================================
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: lint
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    defaults:
+      run:
+        working-directory: services/ml-service
 
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-            - name: Set up Python
-              uses: actions/setup-python@v5
-              with:
-                  python-version: ${{ env.PYTHON_VERSION }}
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
 
-            - name: Install Poetry
-              uses: snok/install-poetry@v1
-              with:
-                  version: ${{ env.POETRY_VERSION }}
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: ${{ env.POETRY_VERSION }}
 
-            - name: Install dependencies
-              run: poetry install --no-interaction
+      - name: Install dependencies
+        run: poetry install --no-interaction
 
-            - name: Run Bandit (security linting)
-              run: poetry run bandit -r src/ -ll -ii
-              continue-on-error: true
+      - name: Run Bandit (security linting)
+        run: |
+          poetry run bandit -r src/ -ll -ii \
+            -f json -o bandit-report.json || true
+          poetry run bandit -r src/ -ll -ii \
+            -f sarif -o bandit-results.sarif || true
 
-            - name: Run Safety (dependency vulnerability check)
-              run: poetry run safety check
-              continue-on-error: true
+      - name: Upload Bandit SARIF results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: services/ml-service/bandit-results.sarif
+          category: bandit
 
-            - name: Run Trivy vulnerability scanner
-              uses: aquasecurity/trivy-action@master
-              with:
-                  scan-type: "fs"
-                  scan-ref: "services/ml-service"
-                  severity: "CRITICAL,HIGH"
+      - name: Run Safety (dependency vulnerability check)
+        run: |
+          poetry run pip-audit --format json --output pip-audit-report.json || true
+        continue-on-error: true
 
-    # ===========================================================================
-    # Build Docker Image
-    # ===========================================================================
-    build:
-        name: Build Docker Image
-        runs-on: ubuntu-latest
-        needs: [test, security]
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+      - name: Run Trivy filesystem scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: "fs"
+          scan-ref: "services/ml-service"
+          severity: "CRITICAL,HIGH,MEDIUM"
+          format: "sarif"
+          output: "trivy-fs-results.sarif"
+          exit-code: "0"
+          ignore-unfixed: true
 
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
+      - name: Upload Trivy FS scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-fs-results.sarif
+          category: trivy-filesystem
 
-            - name: Set up Docker Buildx
-              uses: docker/setup-buildx-action@v3
+      - name: Run Gitleaks (secret detection)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_SUMMARY: true
 
-            - name: Login to GitHub Container Registry
-              uses: docker/login-action@v3
-              with:
-                  registry: ghcr.io
-                  username: ${{ github.actor }}
-                  password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run Checkov (IaC scanning)
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: .
+          framework: kubernetes,dockerfile,github_actions
+          output_format: cli,sarif
+          output_file_path: console,checkov-results.sarif
+          soft_fail: true
 
-            - name: Extract metadata
-              id: meta
-              uses: docker/metadata-action@v5
-              with:
-                  images: ghcr.io/${{ github.repository }}/ml-service
-                  tags: |
-                      type=ref,event=branch
-                      type=sha,prefix=
-                      type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+      - name: Upload Checkov SARIF results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: checkov-results.sarif
+          category: checkov
 
-            - name: Build and push
-              uses: docker/build-push-action@v5
-              with:
-                  context: services/ml-service
-                  file: services/ml-service/Dockerfile
-                  push: true
-                  tags: ${{ steps.meta.outputs.tags }}
-                  labels: ${{ steps.meta.outputs.labels }}
-                  cache-from: type=gha
-                  cache-to: type=gha,mode=max
+  # ===========================================================================
+  # SBOM Generation
+  # ===========================================================================
+  sbom:
+    name: Generate SBOM
+    runs-on: ubuntu-latest
+    needs: lint
+    permissions:
+      contents: write
+      packages: read
+    defaults:
+      run:
+        working-directory: services/ml-service
 
-            - name: Run Trivy on image
-              uses: aquasecurity/trivy-action@master
-              with:
-                  image-ref: ghcr.io/${{ github.repository }}/ml-service:${{ github.sha }}
-                  format: "sarif"
-                  output: "trivy-results.sarif"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-            - name: Upload Trivy scan results
-              uses: github/codeql-action/upload-sarif@v3
-              if: always()
-              with:
-                  sarif_file: "trivy-results.sarif"
+      - name: Generate CycloneDX SBOM
+        uses: CycloneDX/gh-python-generate-sbom@v2
+        with:
+          input: services/ml-service/pyproject.toml
+          output: services/ml-service/sbom.json
+          format: json
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: services/ml-service/sbom.json
+          retention-days: 90
+
+      - name: Run Trivy SBOM vulnerability scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: "sbom"
+          scan-ref: "services/ml-service/sbom.json"
+          severity: "CRITICAL,HIGH"
+          format: "table"
+          exit-code: "0"
+
+  # ===========================================================================
+  # Build Docker Image with Security Scanning
+  # ===========================================================================
+  build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: [test, security, sbom]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build-push.outputs.digest }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/ml-service
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix=
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build and push
+        id: build-push
+        uses: docker/build-push-action@v5
+        with:
+          context: services/ml-service
+          file: services/ml-service/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: true
+          sbom: true
+
+      - name: Run Trivy vulnerability scan on image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ghcr.io/${{ github.repository }}/ml-service:${{ github.sha }}
+          format: "sarif"
+          output: "trivy-image-results.sarif"
+          severity: "CRITICAL,HIGH"
+          ignore-unfixed: true
+          vuln-type: "os,library"
+
+      - name: Upload Trivy image scan results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-image-results.sarif
+          category: trivy-image
+
+      - name: Run Trivy for table output (human readable)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ghcr.io/${{ github.repository }}/ml-service:${{ github.sha }}
+          format: "table"
+          severity: "CRITICAL,HIGH"
+          ignore-unfixed: true
+          vuln-type: "os,library"
+
+      - name: Generate image SBOM with Syft
+        uses: anchore/sbom-action@v0
+        with:
+          image: ghcr.io/${{ github.repository }}/ml-service:${{ github.sha }}
+          format: spdx-json
+          output-file: image-sbom.spdx.json
+
+      - name: Upload image SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-sbom
+          path: image-sbom.spdx.json
+          retention-days: 90
+
+      - name: Run Grype vulnerability scan
+        uses: anchore/scan-action@v5
+        id: grype-scan
+        with:
+          image: ghcr.io/${{ github.repository }}/ml-service:${{ github.sha }}
+          fail-build: false
+          severity-cutoff: critical
+
+      - name: Upload Grype SARIF report
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: ${{ steps.grype-scan.outputs.sarif }}
+          category: grype
+
+  # ===========================================================================
+  # Security Gate - Fail on Critical Vulnerabilities
+  # ===========================================================================
+  security-gate:
+    name: Security Gate
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Trivy security gate (CRITICAL only)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ghcr.io/${{ github.repository }}/ml-service:${{ github.sha }}
+          format: "table"
+          exit-code: "1"
+          severity: "CRITICAL"
+          ignore-unfixed: true
+          vuln-type: "os,library"
+          timeout: "10m"
+
+      - name: Security gate passed
+        run: |
+          echo "✅ Security gate passed - no critical vulnerabilities found"
+          echo "Image is approved for production deployment"

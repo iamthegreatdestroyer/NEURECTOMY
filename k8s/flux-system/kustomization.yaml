@@ -1,0 +1,40 @@
+# ============================================================================
+# NEURECTOMY - Flux System Kustomization
+# Bootstrap configuration for Flux CD GitOps
+# ============================================================================
+#
+# INSTALLATION:
+# 1. Install Flux CLI:
+#    curl -s https://fluxcd.io/install.sh | sudo bash
+#
+# 2. Bootstrap Flux (GitHub):
+#    flux bootstrap github \
+#      --owner=iamthegreatdestroyer \
+#      --repository=NEURECTOMY \
+#      --branch=main \
+#      --path=k8s/flux-system \
+#      --personal
+#
+# 3. Or apply manually:
+#    kubectl apply -k k8s/flux-system
+#
+# ============================================================================
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: flux-system
+
+resources:
+  - namespace.yaml
+  - gotk-components.yaml
+  - gotk-sync.yaml
+  - git-repository.yaml
+  - kustomizations/
+  - notifications/
+  - alerts/
+
+# Common labels for all Flux resources
+commonLabels:
+  app.kubernetes.io/managed-by: flux
+  app.kubernetes.io/part-of: neurectomy-platform

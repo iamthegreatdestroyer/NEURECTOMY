@@ -1,0 +1,11 @@
+# ============================================================================
+# NEURECTOMY - Flux Rollback Kustomization
+# ============================================================================
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - rollback-policy.yaml
+  - image-automation.yaml
+  - image-policy.yaml

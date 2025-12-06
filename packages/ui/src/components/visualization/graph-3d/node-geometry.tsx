@@ -277,7 +277,7 @@ export const InstancedNodeGeometry: React.FC<InstancedNodeGeometryProps> = ({
   }, [cameraDistance, camera.position]);
 
   // Determine current LOD geometry
-  const currentLOD = useMemo(() => {
+  const currentLOD = useMemo((): LODConfig => {
     if (!enableLOD) return LOD_CONFIGS[0];
     return calculateLODLevel(effectiveDistance);
   }, [effectiveDistance, enableLOD]);
@@ -363,6 +363,7 @@ export const InstancedNodeGeometry: React.FC<InstancedNodeGeometryProps> = ({
     // Update each instance
     for (let i = 0; i < count; i++) {
       const node = nodes[i];
+      if (!node) continue;
 
       // Position
       position.set(
@@ -410,13 +411,13 @@ export const InstancedNodeGeometry: React.FC<InstancedNodeGeometryProps> = ({
     const intersects = raycaster.intersectObject(mesh);
 
     if (intersects.length > 0) {
-      const instanceId = intersects[0].instanceId;
+      const instanceId = intersects[0]?.instanceId;
       if (
         instanceId !== undefined &&
         instanceId < instanceData.nodeIds.length
       ) {
         const nodeId = instanceData.nodeIds[instanceId];
-        if (nodeId !== internalHoveredRef.current) {
+        if (nodeId !== undefined && nodeId !== internalHoveredRef.current) {
           internalHoveredRef.current = nodeId;
           onNodeHover?.(nodeId);
         }
@@ -435,13 +436,15 @@ export const InstancedNodeGeometry: React.FC<InstancedNodeGeometryProps> = ({
     const intersects = raycaster.intersectObject(mesh);
 
     if (intersects.length > 0) {
-      const instanceId = intersects[0].instanceId;
+      const instanceId = intersects[0]?.instanceId;
       if (
         instanceId !== undefined &&
         instanceId < instanceData.nodeIds.length
       ) {
         const nodeId = instanceData.nodeIds[instanceId];
-        onNodeClick?.(nodeId);
+        if (nodeId !== undefined) {
+          onNodeClick?.(nodeId);
+        }
       }
     }
   }, [camera, raycaster, pointer, instanceData.nodeIds, onNodeClick]);

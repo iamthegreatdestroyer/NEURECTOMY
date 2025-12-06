@@ -1,0 +1,23 @@
+# ============================================================================
+# NEURECTOMY - Development Anti-Affinity Rules (Relaxed)
+# Light distribution rules for dev environment
+# ============================================================================
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-service
+spec:
+  template:
+    spec:
+      affinity:
+        # Soft anti-affinity for development (prefer different nodes but allow same)
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 50
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: ml-service
+                    environment: development
+                topologyKey: kubernetes.io/hostname

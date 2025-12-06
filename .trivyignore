@@ -1,0 +1,93 @@
+# ============================================================================
+
+# NEURECTOMY - Trivy Ignore File
+
+# CVEs to ignore with documented justification
+
+# ============================================================================
+
+# Format: CVE-YYYY-XXXXX [until=YYYY-MM-DD] [exp:YYYY-MM-DD] # reason
+
+# ============================================================================
+
+# Template for adding ignored CVEs:
+
+# CVE-2024-XXXXX exp:2024-12-31 # Justification: <reason>
+
+# # Risk Assessment: <assessment>
+
+# # Mitigation: <mitigation strategy>
+
+# ============================================================================
+
+# OS-level CVEs - Mitigated by Network Policies
+
+# ============================================================================
+
+# Example (uncomment and modify as needed):
+
+# CVE-2024-0001 exp:2025-06-30 # Justification: Low severity, no exploit available
+
+# # Risk Assessment: Network-isolated service
+
+# # Mitigation: Blocked by NetworkPolicy, WAF rules
+
+# ============================================================================
+
+# Library CVEs - Mitigated by Application Controls
+
+# ============================================================================
+
+# Example (uncomment and modify as needed):
+
+# GHSA-xxxx-xxxx-xxxx exp:2025-06-30 # Justification: Not in code path
+
+# # Risk Assessment: Function not used
+
+# # Mitigation: Upgrade scheduled in sprint X
+
+# ============================================================================
+
+# False Positives - Confirmed not vulnerable
+
+# ============================================================================
+
+# Example (uncomment and modify as needed):
+
+# CVE-2024-9999 # False positive: Our code doesn't use affected function
+
+# # Verified by: Security team review on 2024-01-01
+
+# ============================================================================
+
+# Accepted Risks - Documented and approved
+
+# ============================================================================
+
+# These CVEs have been reviewed and accepted by the security team.
+
+# Each must have:
+
+# 1. Expiration date for re-review
+
+# 2. Documented justification
+
+# 3. Compensating controls
+
+# 4. Approval signature (in comments)
+
+# ============================================================================
+
+# END OF IGNORE FILE
+
+# ============================================================================
+
+# IMPORTANT: All entries must be reviewed quarterly
+
+# Last Review: [DATE]
+
+# Next Review: [DATE + 90 days]
+
+# Reviewed By: [Security Team Lead]
+
+# ============================================================================

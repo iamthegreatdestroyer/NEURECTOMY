@@ -1,0 +1,70 @@
+# ============================================================================
+# NEURECTOMY - Flux Kustomization: Staging Environment
+# GitOps reconciliation for staging namespace (pre-production)
+# ============================================================================
+
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: neurectomy-staging
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: kustomization
+    environment: staging
+spec:
+  # Reconcile every 10 minutes
+  interval: 10m
+
+  # Retry on failure
+  retryInterval: 2m
+
+  # Source reference - main branch for staging
+  sourceRef:
+    kind: GitRepository
+    name: neurectomy
+    namespace: flux-system
+
+  # Path to Kustomize overlay
+  path: ./k8s/overlays/staging
+
+  # Enable pruning of removed resources
+  prune: true
+
+  # Timeout for apply operations
+  timeout: 10m
+
+  # Target namespace
+  targetNamespace: neurectomy-staging
+
+  # Wait for resources to be ready
+  wait: true
+
+  # Health checks for deployment verification
+  healthChecks:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: staging-ml-service
+      namespace: neurectomy-staging
+
+  # Dependency on infrastructure and successful dev deployment
+  dependsOn:
+    - name: neurectomy-infrastructure
+    - name: neurectomy-development
+
+  # Post-build variable substitution
+  postBuild:
+    substitute:
+      ENVIRONMENT: staging
+      DOMAIN: staging.neurectomy.io
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-config
+        optional: true
+      - kind: Secret
+        name: cluster-secrets
+        optional: true
+
+  # Suspend staging deployments by default until dev is validated
+  # Uncomment to enable manual promotion:
+  # suspend: true

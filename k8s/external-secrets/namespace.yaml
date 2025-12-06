@@ -1,0 +1,32 @@
+# ============================================================================
+# NEURECTOMY - External Secrets Operator Setup
+# Complete configuration for production-grade secret management
+# ============================================================================
+
+---
+# Namespace for External Secrets Operator
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: external-secrets
+  labels:
+    app.kubernetes.io/name: external-secrets
+    app.kubernetes.io/part-of: neurectomy-platform
+
+---
+# ServiceAccount for External Secrets (with IRSA annotations for AWS)
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: external-secrets-sa
+  namespace: external-secrets
+  labels:
+    app.kubernetes.io/name: external-secrets
+    app.kubernetes.io/component: operator
+  annotations:
+    # AWS EKS IRSA - uncomment and configure for your AWS account
+    # eks.amazonaws.com/role-arn: arn:aws:iam::<ACCOUNT_ID>:role/neurectomy-external-secrets-role
+    # Azure Workload Identity - uncomment for Azure
+    # azure.workload.identity/client-id: <CLIENT_ID>
+    # GCP Workload Identity - uncomment for GCP
+    # iam.gke.io/gcp-service-account: external-secrets@<PROJECT_ID>.iam.gserviceaccount.com

@@ -1,0 +1,51 @@
+# ============================================================================
+# NEURECTOMY - Flux GitToolkit Components
+# Core Flux CD controllers and CRDs
+# ============================================================================
+#
+# This file contains the Flux CD components. In production, this is generated
+# by `flux install --export > gotk-components.yaml` or during bootstrap.
+#
+# Components included:
+# - source-controller: Manages GitRepository, HelmRepository, Bucket sources
+# - kustomize-controller: Reconciles Kustomization resources
+# - helm-controller: Reconciles HelmRelease resources
+# - notification-controller: Handles alerts and notifications
+#
+# ============================================================================
+
+# For actual deployment, generate this file using:
+# flux install --export > k8s/flux-system/gotk-components.yaml
+#
+# Or download from:
+# https://github.com/fluxcd/flux2/releases/latest/download/install.yaml
+
+---
+# Placeholder - Replace with output from `flux install --export`
+# This comment is here to indicate where the actual Flux components should go.
+#
+# The actual gotk-components.yaml should contain:
+# 1. Custom Resource Definitions (CRDs):
+#    - GitRepository, Bucket, HelmRepository, HelmChart, OCIRepository (source.toolkit.fluxcd.io)
+#    - Kustomization (kustomize.toolkit.fluxcd.io)
+#    - HelmRelease (helm.toolkit.fluxcd.io)
+#    - Alert, Provider, Receiver (notification.toolkit.fluxcd.io)
+#    - ImagePolicy, ImageRepository, ImageUpdateAutomation (image.toolkit.fluxcd.io)
+#
+# 2. Service Accounts and RBAC
+#
+# 3. Deployments:
+#    - source-controller
+#    - kustomize-controller
+#    - helm-controller
+#    - notification-controller
+#
+# Generate with: flux install --export > gotk-components.yaml
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: flux-placeholder
+  namespace: flux-system
+  annotations:
+    note: "Replace this file with output from 'flux install --export'"

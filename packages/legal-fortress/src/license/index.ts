@@ -13,7 +13,6 @@ export {
   LICENSE_DATABASE,
   LicenseDetectionEngine,
   BatchLicenseDetector,
-  DEFAULT_DETECTION_OPTIONS,
 } from "./detection";
 
 export type {

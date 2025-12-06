@@ -1,0 +1,123 @@
+# ============================================================================
+# NEURECTOMY - Flux Image Policies
+# Define version constraints for automatic updates and rollback safety
+# ============================================================================
+
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: ml-service-policy
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: image-policy
+spec:
+  imageRepositoryRef:
+    name: ml-service
+
+  # Use semantic versioning - only update minor/patch, not major
+  policy:
+    semver:
+      range: ">=1.0.0 <2.0.0"
+
+  # Filter to only production-ready tags
+  filterTags:
+    pattern: '^v?(?P<version>\d+\.\d+\.\d+)$'
+    extract: "$version"
+---
+# ============================================================================
+# Staging Image Policy - Allow more flexible versions
+# ============================================================================
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: ml-service-staging-policy
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: image-policy
+    environment: staging
+spec:
+  imageRepositoryRef:
+    name: ml-service
+
+  # Allow pre-release versions in staging
+  policy:
+    semver:
+      range: ">=1.0.0-0"
+
+  filterTags:
+    pattern: '^v?(?P<version>\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?)$'
+    extract: "$version"
+---
+# ============================================================================
+# Development Image Policy - Use latest from develop branch
+# ============================================================================
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: ml-service-dev-policy
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: image-policy
+    environment: development
+spec:
+  imageRepositoryRef:
+    name: ml-service
+
+  # Use latest timestamp for dev builds
+  policy:
+    alphabetical:
+      order: desc
+
+  # Match development branch builds
+  filterTags:
+    pattern: '^develop-[a-f0-9]{7,40}-(?P<ts>\d{14})$'
+    extract: "$ts"
+---
+# ============================================================================
+# Rust Core Service Image Policy
+# ============================================================================
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: rust-core-policy
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: image-policy
+spec:
+  imageRepositoryRef:
+    name: rust-core
+
+  policy:
+    semver:
+      range: ">=1.0.0 <2.0.0"
+
+  filterTags:
+    pattern: '^v?(?P<version>\d+\.\d+\.\d+)$'
+    extract: "$version"
+---
+# ============================================================================
+# Spectrum Workspace Image Policy
+# ============================================================================
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: spectrum-workspace-policy
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: image-policy
+spec:
+  imageRepositoryRef:
+    name: spectrum-workspace
+
+  policy:
+    semver:
+      range: ">=1.0.0 <2.0.0"
+
+  filterTags:
+    pattern: '^v?(?P<version>\d+\.\d+\.\d+)$'
+    extract: "$version"

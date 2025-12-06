@@ -255,10 +255,12 @@ export class EmbeddingGenerator extends EventEmitter {
 
     // Token-based feature extraction
     for (let i = 0; i < tokens.length; i++) {
-      const tokenHash = this.hashToken(tokens[i]);
+      const token = tokens[i];
+      if (!token) continue;
+      const tokenHash = this.hashToken(token);
       for (let d = 0; d < this.config.dimensions; d++) {
         // Distribute token influence across dimensions
-        vector[d] += Math.sin(tokenHash * (d + 1)) / Math.sqrt(tokens.length);
+        vector[d]! += Math.sin(tokenHash * (d + 1)) / Math.sqrt(tokens.length);
       }
     }
 
@@ -882,9 +884,9 @@ export class SemanticComparator extends EventEmitter {
     let magB = 0;
 
     for (let i = 0; i < vecA.length; i++) {
-      dotProduct += vecA[i] * vecB[i];
-      magA += vecA[i] * vecA[i];
-      magB += vecB[i] * vecB[i];
+      dotProduct += vecA[i]! * vecB[i]!;
+      magA += vecA[i]! * vecA[i]!;
+      magB += vecB[i]! * vecB[i]!;
     }
 
     const cosineSimilarity =
@@ -893,14 +895,14 @@ export class SemanticComparator extends EventEmitter {
     // Euclidean distance
     let sumSquaredDiff = 0;
     for (let i = 0; i < vecA.length; i++) {
-      sumSquaredDiff += Math.pow(vecA[i] - vecB[i], 2);
+      sumSquaredDiff += Math.pow(vecA[i]! - vecB[i]!, 2);
     }
     const euclideanDistance = Math.sqrt(sumSquaredDiff);
 
     // Manhattan distance
     let sumAbsDiff = 0;
     for (let i = 0; i < vecA.length; i++) {
-      sumAbsDiff += Math.abs(vecA[i] - vecB[i]);
+      sumAbsDiff += Math.abs(vecA[i]! - vecB[i]!);
     }
     const manhattanDistance = sumAbsDiff;
 

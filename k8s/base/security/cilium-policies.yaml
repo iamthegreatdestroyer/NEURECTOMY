@@ -1,0 +1,222 @@
+# ============================================================================
+# NEURECTOMY - Cilium Network Policies
+# Advanced network security with Cilium CNI
+# ============================================================================
+
+# Cilium Cluster-Wide Network Policy - Default Deny
+---
+apiVersion: cilium.io/v2
+kind: CiliumClusterwideNetworkPolicy
+metadata:
+  name: default-deny-all
+spec:
+  description: "Default deny all traffic cluster-wide"
+  endpointSelector: {}
+  ingress:
+    - {}
+  egress:
+    - {}
+
+# Allow cluster DNS
+---
+apiVersion: cilium.io/v2
+kind: CiliumClusterwideNetworkPolicy
+metadata:
+  name: allow-cluster-dns
+spec:
+  description: "Allow DNS resolution to kube-dns"
+  endpointSelector: {}
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+          rules:
+            dns:
+              - matchPattern: "*"
+
+# ML Service - L7 HTTP Policy
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: ml-service-l7-policy
+  namespace: neurectomy
+spec:
+  description: "L7 HTTP policy for ML Service"
+  endpointSelector:
+    matchLabels:
+      app: ml-service
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: ingress-nginx
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP
+          rules:
+            http:
+              - method: "GET"
+                path: "/health"
+              - method: "GET"
+                path: "/metrics"
+              - method: "GET"
+                path: "/api/v1/.*"
+              - method: "POST"
+                path: "/api/v1/.*"
+              - method: "PUT"
+                path: "/api/v1/.*"
+              - method: "DELETE"
+                path: "/api/v1/.*"
+  egress:
+    # Allow PostgreSQL with L7 inspection
+    - toEndpoints:
+        - matchLabels:
+            app: postgres
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
+    # Allow Redis
+    - toEndpoints:
+        - matchLabels:
+            app: redis
+      toPorts:
+        - ports:
+            - port: "6379"
+              protocol: TCP
+    # Allow external HTTPS (for AI APIs)
+    - toFQDNs:
+        - matchName: "api.openai.com"
+        - matchName: "api.anthropic.com"
+        - matchName: "generativelanguage.googleapis.com"
+        - matchPattern: "*.amazonaws.com"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+
+# PostgreSQL - Database isolation
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: postgres-isolation
+  namespace: neurectomy
+spec:
+  description: "Strict database isolation for PostgreSQL"
+  endpointSelector:
+    matchLabels:
+      app: postgres
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app: ml-service
+        - matchLabels:
+            app: mlflow
+        - matchLabels:
+            app: grafana
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
+  egress:
+    # Postgres doesn't need egress (except DNS already allowed)
+    - toEndpoints:
+        - {}
+      toPorts: []
+
+# Monitoring namespace egress policy
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: prometheus-scraping
+  namespace: monitoring
+spec:
+  description: "Allow Prometheus to scrape all namespaces"
+  endpointSelector:
+    matchLabels:
+      app: prometheus
+  egress:
+    # Scrape all pods with specific ports
+    - toEndpoints:
+        - {}
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP
+            - port: "9090"
+              protocol: TCP
+            - port: "9100"
+              protocol: TCP
+            - port: "10250"
+              protocol: TCP
+
+# External traffic policy - AI API allowlist
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: external-ai-api-allowlist
+  namespace: neurectomy
+spec:
+  description: "Allow only specific external AI API endpoints"
+  endpointSelector:
+    matchLabels:
+      app: ml-service
+  egress:
+    - toFQDNs:
+        # OpenAI
+        - matchName: "api.openai.com"
+        - matchName: "files.openai.com"
+        # Anthropic
+        - matchName: "api.anthropic.com"
+        # Google AI
+        - matchName: "generativelanguage.googleapis.com"
+        - matchName: "aiplatform.googleapis.com"
+        # AWS Bedrock
+        - matchPattern: "bedrock*.amazonaws.com"
+        - matchPattern: "*.bedrock.*.amazonaws.com"
+        # HuggingFace
+        - matchName: "huggingface.co"
+        - matchName: "api-inference.huggingface.co"
+        # Replicate
+        - matchName: "api.replicate.com"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+          rules:
+            http:
+              - method: "POST"
+              - method: "GET"
+
+# Egress Gateway Policy (route external traffic through gateway)
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: egress-gateway-routing
+  namespace: neurectomy
+spec:
+  description: "Route external traffic through egress gateway"
+  endpointSelector:
+    matchLabels:
+      neurectomy.io/egress: "controlled"
+  egressDeny:
+    # Deny direct internet access
+    - toCIDR:
+        - "0.0.0.0/0"
+      exceptCIDRs:
+        # Allow cluster network
+        - "10.0.0.0/8"
+        - "172.16.0.0/12"
+        - "192.168.0.0/16"

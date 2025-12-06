@@ -1,0 +1,49 @@
+# ============================================================================
+# NEURECTOMY - Flux CD PodMonitor
+# Direct pod metrics collection as fallback
+# ============================================================================
+
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: flux-controllers
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: flux-monitoring
+    prometheus: neurectomy
+spec:
+  namespaceSelector:
+    matchNames:
+      - flux-system
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: flux
+  podMetricsEndpoints:
+    - port: http-prom
+      interval: 30s
+      scrapeTimeout: 10s
+      path: /metrics
+---
+# Flagger PodMonitor
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: flagger
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: flagger-monitoring
+    prometheus: neurectomy
+spec:
+  namespaceSelector:
+    matchNames:
+      - flagger-system
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: flagger
+  podMetricsEndpoints:
+    - port: http
+      interval: 30s
+      scrapeTimeout: 10s
+      path: /metrics

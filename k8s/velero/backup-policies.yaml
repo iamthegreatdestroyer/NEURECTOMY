@@ -1,0 +1,225 @@
+# ============================================================================
+# NEURECTOMY - Velero Backup Policies
+# DeleteBackupRequest, RestorePolicy, and backup governance
+# ============================================================================
+
+# Backup retention policy - auto-cleanup old backups
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: velero-backup-policies
+  namespace: velero
+  labels:
+    app.kubernetes.io/part-of: neurectomy
+data:
+  # Backup retention policies
+  retention-policy.yaml: |
+    policies:
+      - name: production-daily
+        retention:
+          daily: 7
+          weekly: 4
+          monthly: 3
+        storageLocation: aws-primary
+      
+      - name: production-hourly
+        retention:
+          hourly: 24
+          daily: 3
+        storageLocation: aws-primary
+      
+      - name: disaster-recovery
+        retention:
+          daily: 30
+          weekly: 12
+        storageLocation: aws-secondary
+      
+      - name: development
+        retention:
+          daily: 7
+        storageLocation: aws-primary
+
+  # Restore priorities
+  restore-priority.yaml: |
+    priorities:
+      - namespace: neurectomy
+        order:
+          - secrets
+          - configmaps
+          - persistentvolumeclaims
+          - deployments
+          - services
+          - ingresses
+      
+      - namespace: monitoring
+        order:
+          - secrets
+          - configmaps
+          - prometheus
+          - grafana
+
+---
+# Pod Disruption Budget for Velero
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: velero-pdb
+  namespace: velero
+  labels:
+    app.kubernetes.io/part-of: neurectomy
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: velero
+
+---
+# RBAC for backup operations
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: velero-backup-viewer
+  labels:
+    app.kubernetes.io/part-of: neurectomy
+rules:
+  - apiGroups: ["velero.io"]
+    resources:
+      - backups
+      - schedules
+      - restores
+      - backupstoragelocations
+      - volumesnapshotlocations
+    verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: velero-backup-admin
+  labels:
+    app.kubernetes.io/part-of: neurectomy
+rules:
+  - apiGroups: ["velero.io"]
+    resources:
+      - backups
+      - schedules
+      - restores
+      - downloadrequests
+      - deletebackuprequests
+      - podvolumebackups
+      - podvolumerestores
+      - resticrepositories
+      - serverstatusrequests
+    verbs: ["*"]
+  - apiGroups: ["velero.io"]
+    resources:
+      - backupstoragelocations
+      - volumesnapshotlocations
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: velero-backup-viewer-binding
+  labels:
+    app.kubernetes.io/part-of: neurectomy
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: velero-backup-viewer
+subjects:
+  - kind: Group
+    name: developers
+    apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: velero-backup-admin-binding
+  labels:
+    app.kubernetes.io/part-of: neurectomy
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: velero-backup-admin
+subjects:
+  - kind: Group
+    name: platform-admins
+    apiGroup: rbac.authorization.k8s.io
+
+---
+# ServiceMonitor for Prometheus
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: velero
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/part-of: neurectomy
+spec:
+  namespaceSelector:
+    matchNames:
+      - velero
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: velero
+  endpoints:
+    - port: http-monitoring
+      interval: 30s
+      path: /metrics
+
+---
+# PrometheusRule for backup alerts
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: velero-alerts
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/part-of: neurectomy
+spec:
+  groups:
+    - name: velero
+      rules:
+        - alert: VeleroBackupFailed
+          expr: |
+            increase(velero_backup_failure_total[24h]) > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Velero backup failed"
+            description: "Velero backup {{ $labels.schedule }} has failed in the last 24 hours"
+
+        - alert: VeleroBackupMissing
+          expr: |
+            time() - velero_backup_last_successful_timestamp > 86400
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "Velero backup missing"
+            description: "No successful backup for {{ $labels.schedule }} in the last 24 hours"
+
+        - alert: VeleroBackupPartiallyFailed
+          expr: |
+            increase(velero_backup_partial_failure_total[24h]) > 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Velero backup partially failed"
+            description: "Velero backup {{ $labels.schedule }} completed with partial failures"
+
+        - alert: VeleroBackupStorageLocationUnavailable
+          expr: |
+            velero_backup_storage_location_available == 0
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Backup storage location unavailable"
+            description: "Backup storage location {{ $labels.location }} is unavailable"

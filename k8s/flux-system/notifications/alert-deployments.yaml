@@ -1,0 +1,106 @@
+# ============================================================================
+# NEURECTOMY - Flux Alert: Deployment Notifications
+# Sends alerts for Kustomization and GitRepository events
+# ============================================================================
+
+apiVersion: notification.toolkit.fluxcd.io/v1beta3
+kind: Alert
+metadata:
+  name: deployment-alerts
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: notifications
+spec:
+  # Summary for the alert
+  summary: "NEURECTOMY GitOps Deployment Alert"
+
+  # Provider to send alerts to
+  providerRef:
+    name: slack-notifications
+
+  # Event severity filter
+  eventSeverity: info
+
+  # Event sources to monitor
+  eventSources:
+    # Monitor all Kustomizations
+    - kind: Kustomization
+      name: "*"
+      namespace: flux-system
+
+    # Monitor GitRepositories
+    - kind: GitRepository
+      name: "*"
+      namespace: flux-system
+
+  # Include metadata
+  eventMetadata:
+    cluster: neurectomy-cluster
+    environment: all
+---
+# ============================================================================
+# NEURECTOMY - Flux Alert: GitHub Status Updates
+# Posts commit status to GitHub on deployment events
+# ============================================================================
+
+apiVersion: notification.toolkit.fluxcd.io/v1beta3
+kind: Alert
+metadata:
+  name: github-status-alerts
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: notifications
+spec:
+  summary: "NEURECTOMY Deployment Status"
+
+  providerRef:
+    name: github-status
+
+  # Only alert on errors and successful reconciliations
+  eventSeverity: info
+
+  eventSources:
+    - kind: Kustomization
+      name: neurectomy-development
+      namespace: flux-system
+    - kind: Kustomization
+      name: neurectomy-staging
+      namespace: flux-system
+    - kind: Kustomization
+      name: neurectomy-production
+      namespace: flux-system
+---
+# ============================================================================
+# NEURECTOMY - Flux Alert: Production Critical
+# High-priority alerts for production deployments only
+# ============================================================================
+
+apiVersion: notification.toolkit.fluxcd.io/v1beta3
+kind: Alert
+metadata:
+  name: production-critical-alerts
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: notifications
+    environment: production
+spec:
+  summary: "🚨 NEURECTOMY Production Alert"
+
+  providerRef:
+    name: slack-notifications
+
+  # Only error events for production
+  eventSeverity: error
+
+  eventSources:
+    - kind: Kustomization
+      name: neurectomy-production
+      namespace: flux-system
+
+  eventMetadata:
+    cluster: neurectomy-cluster
+    environment: production
+    priority: critical

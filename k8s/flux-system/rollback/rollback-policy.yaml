@@ -1,0 +1,93 @@
+# ============================================================================
+# NEURECTOMY - Flux Rollback Policy Configuration
+# Automatic rollback on deployment failures
+# ============================================================================
+
+# Note: Flux doesn't have a native "rollback policy" CRD, but rollback is handled
+# through Git revert operations and health check failures. This file configures
+# the supporting mechanisms for automated rollback.
+
+# The key mechanisms for rollback in Flux:
+# 1. Health checks in Kustomizations trigger suspend on failure
+# 2. Notifications alert teams to failures
+# 3. Git revert (manual or automated via CI) restores previous state
+# 4. Flux reconciles the reverted state automatically
+
+# Below we configure supporting resources for rollback workflows
+
+---
+# ============================================================================
+# ImageUpdateAutomation for automatic version rollback support
+# ============================================================================
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageUpdateAutomation
+metadata:
+  name: neurectomy-image-update
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: rollback
+spec:
+  interval: 10m
+
+  # Source to update
+  sourceRef:
+    kind: GitRepository
+    name: neurectomy
+
+  # Git configuration for commits
+  git:
+    checkout:
+      ref:
+        branch: main
+    commit:
+      author:
+        name: flux-image-automation
+        email: flux@neurectomy.io
+      messageTemplate: |
+        chore(release): update images
+
+        Automated image update:
+        {{range .Changed.Changes}}
+        - {{.OldValue}} -> {{.NewValue}}
+        {{end}}
+    push:
+      branch: main
+
+  # Update strategy
+  update:
+    path: ./k8s
+    strategy: Setters
+---
+# ============================================================================
+# Rollback Alert - Triggers when rollback is needed
+# ============================================================================
+apiVersion: notification.toolkit.fluxcd.io/v1beta3
+kind: Alert
+metadata:
+  name: rollback-trigger-alert
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: rollback
+spec:
+  summary: "🔄 NEURECTOMY Rollback Required"
+
+  providerRef:
+    name: slack-notifications
+
+  # Alert on health check failures (triggers rollback consideration)
+  eventSeverity: error
+
+  eventSources:
+    - kind: Kustomization
+      name: neurectomy-production
+      namespace: flux-system
+    - kind: Kustomization
+      name: neurectomy-staging
+      namespace: flux-system
+
+  # Include rollback instructions in metadata
+  eventMetadata:
+    action: rollback-required
+    runbook: "https://docs.neurectomy.io/runbooks/deployment-rollback"

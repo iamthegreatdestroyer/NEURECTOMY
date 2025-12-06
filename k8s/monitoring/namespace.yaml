@@ -1,0 +1,11 @@
+# ============================================================================
+# NEURECTOMY - Monitoring Namespace
+# ============================================================================
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: monitoring

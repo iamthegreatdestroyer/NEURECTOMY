@@ -1,0 +1,249 @@
+# ============================================================================
+# NEURECTOMY - Istio Virtual Services
+# Traffic routing, load balancing, and traffic management
+# ============================================================================
+
+# ML Service virtual service
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: ml-service
+  namespace: neurectomy
+spec:
+  hosts:
+    - "api.neurectomy.io"
+    - ml-service
+    - ml-service.neurectomy.svc.cluster.local
+  gateways:
+    - neurectomy-gateway
+    - mesh
+  http:
+    # API versioning routes
+    - name: "api-v2-canary"
+      match:
+        - uri:
+            prefix: "/api/v2/"
+          headers:
+            x-canary:
+              exact: "true"
+      route:
+        - destination:
+            host: ml-service
+            subset: canary
+            port:
+              number: 8000
+          weight: 100
+      retries:
+        attempts: 3
+        perTryTimeout: 5s
+        retryOn: "5xx,reset,connect-failure"
+
+    # API v2 stable
+    - name: "api-v2"
+      match:
+        - uri:
+            prefix: "/api/v2/"
+      route:
+        - destination:
+            host: ml-service
+            subset: stable
+            port:
+              number: 8000
+          weight: 95
+        - destination:
+            host: ml-service
+            subset: canary
+            port:
+              number: 8000
+          weight: 5
+      timeout: 30s
+      retries:
+        attempts: 3
+        perTryTimeout: 10s
+        retryOn: "5xx,reset,connect-failure"
+
+    # API v1 (legacy)
+    - name: "api-v1"
+      match:
+        - uri:
+            prefix: "/api/v1/"
+      route:
+        - destination:
+            host: ml-service
+            subset: stable
+            port:
+              number: 8000
+      timeout: 30s
+
+    # Health endpoints - no retries needed
+    - name: "health"
+      match:
+        - uri:
+            exact: "/health"
+        - uri:
+            prefix: "/health/"
+      route:
+        - destination:
+            host: ml-service
+            subset: stable
+            port:
+              number: 8000
+      timeout: 5s
+
+    # Metrics endpoint
+    - name: "metrics"
+      match:
+        - uri:
+            exact: "/metrics"
+      route:
+        - destination:
+            host: ml-service
+            subset: stable
+            port:
+              number: 8000
+      timeout: 10s
+
+    # Default route
+    - name: "default"
+      route:
+        - destination:
+            host: ml-service
+            subset: stable
+            port:
+              number: 8000
+      timeout: 30s
+      retries:
+        attempts: 3
+        perTryTimeout: 10s
+
+# MLflow virtual service
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: mlflow
+  namespace: neurectomy
+spec:
+  hosts:
+    - "mlflow.neurectomy.io"
+    - mlflow
+  gateways:
+    - neurectomy-gateway
+    - mesh
+  http:
+    # API endpoints
+    - name: "api"
+      match:
+        - uri:
+            prefix: "/api/"
+      route:
+        - destination:
+            host: mlflow
+            port:
+              number: 5000
+      timeout: 60s
+      retries:
+        attempts: 2
+        perTryTimeout: 30s
+
+    # UI and static assets
+    - name: "ui"
+      route:
+        - destination:
+            host: mlflow
+            port:
+              number: 5000
+      timeout: 30s
+
+# Grafana virtual service
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: grafana
+  namespace: monitoring
+spec:
+  hosts:
+    - "grafana.neurectomy.io"
+    - grafana
+  gateways:
+    - monitoring-gateway
+    - mesh
+  http:
+    # API endpoints for dashboards
+    - name: "api"
+      match:
+        - uri:
+            prefix: "/api/"
+      route:
+        - destination:
+            host: grafana
+            port:
+              number: 3000
+      timeout: 30s
+
+    # Render endpoint for alerts
+    - name: "render"
+      match:
+        - uri:
+            prefix: "/render/"
+      route:
+        - destination:
+            host: grafana
+            port:
+              number: 3000
+      timeout: 60s
+
+    # Default - UI
+    - name: "ui"
+      route:
+        - destination:
+            host: grafana
+            port:
+              number: 3000
+      timeout: 30s
+
+# PostgreSQL virtual service (internal only)
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: postgres
+  namespace: neurectomy
+spec:
+  hosts:
+    - postgres
+    - postgres.neurectomy.svc.cluster.local
+  gateways:
+    - mesh
+  tcp:
+    - match:
+        - port: 5432
+      route:
+        - destination:
+            host: postgres
+            port:
+              number: 5432
+
+# Redis virtual service (internal only)
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: redis
+  namespace: neurectomy
+spec:
+  hosts:
+    - redis
+    - redis.neurectomy.svc.cluster.local
+  gateways:
+    - mesh
+  tcp:
+    - match:
+        - port: 6379
+      route:
+        - destination:
+            host: redis
+            port:
+              number: 6379

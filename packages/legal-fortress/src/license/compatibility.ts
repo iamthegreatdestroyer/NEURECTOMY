@@ -761,21 +761,4 @@ export class LicenseCompatibilityChecker {
   }
 }
 
-// ============================================================================
-// EXPORTS
-// ============================================================================
-
-export {
-  COMPATIBILITY_MATRIX,
-  parseSPDXExpression,
-  evaluateSPDXExpression,
-  LicenseCompatibilityChecker,
-};
-
-export type {
-  CompatibilityLevel,
-  CompatibilityResult,
-  ProjectLicenseAnalysis,
-  LicenseIssue,
-  SPDXExpressionNode,
-};
+// Types and functions are already exported inline above

@@ -587,15 +587,4 @@ export class ProvenanceStreamProcessor extends EventEmitter {
   }
 }
 
-// ============================================================================
-// EXPORTS
-// ============================================================================
-
-export {
-  createProvenanceEvent,
-  computeEventHash,
-  ProvenanceChainManager,
-  ProvenanceStreamProcessor,
-};
-
-export type { ProvenanceActor, ProvenanceConfig, ProvenanceEvents };
+// Types and functions are already exported inline above

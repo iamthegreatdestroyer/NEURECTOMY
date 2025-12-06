@@ -1,0 +1,13 @@
+# ============================================================================
+# NEURECTOMY - Flux Notifications Kustomization
+# Organizes all notification providers and alerts
+# ============================================================================
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - provider-github.yaml
+  - provider-slack.yaml
+  - receiver-github.yaml
+  - alert-deployments.yaml

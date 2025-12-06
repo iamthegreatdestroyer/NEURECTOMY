@@ -25,20 +25,20 @@
   "dependencies": {
     "@neurectomy/types": "workspace:*",
     "eventemitter3": "^5.0.1",
-    "pino": "^9.0.0",
-    "zod": "^3.23.8",
-    "simple-statistics": "^7.8.3",
     "jstat": "^1.9.6",
     "ml-matrix": "^6.11.0",
+    "pino": "^9.0.0",
     "seedrandom": "^3.0.5",
-    "uuid": "^9.0.1"
+    "simple-statistics": "^7.8.3",
+    "uuid": "^9.0.1",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
     "@types/seedrandom": "^3.0.8",
     "@types/uuid": "^9.0.8",
     "tsup": "^8.0.1",
-    "typescript": "^5.3.3",
+    "typescript": "^5.5.0",
     "vitest": "^1.2.0"
   },
   "keywords": [

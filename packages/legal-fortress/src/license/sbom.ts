@@ -677,7 +677,9 @@ export class SBOMValidator {
 // EXPORTS
 // ============================================================================
 
-export { SBOMGenerator, SBOMValidator, DEFAULT_SBOM_OPTIONS };
+// Classes and interfaces are already exported inline above
+// Only export the default constant that wasn't exported inline
+export { DEFAULT_SBOM_OPTIONS };
 
 export type {
   PackageInfo,

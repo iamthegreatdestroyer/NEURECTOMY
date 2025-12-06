@@ -877,24 +877,4 @@ export class SimilarityAnalyzer {
   }
 }
 
-// ============================================================================
-// EXPORTS
-// ============================================================================
-
-export {
-  tokenize,
-  generateNgrams,
-  hashNgrams,
-  winnow,
-  MinHashGenerator,
-  SimilarityAnalyzer,
-  DEFAULT_SIMILARITY_OPTIONS,
-};
-
-export type {
-  SimilarityOptions,
-  Token,
-  CodeFingerprint,
-  SimilarityResult,
-  MatchedRegion,
-};
+// Types and functions are already exported inline above

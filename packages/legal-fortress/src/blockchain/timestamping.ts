@@ -713,16 +713,4 @@ export class TimestampingService extends EventEmitter<TimestampingEvents> {
   }
 }
 
-// ============================================================================
-// EXPORTS
-// ============================================================================
-
-export {
-  computeHash,
-  createFingerprint,
-  MerkleTreeBuilder,
-  BlockchainAnchorService,
-  TimestampingService,
-};
-
-export type { NetworkConfig, TimestampingConfig, TimestampingEvents };
+// Types and functions are already exported inline above

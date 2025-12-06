@@ -1,0 +1,11 @@
+# ============================================================================
+# NEURECTOMY - Flux System Namespace
+# ============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: flux-system
+  labels:
+    app.kubernetes.io/name: flux-system
+    app.kubernetes.io/part-of: neurectomy-platform
+    app.kubernetes.io/component: gitops

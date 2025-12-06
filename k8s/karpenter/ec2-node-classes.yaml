@@ -1,0 +1,266 @@
+# ============================================================================
+# NEURECTOMY - Karpenter EC2NodeClasses
+# Define EC2 instance configurations for different workload types
+# ============================================================================
+
+# Default EC2NodeClass - General purpose nodes
+---
+apiVersion: karpenter.k8s.aws/v1beta1
+kind: EC2NodeClass
+metadata:
+  name: default
+  labels:
+    app.kubernetes.io/part-of: neurectomy
+spec:
+  # AMI configuration
+  amiFamily: AL2
+  amiSelectorTerms:
+    - id: "${DEFAULT_AMI_ID}" # Specify exact AMI for consistency
+    # Or use automatic selection:
+    # - name: "amazon-eks-node-1.29-*"
+    #   owner: amazon
+
+  # Instance profile
+  instanceProfile: "${KARPENTER_INSTANCE_PROFILE}"
+
+  # Subnet selector
+  subnetSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: "${CLUSTER_NAME}"
+        kubernetes.io/role/internal-elb: "1"
+
+  # Security group selector
+  securityGroupSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: "${CLUSTER_NAME}"
+
+  # Block device mapping
+  blockDeviceMappings:
+    - deviceName: /dev/xvda
+      ebs:
+        volumeSize: 100Gi
+        volumeType: gp3
+        iops: 3000
+        throughput: 125
+        encrypted: true
+        kmsKeyId: "${EBS_KMS_KEY_ID}"
+        deleteOnTermination: true
+
+  # Detailed monitoring
+  detailedMonitoring: true
+
+  # Metadata options (IMDSv2)
+  metadataOptions:
+    httpEndpoint: enabled
+    httpProtocolIPv6: disabled
+    httpPutResponseHopLimit: 2
+    httpTokens: required # Enforce IMDSv2
+
+  # Tags for cost allocation
+  tags:
+    Name: "${CLUSTER_NAME}-karpenter-node"
+    Environment: "${ENVIRONMENT}"
+    ManagedBy: karpenter
+    Project: neurectomy
+    CostCenter: ml-platform
+
+  # User data (cloud-init)
+  userData: |
+    #!/bin/bash
+    set -ex
+
+    # Configure containerd for better performance
+    cat <<EOF > /etc/containerd/config.toml
+    version = 2
+    [plugins."io.containerd.grpc.v1.cri"]
+      sandbox_image = "602401143452.dkr.ecr.us-west-2.amazonaws.com/eks/pause:3.5"
+    [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+      SystemdCgroup = true
+    EOF
+
+    systemctl restart containerd
+
+    # Optimize network settings
+    cat <<EOF >> /etc/sysctl.d/99-kubernetes.conf
+    net.core.somaxconn = 32768
+    net.ipv4.tcp_max_syn_backlog = 32768
+    net.core.netdev_max_backlog = 32768
+    net.ipv4.neigh.default.gc_thresh1 = 8192
+    net.ipv4.neigh.default.gc_thresh2 = 32768
+    net.ipv4.neigh.default.gc_thresh3 = 65536
+    EOF
+
+    sysctl --system
+
+
+# GPU EC2NodeClass - For ML workloads
+---
+apiVersion: karpenter.k8s.aws/v1beta1
+kind: EC2NodeClass
+metadata:
+  name: gpu
+  labels:
+    app.kubernetes.io/part-of: neurectomy
+    workload-type: gpu
+spec:
+  # GPU-optimized AMI
+  amiFamily: AL2
+  amiSelectorTerms:
+    - name: "amazon-eks-gpu-node-1.29-*"
+      owner: amazon
+
+  instanceProfile: "${KARPENTER_INSTANCE_PROFILE}"
+
+  subnetSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: "${CLUSTER_NAME}"
+        kubernetes.io/role/internal-elb: "1"
+
+  securityGroupSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: "${CLUSTER_NAME}"
+
+  # Larger root volume for GPU images
+  blockDeviceMappings:
+    - deviceName: /dev/xvda
+      ebs:
+        volumeSize: 200Gi
+        volumeType: gp3
+        iops: 6000
+        throughput: 250
+        encrypted: true
+        kmsKeyId: "${EBS_KMS_KEY_ID}"
+        deleteOnTermination: true
+    # Instance store for scratch space (if available)
+    - deviceName: /dev/xvdb
+      ebs:
+        volumeSize: 500Gi
+        volumeType: gp3
+        iops: 10000
+        throughput: 500
+        encrypted: true
+        kmsKeyId: "${EBS_KMS_KEY_ID}"
+        deleteOnTermination: true
+
+  detailedMonitoring: true
+
+  metadataOptions:
+    httpEndpoint: enabled
+    httpProtocolIPv6: disabled
+    httpPutResponseHopLimit: 2
+    httpTokens: required
+
+  tags:
+    Name: "${CLUSTER_NAME}-karpenter-gpu-node"
+    Environment: "${ENVIRONMENT}"
+    ManagedBy: karpenter
+    Project: neurectomy
+    WorkloadType: gpu-ml
+    CostCenter: ml-platform
+
+  userData: |
+    #!/bin/bash
+    set -ex
+
+    # Install NVIDIA Container Toolkit if not present
+    if ! command -v nvidia-container-toolkit &> /dev/null; then
+      distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+      curl -s -L https://nvidia.github.io/libnvidia-container/gpgkey | sudo apt-key add -
+      curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list | sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+      yum install -y nvidia-container-toolkit
+      nvidia-ctk runtime configure --runtime=containerd
+    fi
+
+    # Configure containerd for GPU
+    cat <<EOF > /etc/containerd/config.toml
+    version = 2
+    [plugins."io.containerd.grpc.v1.cri"]
+      sandbox_image = "602401143452.dkr.ecr.us-west-2.amazonaws.com/eks/pause:3.5"
+    [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+      SystemdCgroup = true
+    [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia]
+      runtime_type = "io.containerd.runc.v2"
+    [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia.options]
+      BinaryName = "/usr/bin/nvidia-container-runtime"
+      SystemdCgroup = true
+    EOF
+
+    systemctl restart containerd
+
+    # Mount instance store if available
+    if [ -b /dev/nvme1n1 ]; then
+      mkfs.xfs /dev/nvme1n1
+      mkdir -p /mnt/scratch
+      mount /dev/nvme1n1 /mnt/scratch
+      chmod 777 /mnt/scratch
+    fi
+
+    # Optimize network settings
+    cat <<EOF >> /etc/sysctl.d/99-kubernetes.conf
+    net.core.somaxconn = 32768
+    net.ipv4.tcp_max_syn_backlog = 32768
+    net.core.netdev_max_backlog = 32768
+    net.core.rmem_max = 16777216
+    net.core.wmem_max = 16777216
+    EOF
+
+    sysctl --system
+
+
+# Bottlerocket EC2NodeClass - For enhanced security
+---
+apiVersion: karpenter.k8s.aws/v1beta1
+kind: EC2NodeClass
+metadata:
+  name: bottlerocket
+  labels:
+    app.kubernetes.io/part-of: neurectomy
+    security: hardened
+spec:
+  amiFamily: Bottlerocket
+  amiSelectorTerms:
+    - name: "bottlerocket-aws-k8s-1.29-*"
+      owner: amazon
+
+  instanceProfile: "${KARPENTER_INSTANCE_PROFILE}"
+
+  subnetSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: "${CLUSTER_NAME}"
+        kubernetes.io/role/internal-elb: "1"
+
+  securityGroupSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: "${CLUSTER_NAME}"
+
+  blockDeviceMappings:
+    - deviceName: /dev/xvda
+      ebs:
+        volumeSize: 50Gi
+        volumeType: gp3
+        encrypted: true
+        kmsKeyId: "${EBS_KMS_KEY_ID}"
+        deleteOnTermination: true
+    - deviceName: /dev/xvdb
+      ebs:
+        volumeSize: 100Gi
+        volumeType: gp3
+        encrypted: true
+        kmsKeyId: "${EBS_KMS_KEY_ID}"
+        deleteOnTermination: true
+
+  detailedMonitoring: true
+
+  metadataOptions:
+    httpEndpoint: enabled
+    httpProtocolIPv6: disabled
+    httpPutResponseHopLimit: 1 # More restrictive
+    httpTokens: required
+
+  tags:
+    Name: "${CLUSTER_NAME}-karpenter-bottlerocket-node"
+    Environment: "${ENVIRONMENT}"
+    ManagedBy: karpenter
+    Project: neurectomy
+    OSFamily: bottlerocket
+    Security: hardened

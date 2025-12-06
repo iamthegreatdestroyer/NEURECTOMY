@@ -1,0 +1,145 @@
+# ============================================================================
+# NEURECTOMY - Azure Storage Classes
+# Optimized for Azure AKS with Azure Disk and Azure Files CSI drivers
+# ============================================================================
+
+# Premium SSD v2 - General Purpose (Default)
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: neurectomy-standard
+  labels:
+    app.kubernetes.io/part-of: neurectomy-platform
+    storage.neurectomy.io/tier: standard
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: disk.csi.azure.com
+parameters:
+  skuName: Premium_LRS
+  cachingMode: ReadOnly
+  diskEncryptionType: EncryptionAtRestWithPlatformKey
+reclaimPolicy: Delete
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+
+# Premium SSD v2 - Fast Storage
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: neurectomy-fast
+  labels:
+    app.kubernetes.io/part-of: neurectomy-platform
+    storage.neurectomy.io/tier: fast
+provisioner: disk.csi.azure.com
+parameters:
+  skuName: PremiumV2_LRS
+  cachingMode: None
+  diskEncryptionType: EncryptionAtRestWithPlatformKey
+  DiskIOPSReadWrite: "8000"
+  DiskMBpsReadWrite: "500"
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+
+# Premium SSD v2 - ML Models Storage
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: neurectomy-ml-storage
+  labels:
+    app.kubernetes.io/part-of: neurectomy-platform
+    storage.neurectomy.io/tier: ml
+provisioner: disk.csi.azure.com
+parameters:
+  skuName: PremiumV2_LRS
+  cachingMode: None
+  diskEncryptionType: EncryptionAtRestWithPlatformKey
+  DiskIOPSReadWrite: "16000"
+  DiskMBpsReadWrite: "1000"
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+
+# Ultra Disk - Database Storage (Highest Performance)
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: neurectomy-database
+  labels:
+    app.kubernetes.io/part-of: neurectomy-platform
+    storage.neurectomy.io/tier: database
+provisioner: disk.csi.azure.com
+parameters:
+  skuName: UltraSSD_LRS
+  cachingMode: None
+  diskEncryptionType: EncryptionAtRestWithPlatformKey
+  DiskIOPSReadWrite: "32000"
+  DiskMBpsReadWrite: "2000"
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+
+# Standard HDD - Archive Storage
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: neurectomy-archive
+  labels:
+    app.kubernetes.io/part-of: neurectomy-platform
+    storage.neurectomy.io/tier: archive
+provisioner: disk.csi.azure.com
+parameters:
+  skuName: Standard_LRS
+  cachingMode: None
+  diskEncryptionType: EncryptionAtRestWithPlatformKey
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+
+# Azure Files Premium - Shared Storage (ReadWriteMany)
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: neurectomy-shared
+  labels:
+    app.kubernetes.io/part-of: neurectomy-platform
+    storage.neurectomy.io/tier: shared
+provisioner: file.csi.azure.com
+parameters:
+  skuName: Premium_LRS
+  protocol: nfs
+  shareAccessTier: Premium
+  # Storage account will be created automatically or patched
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: Immediate
+mountOptions:
+  - noresvport
+  - actimeo=30
+
+# Azure Files - ML Models Shared Storage
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: neurectomy-ml-shared
+  labels:
+    app.kubernetes.io/part-of: neurectomy-platform
+    storage.neurectomy.io/tier: ml-shared
+provisioner: file.csi.azure.com
+parameters:
+  skuName: Premium_LRS
+  protocol: nfs
+  shareAccessTier: Premium
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: Immediate
+mountOptions:
+  - noresvport
+  - actimeo=30

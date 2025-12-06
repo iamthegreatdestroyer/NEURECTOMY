@@ -1,0 +1,16 @@
+# ============================================================================
+# NEURECTOMY - Production PodDisruptionBudget Patch
+# Higher availability requirements for production
+# ============================================================================
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: ml-service
+  namespace: neurectomy-prod
+spec:
+  # Production: maintain at least 2 replicas available at all times
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ml-service
+      environment: production

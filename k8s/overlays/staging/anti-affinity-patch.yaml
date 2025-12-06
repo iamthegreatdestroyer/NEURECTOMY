@@ -1,0 +1,41 @@
+# ============================================================================
+# NEURECTOMY - Staging Anti-Affinity Rules
+# Moderate distribution for staging environment
+# ============================================================================
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-service
+spec:
+  template:
+    spec:
+      affinity:
+        podAntiAffinity:
+          # Required: don't schedule on same node
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: ml-service
+                  environment: staging
+              topologyKey: kubernetes.io/hostname
+
+          # Preferred: spread across zones
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 75
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: ml-service
+                    environment: staging
+                topologyKey: topology.kubernetes.io/zone
+
+      # Topology spread constraints
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: ml-service
+              environment: staging

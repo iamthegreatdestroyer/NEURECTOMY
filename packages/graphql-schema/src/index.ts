@@ -5,8 +5,9 @@
  * Contains schema definitions, generated types, and utilities.
  */
 
-// Re-export generated types when available
-export * from "../generated/typescript";
+// NOTE: Generated types will be available after running `pnpm codegen`
+// Re-export generated types when available - uncomment after codegen runs
+// export * from "../generated/typescript";
 
 // Schema utilities
 export { gql } from "graphql-tag";

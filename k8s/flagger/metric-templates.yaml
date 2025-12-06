@@ -1,0 +1,161 @@
+# ============================================================================
+# NEURECTOMY - Flagger Metric Templates
+# Custom metrics for canary analysis
+# ============================================================================
+
+# Request Success Rate Template
+apiVersion: flagger.app/v1beta1
+kind: MetricTemplate
+metadata:
+  name: request-success-rate
+  namespace: neurectomy-prod
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: metrics
+spec:
+  provider:
+    type: prometheus
+    address: http://prometheus-operated.monitoring:9090
+  query: |
+    100 - (
+      sum(
+        rate(
+          http_requests_total{
+            namespace="{{ namespace }}",
+            deployment=~"{{ target }}-canary",
+            status=~"5.*"
+          }[{{ interval }}]
+        )
+      )
+      /
+      sum(
+        rate(
+          http_requests_total{
+            namespace="{{ namespace }}",
+            deployment=~"{{ target }}-canary"
+          }[{{ interval }}]
+        )
+      )
+      * 100
+    )
+---
+# Request Duration (P99) Template
+apiVersion: flagger.app/v1beta1
+kind: MetricTemplate
+metadata:
+  name: request-duration
+  namespace: neurectomy-prod
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: metrics
+spec:
+  provider:
+    type: prometheus
+    address: http://prometheus-operated.monitoring:9090
+  query: |
+    histogram_quantile(0.99,
+      sum(
+        rate(
+          http_request_duration_seconds_bucket{
+            namespace="{{ namespace }}",
+            deployment=~"{{ target }}-canary"
+          }[{{ interval }}]
+        )
+      ) by (le)
+    ) * 1000
+---
+# Error Rate Template
+apiVersion: flagger.app/v1beta1
+kind: MetricTemplate
+metadata:
+  name: error-rate
+  namespace: neurectomy-prod
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: metrics
+spec:
+  provider:
+    type: prometheus
+    address: http://prometheus-operated.monitoring:9090
+  query: |
+    sum(
+      rate(
+        http_requests_total{
+          namespace="{{ namespace }}",
+          deployment=~"{{ target }}-canary",
+          status=~"5.*"
+        }[{{ interval }}]
+      )
+    )
+    /
+    sum(
+      rate(
+        http_requests_total{
+          namespace="{{ namespace }}",
+          deployment=~"{{ target }}-canary"
+        }[{{ interval }}]
+      )
+    )
+    * 100
+---
+# Staging Metrics (duplicated for staging namespace)
+apiVersion: flagger.app/v1beta1
+kind: MetricTemplate
+metadata:
+  name: request-success-rate
+  namespace: neurectomy-staging
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: metrics
+    environment: staging
+spec:
+  provider:
+    type: prometheus
+    address: http://prometheus-operated.monitoring:9090
+  query: |
+    100 - (
+      sum(
+        rate(
+          http_requests_total{
+            namespace="{{ namespace }}",
+            deployment=~"{{ target }}-canary",
+            status=~"5.*"
+          }[{{ interval }}]
+        )
+      )
+      /
+      sum(
+        rate(
+          http_requests_total{
+            namespace="{{ namespace }}",
+            deployment=~"{{ target }}-canary"
+          }[{{ interval }}]
+        )
+      )
+      * 100
+    )
+---
+apiVersion: flagger.app/v1beta1
+kind: MetricTemplate
+metadata:
+  name: request-duration
+  namespace: neurectomy-staging
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: metrics
+    environment: staging
+spec:
+  provider:
+    type: prometheus
+    address: http://prometheus-operated.monitoring:9090
+  query: |
+    histogram_quantile(0.99,
+      sum(
+        rate(
+          http_request_duration_seconds_bucket{
+            namespace="{{ namespace }}",
+            deployment=~"{{ target }}-canary"
+          }[{{ interval }}]
+        )
+      ) by (le)
+    ) * 1000

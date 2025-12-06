@@ -1,0 +1,15 @@
+# ============================================================================
+# NEURECTOMY - Flagger Canary Deployment Configuration
+# Progressive delivery with automated analysis and rollback
+# ============================================================================
+
+# Flagger Installation Kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - namespace.yaml
+  - flagger-deployment.yaml
+  - canary-ml-service.yaml
+  - metric-templates.yaml
+  - alert-provider.yaml

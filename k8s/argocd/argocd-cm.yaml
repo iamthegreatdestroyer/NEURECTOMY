@@ -1,0 +1,104 @@
+# ============================================================================
+# NEURECTOMY - ArgoCD ConfigMap
+# Core configuration for ArgoCD server
+# ============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-cm
+    app.kubernetes.io/part-of: argocd
+data:
+  # Repository configuration
+  repositories: |
+    - url: https://github.com/iamthegreatdestroyer/NEURECTOMY
+      type: git
+      name: neurectomy
+
+  # Enable status badge
+  statusbadge.enabled: "true"
+
+  # Application health checks
+  resource.customizations.health.argoproj.io_Application: |
+    hs = {}
+    hs.status = "Progressing"
+    hs.message = ""
+    if obj.status ~= nil then
+      if obj.status.health ~= nil then
+        hs.status = obj.status.health.status
+        if obj.status.health.message ~= nil then
+          hs.message = obj.status.health.message
+        end
+      end
+    end
+    return hs
+
+  # Custom health checks for NEURECTOMY resources
+  resource.customizations.health.apps_Deployment: |
+    hs = {}
+    hs.status = "Progressing"
+    hs.message = ""
+    if obj.status ~= nil then
+      if obj.status.conditions ~= nil then
+        for i, condition in ipairs(obj.status.conditions) do
+          if condition.type == "Progressing" and condition.reason == "NewReplicaSetAvailable" then
+            hs.status = "Healthy"
+          end
+          if condition.type == "Available" and condition.status == "False" then
+            hs.status = "Degraded"
+            hs.message = condition.message
+          end
+        end
+      end
+      if obj.status.replicas ~= nil and obj.status.updatedReplicas ~= nil then
+        if obj.status.replicas == obj.status.updatedReplicas then
+          if obj.status.availableReplicas == obj.status.replicas then
+            hs.status = "Healthy"
+          end
+        end
+      end
+    end
+    return hs
+
+  # Resource exclusions (resources ArgoCD should ignore)
+  resource.exclusions: |
+    - apiGroups:
+        - cilium.io
+      kinds:
+        - CiliumIdentity
+      clusters:
+        - "*"
+    - apiGroups:
+        - "*"
+      kinds:
+        - "ProviderConfigUsage"
+      clusters:
+        - "*"
+
+  # Timeout settings
+  timeout.reconciliation: 180s
+  timeout.hard.reconciliation: 0
+
+  # Enable Helm
+  helm.valuesFileSchemes: secrets
+
+  # Kustomize build options
+  kustomize.buildOptions: --load-restrictor LoadRestrictionsNone --enable-helm
+
+  # URL for ArgoCD server (update for your domain)
+  url: https://argocd.neurectomy.local
+
+  # OIDC configuration (uncomment and configure for SSO)
+  # oidc.config: |
+  #   name: Okta
+  #   issuer: https://your-domain.okta.com
+  #   clientID: your-client-id
+  #   clientSecret: $oidc.okta.clientSecret
+  #   requestedScopes: ["openid", "profile", "email", "groups"]
+  #   requestedIDTokenClaims: {"groups": {"essential": true}}
+
+  # Notifications triggers (for Slack/Teams integration)
+  # service.slack: |
+  #   token: $slack-token

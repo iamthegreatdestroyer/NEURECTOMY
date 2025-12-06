@@ -1,0 +1,10 @@
+# ============================================================================
+# NEURECTOMY - Istio System Namespace
+# ============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: istio-system
+  labels:
+    app.kubernetes.io/part-of: neurectomy-platform
+    istio-injection: disabled

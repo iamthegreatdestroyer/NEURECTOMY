@@ -17,32 +17,41 @@
 // Similarity Analysis (@PHANTOM @TENSOR)
 export {
   SimilarityAnalyzer,
-  WinnowingAnalyzer,
-  NgramAnalyzer,
-  MinHashAnalyzer,
-  JaccardAnalyzer,
-  type SimilarityOptions,
-  type Token,
-  type CodeFingerprint,
-  type SimilarityResult,
-  type MatchedRegion,
-  DEFAULT_SIMILARITY_OPTIONS,
+  MinHashGenerator,
+  tokenize,
+  generateNgrams,
+  hashNgrams,
+  winnow,
+} from "./similarity";
+
+export type {
+  SimilarityOptions,
+  Token,
+  CodeFingerprint,
+  SimilarityResult,
+  MatchedRegion,
 } from "./similarity";
 
 // AST Comparison (@PHANTOM @CORE)
 export {
   ASTComparator,
-  ASTNormalizer,
-  TreeEditDistance,
-  SubtreeMatcher,
-  CloneDetector,
   NormalizedNodeType,
-  type SupportedLanguage,
-  type NormalizedASTNode,
-  type ASTComparisonResult,
-  type CloneInstance,
-  type CloneClass,
-  DEFAULT_AST_OPTIONS,
+  MatchType,
+  TransformationType,
+  createASTComparator,
+} from "./ast-comparator";
+
+export type {
+  SupportedLanguage,
+  NormalizedASTNode,
+  NodeMetadata,
+  SourceLocation,
+  ASTComparisonResult,
+  SubtreeMatch,
+  StructuralDifference,
+  ComparisonStatistics,
+  DetailedAnalysis,
+  ASTComparatorConfig,
 } from "./ast-comparator";
 
 // Semantic Analysis (@LINGUA @TENSOR)
@@ -52,15 +61,16 @@ export {
   CodeTokenizer,
   IntentRecognizer,
   CrossLanguageAnalyzer,
-  type EmbeddingModelConfig,
-  type CodeEmbedding,
-  type SemanticSimilarityResult,
-  type CodeIntent,
-  type SemanticMatch,
-  type CodeRegion,
-  type SemanticAnalysisConfig,
-  DEFAULT_EMBEDDING_CONFIG,
-  DEFAULT_SEMANTIC_CONFIG,
+} from "./semantic";
+
+export type {
+  EmbeddingModelConfig,
+  CodeEmbedding,
+  SemanticSimilarityResult,
+  CodeIntent,
+  SemanticMatch,
+  CodeRegion,
+  SemanticAnalysisConfig,
 } from "./semantic";
 
 // ============================================================================
@@ -237,32 +247,32 @@ export class PlagiarismDetector extends EventEmitter {
 
     this.emit("analysis-started", { sourceFile, targetFile });
 
-    // Run enabled analyses in parallel
-    const analysisPromises: Promise<unknown>[] = [];
+    // Run enabled analyses
     let similarityResult: SimilarityResult | null = null;
     let astResult: ASTComparisonResult | null = null;
     let semanticResult: SemanticMatch | null = null;
 
+    // Similarity analysis is synchronous
     if (this.config.enableSimilarity) {
-      analysisPromises.push(
-        this.similarityAnalyzer
-          .analyze(sourceCode, targetCode)
-          .then((result) => {
-            similarityResult = result;
-          })
+      similarityResult = this.similarityAnalyzer.analyze(
+        sourceCode,
+        targetCode,
+        sourceFile,
+        targetFile
       );
     }
 
+    // AST comparison is async (takes 3 args: sourceCode, targetCode, language)
+    // Use sourceLanguage as the common language for comparison
     if (this.config.enableAST) {
-      analysisPromises.push(
-        this.astComparator
-          .compare(sourceCode, sourceLanguage, targetCode, targetLanguage)
-          .then((result) => {
-            astResult = result;
-          })
+      astResult = await this.astComparator.compare(
+        sourceCode,
+        targetCode,
+        sourceLanguage as import("./ast-comparator").SupportedLanguage
       );
     }
 
+    // Semantic comparison is async
     if (this.config.enableSemantic) {
       const sourceRegion: CodeRegion = {
         file: sourceFile,
@@ -279,23 +289,14 @@ export class PlagiarismDetector extends EventEmitter {
         language: targetLanguage,
       };
 
-      const analyzer =
+      semanticResult =
         this.config.enableCrossLanguage && sourceLanguage !== targetLanguage
-          ? this.crossLanguageAnalyzer.compareAcrossLanguages(
+          ? await this.crossLanguageAnalyzer.compareAcrossLanguages(
               sourceRegion,
               targetRegion
             )
-          : this.semanticComparator.compare(sourceRegion, targetRegion);
-
-      analysisPromises.push(
-        analyzer.then((result) => {
-          semanticResult = result;
-        })
-      );
+          : await this.semanticComparator.compare(sourceRegion, targetRegion);
     }
-
-    // Wait for all analyses
-    await Promise.all(analysisPromises);
 
     // Combine scores
     const scores: PlagiarismResult["scores"] = {};
@@ -309,13 +310,13 @@ export class PlagiarismDetector extends EventEmitter {
     }
 
     if (astResult) {
-      scores.ast = astResult.similarity;
+      scores.ast = astResult.similarity ?? 0;
       weightedScore += scores.ast * this.config.astWeight;
       totalWeight += this.config.astWeight;
     }
 
     if (semanticResult) {
-      scores.semantic = semanticResult.similarity.overallScore;
+      scores.semantic = semanticResult.similarity?.overallScore ?? 0;
       weightedScore += scores.semantic * this.config.semanticWeight;
       totalWeight += this.config.semanticWeight;
     }
@@ -391,16 +392,18 @@ export class PlagiarismDetector extends EventEmitter {
 
     for (const chunk of chunks) {
       const chunkResults = await Promise.all(
-        chunk.map(([i, j]) =>
-          this.detect(
-            files[i].path,
-            files[i].content,
-            files[i].language,
-            files[j].path,
-            files[j].content,
-            files[j].language
-          )
-        )
+        chunk.map(([i, j]) => {
+          const fileI = files[i]!;
+          const fileJ = files[j]!;
+          return this.detect(
+            fileI.path,
+            fileI.content,
+            fileI.language,
+            fileJ.path,
+            fileJ.content,
+            fileJ.language
+          );
+        })
       );
 
       // Filter by threshold
@@ -463,21 +466,21 @@ export class PlagiarismDetector extends EventEmitter {
     }
 
     // Add AST matches
-    if (astResult?.clones) {
-      for (const clone of astResult.clones) {
+    if (astResult?.matchedSubtrees) {
+      for (const subtree of astResult.matchedSubtrees) {
         matches.push({
           type: "structural",
           source: {
-            startLine: clone.sourceStart,
-            endLine: clone.sourceEnd,
+            startLine: subtree.sourceNode.location?.startLine ?? 0,
+            endLine: subtree.sourceNode.location?.endLine ?? 0,
             content: "",
           },
           target: {
-            startLine: clone.targetStart,
-            endLine: clone.targetEnd,
+            startLine: subtree.targetNode.location?.startLine ?? 0,
+            endLine: subtree.targetNode.location?.endLine ?? 0,
             content: "",
           },
-          similarity: clone.similarity,
+          similarity: subtree.similarity,
           detectedBy: "ast",
         });
       }
@@ -570,7 +573,7 @@ export class PlagiarismDetector extends EventEmitter {
    */
   clearCache(): void {
     this.resultCache.clear();
-    this.similarityAnalyzer.clearCache?.();
+    // SimilarityAnalyzer doesn't have a cache to clear
     this.semanticComparator.clearCaches();
     this.emit("caches-cleared");
   }
@@ -610,28 +613,8 @@ export function createPlagiarismDetector(
   return new PlagiarismDetector(config);
 }
 
-/**
- * Create a quick similarity analyzer
- */
-export function createSimilarityAnalyzer(): SimilarityAnalyzer {
-  return new SimilarityAnalyzer();
-}
-
-/**
- * Create an AST comparator
- */
-export function createASTComparator(): ASTComparator {
-  return new ASTComparator();
-}
-
-/**
- * Create a semantic comparator
- */
-export function createSemanticComparator(
-  config?: Partial<import("./semantic").SemanticAnalysisConfig>
-): SemanticComparator {
-  return new SemanticComparator(config);
-}
+// NOTE: createSimilarityAnalyzer, createASTComparator, and createSemanticComparator
+// are re-exported from their respective modules above
 
 // ============================================================================
 // Default Export

@@ -1,0 +1,107 @@
+# ============================================================================
+# NEURECTOMY - Karpenter Namespace
+# Node autoscaling system
+# ============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: karpenter
+  labels:
+    app.kubernetes.io/name: karpenter
+    app.kubernetes.io/part-of: neurectomy
+    app.kubernetes.io/component: autoscaling
+    # Pod security standards
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/audit: privileged
+    pod-security.kubernetes.io/warn: privileged
+---
+# Service account for Karpenter with IRSA
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: karpenter
+  namespace: karpenter
+  labels:
+    app.kubernetes.io/name: karpenter
+  annotations:
+    eks.amazonaws.com/role-arn: "${KARPENTER_IAM_ROLE_ARN}"
+---
+# Resource quota for Karpenter namespace
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: karpenter-quota
+  namespace: karpenter
+spec:
+  hard:
+    requests.cpu: "2"
+    requests.memory: 4Gi
+    limits.cpu: "4"
+    limits.memory: 8Gi
+---
+# PodDisruptionBudget for Karpenter
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: karpenter-pdb
+  namespace: karpenter
+  labels:
+    app.kubernetes.io/part-of: neurectomy
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: karpenter
+---
+# Network policy for Karpenter
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: karpenter-network-policy
+  namespace: karpenter
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: karpenter
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow webhook traffic
+    - from:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 8443
+    # Allow Prometheus scraping
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: monitoring
+      ports:
+        - protocol: TCP
+          port: 8000
+  egress:
+    # Allow access to AWS APIs
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 443
+    # Allow access to Kubernetes API
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 443
+    # Allow DNS
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53

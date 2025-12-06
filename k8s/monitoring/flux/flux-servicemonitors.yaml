@@ -1,0 +1,142 @@
+# ============================================================================
+# NEURECTOMY - Flux CD ServiceMonitors
+# Prometheus metrics collection for GitOps observability
+# ============================================================================
+
+# Source Controller ServiceMonitor
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: flux-source-controller
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: flux-monitoring
+    prometheus: neurectomy
+spec:
+  namespaceSelector:
+    matchNames:
+      - flux-system
+  selector:
+    matchLabels:
+      app: source-controller
+  endpoints:
+    - port: http-prom
+      interval: 30s
+      scrapeTimeout: 10s
+      path: /metrics
+---
+# Kustomize Controller ServiceMonitor
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: flux-kustomize-controller
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: flux-monitoring
+    prometheus: neurectomy
+spec:
+  namespaceSelector:
+    matchNames:
+      - flux-system
+  selector:
+    matchLabels:
+      app: kustomize-controller
+  endpoints:
+    - port: http-prom
+      interval: 30s
+      scrapeTimeout: 10s
+      path: /metrics
+---
+# Helm Controller ServiceMonitor
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: flux-helm-controller
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: flux-monitoring
+    prometheus: neurectomy
+spec:
+  namespaceSelector:
+    matchNames:
+      - flux-system
+  selector:
+    matchLabels:
+      app: helm-controller
+  endpoints:
+    - port: http-prom
+      interval: 30s
+      scrapeTimeout: 10s
+      path: /metrics
+---
+# Notification Controller ServiceMonitor
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: flux-notification-controller
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: flux-monitoring
+    prometheus: neurectomy
+spec:
+  namespaceSelector:
+    matchNames:
+      - flux-system
+  selector:
+    matchLabels:
+      app: notification-controller
+  endpoints:
+    - port: http-prom
+      interval: 30s
+      scrapeTimeout: 10s
+      path: /metrics
+---
+# Image Reflector Controller ServiceMonitor
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: flux-image-reflector-controller
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: flux-monitoring
+    prometheus: neurectomy
+spec:
+  namespaceSelector:
+    matchNames:
+      - flux-system
+  selector:
+    matchLabels:
+      app: image-reflector-controller
+  endpoints:
+    - port: http-prom
+      interval: 30s
+      scrapeTimeout: 10s
+      path: /metrics
+---
+# Image Automation Controller ServiceMonitor
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: flux-image-automation-controller
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: flux-monitoring
+    prometheus: neurectomy
+spec:
+  namespaceSelector:
+    matchNames:
+      - flux-system
+  selector:
+    matchLabels:
+      app: image-automation-controller
+  endpoints:
+    - port: http-prom
+      interval: 30s
+      scrapeTimeout: 10s
+      path: /metrics

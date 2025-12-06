@@ -1,0 +1,40 @@
+# ============================================================================
+# NEURECTOMY - Flux Notification Provider: GitHub
+# Posts deployment status to GitHub commit statuses
+# ============================================================================
+
+apiVersion: notification.toolkit.fluxcd.io/v1beta3
+kind: Provider
+metadata:
+  name: github-status
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: notifications
+spec:
+  # Provider type
+  type: github
+
+  # GitHub API address (use default for github.com)
+  address: https://github.com/iamthegreatdestroyer/NEURECTOMY
+
+  # Secret containing GitHub token
+  secretRef:
+    name: github-token
+---
+# ============================================================================
+# GitHub Token Secret (placeholder - should be sealed or from external-secrets)
+# ============================================================================
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: github-token
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: notifications
+type: Opaque
+stringData:
+  # TODO: Replace with actual token or use external-secrets-operator
+  token: "${GITHUB_TOKEN}"

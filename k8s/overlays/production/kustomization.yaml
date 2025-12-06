@@ -8,11 +8,22 @@ namespace: neurectomy-prod
 
 resources:
   - ../../base
+  - ../../base/storage # Include storage classes
+  - resource-quota.yaml
+  - pdb-patch.yaml
 
 namePrefix: prod-
 
 commonLabels:
   environment: production
+
+commonAnnotations:
+  app.kubernetes.io/managed-by: flux
+  app.kubernetes.io/part-of: neurectomy-platform
+
+# Strategic merge patches from files
+patchesStrategicMerge:
+  - anti-affinity-patch.yaml
 
 patches:
   # Increase replicas for production

@@ -1,0 +1,173 @@
+# ============================================================================
+# NEURECTOMY - Flagger Canary for ML Service
+# Progressive delivery configuration for production
+# ============================================================================
+
+apiVersion: flagger.app/v1beta1
+kind: Canary
+metadata:
+  name: ml-service
+  namespace: neurectomy-prod
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: ml-service
+    app.kubernetes.io/managed-by: flagger
+spec:
+  # Target deployment
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: prod-ml-service
+
+  # Autoscaler reference (optional)
+  autoscalerRef:
+    apiVersion: autoscaling/v2
+    kind: HorizontalPodAutoscaler
+    name: prod-ml-service
+
+  # Service configuration
+  service:
+    port: 8000
+    targetPort: 8000
+    gateways:
+      - public-gateway.istio-system.svc.cluster.local
+    hosts:
+      - api.neurectomy.io
+    trafficPolicy:
+      tls:
+        mode: ISTIO_MUTUAL
+
+  # Analysis configuration
+  analysis:
+    # Analysis interval
+    interval: 1m
+
+    # Number of iterations before promotion
+    iterations: 10
+
+    # Max number of failed iterations
+    threshold: 5
+
+    # Traffic weight step
+    stepWeight: 10
+
+    # Maximum traffic weight
+    maxWeight: 50
+
+    # Prometheus metrics
+    metrics:
+      # Request success rate
+      - name: request-success-rate
+        templateRef:
+          name: request-success-rate
+          namespace: neurectomy-prod
+        thresholdRange:
+          min: 99
+        interval: 1m
+
+      # Request duration (p99)
+      - name: request-duration
+        templateRef:
+          name: request-duration
+          namespace: neurectomy-prod
+        thresholdRange:
+          max: 500
+        interval: 1m
+
+      # Error rate
+      - name: error-rate
+        templateRef:
+          name: error-rate
+          namespace: neurectomy-prod
+        thresholdRange:
+          max: 1
+        interval: 1m
+
+    # Webhooks for custom validation
+    webhooks:
+      # Load test during canary
+      - name: load-test
+        type: rollout
+        url: http://flagger-loadtester.flagger-system/
+        timeout: 5s
+        metadata:
+          cmd: "hey -z 1m -q 10 -c 2 http://prod-ml-service-canary.neurectomy-prod:8000/health"
+
+      # Pre-rollout acceptance test
+      - name: acceptance-test
+        type: pre-rollout
+        url: http://flagger-loadtester.flagger-system/
+        timeout: 30s
+        metadata:
+          cmd: "curl -s http://prod-ml-service-canary.neurectomy-prod:8000/health | grep -q 'ok'"
+
+      # Post-rollout notification
+      - name: notify-promotion
+        type: post-rollout
+        url: http://flagger-loadtester.flagger-system/
+        timeout: 5s
+        metadata:
+          cmd: "echo 'Canary promotion complete for ml-service'"
+
+  # Progressive delivery settings
+  progressDeadlineSeconds: 600
+
+  # Suspend canary (manual trigger only)
+  # suspend: true
+---
+# ============================================================================
+# Staging Canary (more aggressive settings)
+# ============================================================================
+apiVersion: flagger.app/v1beta1
+kind: Canary
+metadata:
+  name: ml-service-staging
+  namespace: neurectomy-staging
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: ml-service
+    app.kubernetes.io/managed-by: flagger
+    environment: staging
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: staging-ml-service
+
+  service:
+    port: 8000
+    targetPort: 8000
+
+  analysis:
+    interval: 30s
+    iterations: 5
+    threshold: 3
+    stepWeight: 20
+    maxWeight: 80
+
+    metrics:
+      - name: request-success-rate
+        templateRef:
+          name: request-success-rate
+          namespace: neurectomy-staging
+        thresholdRange:
+          min: 95
+        interval: 30s
+
+      - name: request-duration
+        templateRef:
+          name: request-duration
+          namespace: neurectomy-staging
+        thresholdRange:
+          max: 1000
+        interval: 30s
+
+    webhooks:
+      - name: acceptance-test
+        type: pre-rollout
+        url: http://flagger-loadtester.flagger-system/
+        timeout: 30s
+        metadata:
+          cmd: "curl -s http://staging-ml-service-canary.neurectomy-staging:8000/health | grep -q 'ok'"
+
+  progressDeadlineSeconds: 300

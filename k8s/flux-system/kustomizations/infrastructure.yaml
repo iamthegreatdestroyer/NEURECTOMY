@@ -1,0 +1,48 @@
+# ============================================================================
+# NEURECTOMY - Flux Kustomization: Infrastructure Components
+# Shared infrastructure deployed before applications
+# ============================================================================
+
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: neurectomy-infrastructure
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: infrastructure
+spec:
+  # Reconcile frequently for infrastructure changes
+  interval: 10m
+
+  # Retry on failure
+  retryInterval: 2m
+
+  # Source reference
+  sourceRef:
+    kind: GitRepository
+    name: neurectomy
+    namespace: flux-system
+
+  # Path to base Kubernetes resources
+  path: ./k8s/base
+
+  # Enable pruning
+  prune: true
+
+  # Timeout for infrastructure deployment
+  timeout: 10m
+
+  # Wait for core resources
+  wait: true
+
+  # Health checks for critical infrastructure
+  healthChecks:
+    - apiVersion: v1
+      kind: Namespace
+      name: neurectomy
+
+  # Post-build variable substitution
+  postBuild:
+    substitute:
+      CLUSTER_NAME: neurectomy-cluster

@@ -1,0 +1,52 @@
+# ============================================================================
+# NEURECTOMY - Flux Receiver: GitHub Webhook
+# Receives webhook events from GitHub to trigger reconciliation
+# ============================================================================
+
+apiVersion: notification.toolkit.fluxcd.io/v1
+kind: Receiver
+metadata:
+  name: github-receiver
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: notifications
+spec:
+  # Receiver type
+  type: github
+
+  # Events to listen for
+  events:
+    - "ping"
+    - "push"
+    - "pull_request"
+
+  # Secret containing webhook token
+  secretRef:
+    name: github-receiver-token
+
+  # Resources to trigger on webhook
+  resources:
+    - kind: GitRepository
+      name: neurectomy
+      namespace: flux-system
+    - kind: GitRepository
+      name: neurectomy-develop
+      namespace: flux-system
+---
+# ============================================================================
+# GitHub Receiver Token Secret (placeholder)
+# ============================================================================
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: github-receiver-token
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: notifications
+type: Opaque
+stringData:
+  # TODO: Replace with actual token or use external-secrets-operator
+  token: "${GITHUB_RECEIVER_TOKEN}"

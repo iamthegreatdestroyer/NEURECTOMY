@@ -1,0 +1,74 @@
+# ============================================================================
+# NEURECTOMY - ArgoCD RBAC Configuration
+# Role-based access control for ArgoCD
+# ============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-rbac-cm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-rbac-cm
+    app.kubernetes.io/part-of: argocd
+data:
+  # Default policy for unauthenticated users
+  policy.default: role:readonly
+
+  # RBAC policy
+  policy.csv: |
+    # Roles
+    # p = policy, <subject>, <resource>, <action>, <object>, <effect>
+    # g = group, <user/group>, <role>
+
+    # Admin role - full access
+    p, role:admin, applications, *, */*, allow
+    p, role:admin, clusters, *, *, allow
+    p, role:admin, repositories, *, *, allow
+    p, role:admin, projects, *, *, allow
+    p, role:admin, accounts, *, *, allow
+    p, role:admin, gpgkeys, *, *, allow
+    p, role:admin, certificates, *, *, allow
+    p, role:admin, logs, *, *, allow
+    p, role:admin, exec, *, *, allow
+
+    # Developer role - can sync and view, but not delete or modify settings
+    p, role:developer, applications, get, */*, allow
+    p, role:developer, applications, sync, */*, allow
+    p, role:developer, applications, action/*, */*, allow
+    p, role:developer, logs, get, */*, allow
+    p, role:developer, repositories, get, *, allow
+    p, role:developer, projects, get, *, allow
+
+    # Read-only role
+    p, role:readonly, applications, get, */*, allow
+    p, role:readonly, repositories, get, *, allow
+    p, role:readonly, projects, get, *, allow
+    p, role:readonly, clusters, get, *, allow
+    p, role:readonly, logs, get, */*, allow
+
+    # Production guard - only admins can modify production apps
+    p, role:prod-admin, applications, *, neurectomy/*-prod, allow
+    p, role:prod-admin, applications, get, */*, allow
+
+    # Development team - full access to dev, readonly to prod
+    p, role:dev-team, applications, *, neurectomy/*-dev, allow
+    p, role:dev-team, applications, get, neurectomy/*-prod, allow
+    p, role:dev-team, applications, sync, neurectomy/*-dev, allow
+    p, role:dev-team, logs, get, */*, allow
+
+    # Group mappings
+    # Map OIDC groups to ArgoCD roles
+    g, neurectomy-admins, role:admin
+    g, neurectomy-devops, role:admin
+    g, neurectomy-developers, role:dev-team
+    g, neurectomy-viewers, role:readonly
+
+    # Local user mappings (if not using OIDC)
+    g, admin, role:admin
+    g, developer, role:developer
+
+  # Enable anonymous access (set to false in production)
+  policy.anonymous: role:readonly
+
+  # Match policy
+  scopes: "[groups]"

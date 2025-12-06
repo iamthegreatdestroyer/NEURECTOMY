@@ -1,0 +1,57 @@
+# ============================================================================
+# NEURECTOMY - Flux GitRepository Source
+# Primary source repository for GitOps reconciliation
+# ============================================================================
+
+---
+# Main repository source - HTTPS (public access)
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: neurectomy
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: source
+spec:
+  interval: 1m
+  url: https://github.com/iamthegreatdestroyer/NEURECTOMY
+  ref:
+    branch: main
+  # Ignore paths that don't affect deployments
+  ignore: |
+    # Exclude non-kubernetes files
+    /*
+    !/k8s
+    /k8s/flux-system/gotk-components.yaml
+
+---
+# Development branch source
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: neurectomy-develop
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: source
+    environment: development
+spec:
+  interval: 30s
+  url: https://github.com/iamthegreatdestroyer/NEURECTOMY
+  ref:
+    branch: develop
+  ignore: |
+    /*
+    !/k8s
+
+---
+# For private repository access, create a secret:
+# kubectl create secret generic neurectomy-git-credentials \
+#   --namespace=flux-system \
+#   --from-literal=username=git \
+#   --from-literal=password=<github-token>
+#
+# Then uncomment secretRef in the GitRepository spec:
+# secretRef:
+#   name: neurectomy-git-credentials

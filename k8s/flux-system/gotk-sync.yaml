@@ -1,0 +1,32 @@
+# ============================================================================
+# NEURECTOMY - Flux GitOps Sync Configuration
+# Main sync configuration pointing to the cluster's desired state
+# ============================================================================
+
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: flux-system
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  ref:
+    branch: main
+  secretRef:
+    name: flux-system
+  url: ssh://git@github.com/iamthegreatdestroyer/NEURECTOMY
+
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: flux-system
+  namespace: flux-system
+spec:
+  interval: 10m0s
+  path: ./k8s/flux-system
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system

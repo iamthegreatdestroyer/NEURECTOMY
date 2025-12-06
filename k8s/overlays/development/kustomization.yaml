@@ -8,11 +8,20 @@ namespace: neurectomy-dev
 
 resources:
   - ../../base
+  - ../../base/storage # Include storage classes
 
 namePrefix: dev-
 
 commonLabels:
   environment: development
+
+commonAnnotations:
+  app.kubernetes.io/managed-by: flux
+  app.kubernetes.io/part-of: neurectomy-platform
+
+# Strategic merge patches
+patchesStrategicMerge:
+  - anti-affinity-patch.yaml
 
 patches:
   # Reduce replicas for development

@@ -1,0 +1,134 @@
+# ============================================================================
+# NEURECTOMY - Velero Backup Storage Locations
+# Multi-cloud backup storage configuration
+# ============================================================================
+
+# AWS S3 Primary Storage Location
+---
+apiVersion: velero.io/v1
+kind: BackupStorageLocation
+metadata:
+  name: aws-primary
+  namespace: velero
+  labels:
+    app.kubernetes.io/part-of: neurectomy
+    cloud: aws
+    tier: primary
+spec:
+  provider: aws
+  default: true
+  objectStorage:
+    bucket: neurectomy-velero-backups-primary
+    prefix: backups
+  config:
+    region: us-west-2
+    s3ForcePathStyle: "false"
+    checksumAlgorithm: ""
+  credential:
+    name: "" # Using IRSA
+    key: ""
+  accessMode: ReadWrite
+  backupSyncPeriod: 1m
+
+# AWS S3 Secondary Storage Location (DR region)
+---
+apiVersion: velero.io/v1
+kind: BackupStorageLocation
+metadata:
+  name: aws-secondary
+  namespace: velero
+  labels:
+    app.kubernetes.io/part-of: neurectomy
+    cloud: aws
+    tier: secondary
+spec:
+  provider: aws
+  objectStorage:
+    bucket: neurectomy-velero-backups-dr
+    prefix: backups
+  config:
+    region: us-east-1
+    s3ForcePathStyle: "false"
+  accessMode: ReadWrite
+  backupSyncPeriod: 5m
+
+# Azure Blob Storage Location
+---
+apiVersion: velero.io/v1
+kind: BackupStorageLocation
+metadata:
+  name: azure-primary
+  namespace: velero
+  labels:
+    app.kubernetes.io/part-of: neurectomy
+    cloud: azure
+    tier: primary
+spec:
+  provider: azure
+  objectStorage:
+    bucket: neurectomy-backups
+    prefix: velero
+  config:
+    resourceGroup: neurectomy-backups-rg
+    storageAccount: neurectomybackups
+    subscriptionId: "${AZURE_SUBSCRIPTION_ID}"
+  credential:
+    name: azure-credentials
+    key: cloud
+  accessMode: ReadWrite
+  backupSyncPeriod: 5m
+
+# GCP Cloud Storage Location
+---
+apiVersion: velero.io/v1
+kind: BackupStorageLocation
+metadata:
+  name: gcp-primary
+  namespace: velero
+  labels:
+    app.kubernetes.io/part-of: neurectomy
+    cloud: gcp
+    tier: primary
+spec:
+  provider: gcp
+  objectStorage:
+    bucket: neurectomy-velero-backups
+    prefix: velero
+  config:
+    project: neurectomy-production
+  credential:
+    name: gcp-credentials
+    key: cloud
+  accessMode: ReadWrite
+  backupSyncPeriod: 5m
+
+# Cloud credentials secrets (for non-IRSA environments)
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: azure-credentials
+  namespace: velero
+  labels:
+    app.kubernetes.io/part-of: neurectomy
+type: Opaque
+stringData:
+  cloud: |
+    AZURE_SUBSCRIPTION_ID=${AZURE_SUBSCRIPTION_ID}
+    AZURE_TENANT_ID=${AZURE_TENANT_ID}
+    AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
+    AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}
+    AZURE_RESOURCE_GROUP=neurectomy-backups-rg
+    AZURE_CLOUD_NAME=AzurePublicCloud
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: gcp-credentials
+  namespace: velero
+  labels:
+    app.kubernetes.io/part-of: neurectomy
+type: Opaque
+stringData:
+  cloud: |
+    ${GCP_SERVICE_ACCOUNT_KEY}

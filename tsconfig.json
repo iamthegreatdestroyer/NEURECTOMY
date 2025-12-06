@@ -27,9 +27,18 @@
       "@neurectomy/types": ["packages/types/src"],
       "@neurectomy/utils": ["packages/utils/src"],
       "@neurectomy/api-client": ["packages/api-client/src"],
-      "@neurectomy/3d-engine": ["packages/3d-engine/src"]
+      "@neurectomy/3d-engine": ["packages/3d-engine/src"],
+      "@neurectomy/container-command": ["packages/container-command/src"],
+      "@neurectomy/enterprise": ["packages/enterprise/src"],
+      "@neurectomy/github-universe": ["packages/github-universe/src"],
+      "@neurectomy/legal-fortress": ["packages/legal-fortress/src"],
+      "@neurectomy/discovery-engine": ["packages/discovery-engine/src"],
+      "@neurectomy/performance-engine": ["packages/performance-engine/src"],
+      "@neurectomy/continuous-intelligence": ["packages/continuous-intelligence/src"],
+      "@neurectomy/experimentation-engine": ["packages/experimentation-engine/src"],
+      "@neurectomy/deployment-orchestrator": ["packages/deployment-orchestrator/src"]
     }
   },
   "include": ["packages/**/*.ts", "packages/**/*.tsx", "services/**/*.ts"],
-  "exclude": ["node_modules", "dist", "build", ".turbo", "apps"]
+  "exclude": ["node_modules", "dist", "build", ".turbo", "apps", "coverage"]
 }

@@ -1,0 +1,216 @@
+# ============================================================================
+# NEURECTOMY - Velero Backup Schedules
+# Automated backup schedules with different retention policies
+# ============================================================================
+
+# Production Daily Backup - Full cluster backup
+---
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: production-daily
+  namespace: velero
+  labels:
+    app.kubernetes.io/part-of: neurectomy
+    backup-tier: daily
+    environment: production
+spec:
+  schedule: "0 2 * * *" # Daily at 2 AM UTC
+  template:
+    includedNamespaces:
+      - neurectomy
+      - neurectomy-prod
+      - monitoring
+    excludedNamespaces:
+      - kube-system
+      - kube-public
+    includedResources:
+      - "*"
+    excludedResources:
+      - events
+      - events.events.k8s.io
+    includeClusterResources: true
+    storageLocation: aws-primary
+    volumeSnapshotLocations:
+      - aws-ebs
+    ttl: 720h # 30 days retention
+    snapshotVolumes: true
+    defaultVolumesToFsBackup: true
+    hooks:
+      resources:
+        - name: postgresql-backup-hook
+          includedNamespaces:
+            - neurectomy
+          labelSelector:
+            matchLabels:
+              app: postgres
+          pre:
+            - exec:
+                container: postgres
+                command:
+                  - /bin/sh
+                  - -c
+                  - pg_dump -U postgres -Fc neurectomy > /var/lib/postgresql/data/backup.dump
+                onError: Fail
+                timeout: 300s
+          post:
+            - exec:
+                container: postgres
+                command:
+                  - /bin/sh
+                  - -c
+                  - rm -f /var/lib/postgresql/data/backup.dump
+                onError: Continue
+                timeout: 60s
+    metadata:
+      labels:
+        backup-type: scheduled
+        schedule: daily
+
+# Production Hourly Backup - Critical data only
+---
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: production-hourly
+  namespace: velero
+  labels:
+    app.kubernetes.io/part-of: neurectomy
+    backup-tier: hourly
+    environment: production
+spec:
+  schedule: "0 * * * *" # Every hour
+  template:
+    includedNamespaces:
+      - neurectomy
+      - neurectomy-prod
+    labelSelector:
+      matchLabels:
+        backup-priority: critical
+    storageLocation: aws-primary
+    volumeSnapshotLocations:
+      - aws-ebs
+    ttl: 72h # 3 days retention
+    snapshotVolumes: true
+    metadata:
+      labels:
+        backup-type: scheduled
+        schedule: hourly
+
+# Production Weekly Backup - Long-term retention
+---
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: production-weekly
+  namespace: velero
+  labels:
+    app.kubernetes.io/part-of: neurectomy
+    backup-tier: weekly
+    environment: production
+spec:
+  schedule: "0 3 * * 0" # Sunday at 3 AM UTC
+  template:
+    includedNamespaces:
+      - "*"
+    excludedNamespaces:
+      - kube-system
+      - kube-public
+      - kube-node-lease
+    includeClusterResources: true
+    storageLocation: aws-primary
+    volumeSnapshotLocations:
+      - aws-ebs
+    ttl: 2160h # 90 days retention
+    snapshotVolumes: true
+    defaultVolumesToFsBackup: true
+    metadata:
+      labels:
+        backup-type: scheduled
+        schedule: weekly
+        retention: long-term
+
+# Cross-Region DR Backup - Replicate to secondary region
+---
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: disaster-recovery-replication
+  namespace: velero
+  labels:
+    app.kubernetes.io/part-of: neurectomy
+    backup-tier: dr
+    environment: production
+spec:
+  schedule: "30 4 * * *" # Daily at 4:30 AM UTC
+  template:
+    includedNamespaces:
+      - neurectomy
+      - neurectomy-prod
+      - monitoring
+      - istio-system
+    includeClusterResources: true
+    storageLocation: aws-secondary
+    volumeSnapshotLocations:
+      - aws-ebs-dr
+    ttl: 720h # 30 days retention
+    snapshotVolumes: true
+    defaultVolumesToFsBackup: true
+    metadata:
+      labels:
+        backup-type: scheduled
+        schedule: dr-daily
+        region: us-east-1
+
+# Development Daily Backup
+---
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: development-daily
+  namespace: velero
+  labels:
+    app.kubernetes.io/part-of: neurectomy
+    backup-tier: daily
+    environment: development
+spec:
+  schedule: "0 6 * * *" # Daily at 6 AM UTC
+  template:
+    includedNamespaces:
+      - neurectomy-dev
+    storageLocation: aws-primary
+    ttl: 168h # 7 days retention
+    snapshotVolumes: false # File-based backup only for dev
+    defaultVolumesToFsBackup: true
+    metadata:
+      labels:
+        backup-type: scheduled
+        schedule: daily
+        environment: development
+
+# Pre-deployment backup (triggered manually or via CI/CD)
+---
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: pre-deployment
+  namespace: velero
+  labels:
+    app.kubernetes.io/part-of: neurectomy
+    backup-tier: on-demand
+spec:
+  schedule: "0 0 31 2 *" # Never runs automatically (Feb 31)
+  paused: true # Manually triggered
+  template:
+    includedNamespaces:
+      - neurectomy
+      - neurectomy-prod
+    includeClusterResources: true
+    storageLocation: aws-primary
+    volumeSnapshotLocations:
+      - aws-ebs
+    ttl: 48h # 2 days retention
+    snapshotVolumes: true
+    metadata:
+      labels:
+        backup-type: pre-deployment

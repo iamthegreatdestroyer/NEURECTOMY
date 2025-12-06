@@ -17,33 +17,25 @@ export {
   MerkleTreeBuilder,
   BlockchainAnchorService,
   TimestampingService,
-  DEFAULT_TIMESTAMPING_CONFIG,
+  DEFAULT_NETWORK_CONFIGS,
 } from "./timestamping";
 
 export type {
-  MerkleNode,
-  AnchorConfig,
+  NetworkConfig,
   TimestampingConfig,
+  TimestampingEvents,
 } from "./timestamping";
 
 // Fingerprinting (@CIPHER @APEX)
 export {
-  LANGUAGE_CONFIGS,
-  removeComments,
-  normalizeWhitespace,
-  tokenize,
-  generateStructureHash,
-  calculateCyclomaticComplexity,
-  calculateHalsteadMetrics,
+  DEFAULT_FINGERPRINTING_CONFIG,
+  detectLanguage,
   generateCodeFingerprint,
   compareFingerprints,
+  batchFingerprint,
 } from "./fingerprinting";
 
-export type {
-  LanguageConfig,
-  HalsteadMetrics,
-  FingerprintComparisonResult,
-} from "./fingerprinting";
+export type { SupportedLanguage, FingerprintingConfig } from "./fingerprinting";
 
 // Signatures (@CIPHER @FORTRESS)
 export {
@@ -51,12 +43,20 @@ export {
   InMemoryKeyStore,
   DigitalSignatureService,
   MultiSignatureCoordinator,
+  DEFAULT_KEY_DERIVATION,
+  generateSalt,
+  deriveKey,
+  encryptWithKey,
+  decryptWithKey,
 } from "./signatures";
 
 export type {
-  SignatureResult,
-  SignatureVerificationResult,
-  MultiSignatureSession,
+  KeyDerivationParams,
+  KeyStore,
+  SignatureEvents,
+  SignatureServiceConfig,
+  MultiSigRequirement,
+  MultiSignature,
 } from "./signatures";
 
 // Provenance (@CRYPTO @STREAM)
@@ -80,7 +80,6 @@ export {
   InMemoryStorageBackend,
   MultiRegionStorageBackend,
   EvidenceVault,
-  DEFAULT_STORAGE_OPTIONS,
 } from "./evidence-vault";
 
 export type {

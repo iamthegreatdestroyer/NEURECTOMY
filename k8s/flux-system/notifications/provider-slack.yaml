@@ -1,0 +1,40 @@
+# ============================================================================
+# NEURECTOMY - Flux Notification Provider: Slack
+# Posts deployment notifications to Slack channels
+# ============================================================================
+
+apiVersion: notification.toolkit.fluxcd.io/v1beta3
+kind: Provider
+metadata:
+  name: slack-notifications
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: notifications
+spec:
+  # Provider type
+  type: slack
+
+  # Slack channel (without #)
+  channel: neurectomy-deployments
+
+  # Secret containing Slack webhook URL
+  secretRef:
+    name: slack-webhook
+---
+# ============================================================================
+# Slack Webhook Secret (placeholder - should be sealed or from external-secrets)
+# ============================================================================
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: slack-webhook
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: notifications
+type: Opaque
+stringData:
+  # TODO: Replace with actual webhook URL or use external-secrets-operator
+  address: "${SLACK_WEBHOOK_URL}"

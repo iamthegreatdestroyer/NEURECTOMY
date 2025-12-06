@@ -1,0 +1,94 @@
+# ============================================================================
+# NEURECTOMY Kubernetes - Staging PodDisruptionBudget
+# Ensures availability during updates and node maintenance
+# ============================================================================
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: staging-ml-service-pdb
+  namespace: neurectomy-staging
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: ml-service
+    environment: staging
+spec:
+  # Ensure at least 1 pod is always available (for 2 replicas)
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: ml-service
+      environment: staging
+---
+# ============================================================================
+# NEURECTOMY Kubernetes - Staging Network Policy
+# Restrict network access for security
+# ============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: staging-ml-service-network-policy
+  namespace: neurectomy-staging
+  labels:
+    app.kubernetes.io/name: neurectomy
+    environment: staging
+spec:
+  podSelector:
+    matchLabels:
+      app: ml-service
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow traffic from ingress controller
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8000
+    # Allow traffic from monitoring
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - protocol: TCP
+          port: 9090 # metrics
+    # Allow internal traffic within namespace
+    - from:
+        - podSelector: {}
+  egress:
+    # Allow DNS
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53
+    # Allow traffic to database
+    - to:
+        - podSelector:
+            matchLabels:
+              app: postgres
+      ports:
+        - protocol: TCP
+          port: 5432
+    # Allow traffic to Redis
+    - to:
+        - podSelector:
+            matchLabels:
+              app: redis
+      ports:
+        - protocol: TCP
+          port: 6379
+    # Allow external HTTPS (for API calls, model downloads)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - protocol: TCP
+          port: 443

@@ -1,0 +1,128 @@
+# ============================================================================
+# NEURECTOMY - GCP Storage Classes
+# Optimized for GKE with GCE Persistent Disk CSI and Filestore
+# ============================================================================
+
+# Balanced PD - General Purpose (Default)
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: neurectomy-standard
+  labels:
+    app.kubernetes.io/part-of: neurectomy-platform
+    storage.neurectomy.io/tier: standard
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: pd.csi.storage.gke.io
+parameters:
+  type: pd-balanced
+  replication-type: none
+  disk-encryption-kms-key: "" # Optional: Set to KMS key for CMK encryption
+reclaimPolicy: Delete
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+
+# SSD PD - Fast Storage
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: neurectomy-fast
+  labels:
+    app.kubernetes.io/part-of: neurectomy-platform
+    storage.neurectomy.io/tier: fast
+provisioner: pd.csi.storage.gke.io
+parameters:
+  type: pd-ssd
+  replication-type: none
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+
+# SSD PD Regional - ML Models Storage (Regional for HA)
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: neurectomy-ml-storage
+  labels:
+    app.kubernetes.io/part-of: neurectomy-platform
+    storage.neurectomy.io/tier: ml
+provisioner: pd.csi.storage.gke.io
+parameters:
+  type: pd-ssd
+  replication-type: regional-pd
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+
+# Extreme PD - Database Storage (Highest Performance)
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: neurectomy-database
+  labels:
+    app.kubernetes.io/part-of: neurectomy-platform
+    storage.neurectomy.io/tier: database
+provisioner: pd.csi.storage.gke.io
+parameters:
+  type: pd-extreme
+  provisioned-iops-on-create: "40000"
+  replication-type: none
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+
+# Standard PD - Archive Storage
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: neurectomy-archive
+  labels:
+    app.kubernetes.io/part-of: neurectomy-platform
+    storage.neurectomy.io/tier: archive
+provisioner: pd.csi.storage.gke.io
+parameters:
+  type: pd-standard
+  replication-type: none
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+
+# Filestore - Shared Storage (ReadWriteMany)
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: neurectomy-shared
+  labels:
+    app.kubernetes.io/part-of: neurectomy-platform
+    storage.neurectomy.io/tier: shared
+provisioner: filestore.csi.storage.gke.io
+parameters:
+  tier: standard
+  network: default
+  # Optional: reserved-ipv4-cidr for custom IP range
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: Immediate
+
+# Filestore High Scale - ML Models Shared Storage
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: neurectomy-ml-shared
+  labels:
+    app.kubernetes.io/part-of: neurectomy-platform
+    storage.neurectomy.io/tier: ml-shared
+provisioner: filestore.csi.storage.gke.io
+parameters:
+  tier: premium
+  network: default
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: Immediate

@@ -1,0 +1,12 @@
+# ============================================================================
+# NEURECTOMY - Grafana Dashboards Kustomization
+# GitOps and deployment visibility dashboards
+# ============================================================================
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - flux-dashboard-configmap.yaml
+  - deployment-dashboard-configmap.yaml
+  - canary-dashboard-configmap.yaml

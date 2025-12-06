@@ -1,0 +1,65 @@
+# ============================================================================
+# NEURECTOMY - Flux Kustomization: Development Environment
+# GitOps reconciliation for development namespace
+# ============================================================================
+
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: neurectomy-development
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: kustomization
+    environment: development
+spec:
+  # Reconcile every 5 minutes for faster dev iteration
+  interval: 5m
+
+  # Retry on failure
+  retryInterval: 1m
+
+  # Source reference
+  sourceRef:
+    kind: GitRepository
+    name: neurectomy-develop
+    namespace: flux-system
+
+  # Path to Kustomize overlay
+  path: ./k8s/overlays/development
+
+  # Enable pruning of removed resources
+  prune: true
+
+  # Timeout for apply operations
+  timeout: 5m
+
+  # Target namespace
+  targetNamespace: neurectomy-dev
+
+  # Wait for resources to be ready
+  wait: true
+
+  # Health checks for deployment verification
+  healthChecks:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: dev-ml-service
+      namespace: neurectomy-dev
+
+  # Dependency on infrastructure
+  dependsOn:
+    - name: neurectomy-infrastructure
+
+  # Post-build variable substitution
+  postBuild:
+    substitute:
+      ENVIRONMENT: development
+      DOMAIN: dev.neurectomy.io
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-config
+        optional: true
+      - kind: Secret
+        name: cluster-secrets
+        optional: true

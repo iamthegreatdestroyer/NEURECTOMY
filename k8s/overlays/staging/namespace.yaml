@@ -1,0 +1,85 @@
+# ============================================================================
+# NEURECTOMY Kubernetes - Staging Namespace
+# ============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: neurectomy-staging
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: platform
+    environment: staging
+    tier: pre-production
+  annotations:
+    scheduler.alpha.kubernetes.io/defaultTolerations: |
+      [{"operator": "Exists", "effect": "NoSchedule", "key": "staging"}]
+---
+# ============================================================================
+# ResourceQuota for Staging Namespace
+# ============================================================================
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: staging-quota
+  namespace: neurectomy-staging
+  labels:
+    app.kubernetes.io/name: neurectomy
+    environment: staging
+spec:
+  hard:
+    # Compute resources
+    requests.cpu: "8"
+    requests.memory: "16Gi"
+    limits.cpu: "16"
+    limits.memory: "32Gi"
+
+    # Object counts
+    pods: "50"
+    services: "20"
+    secrets: "50"
+    configmaps: "50"
+    persistentvolumeclaims: "20"
+
+    # Storage
+    requests.storage: "200Gi"
+---
+# ============================================================================
+# LimitRange for Staging Namespace
+# ============================================================================
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: staging-limits
+  namespace: neurectomy-staging
+  labels:
+    app.kubernetes.io/name: neurectomy
+    environment: staging
+spec:
+  limits:
+    # Default container limits
+    - type: Container
+      default:
+        cpu: "500m"
+        memory: "512Mi"
+      defaultRequest:
+        cpu: "100m"
+        memory: "128Mi"
+      max:
+        cpu: "4"
+        memory: "8Gi"
+      min:
+        cpu: "50m"
+        memory: "64Mi"
+
+    # Pod limits
+    - type: Pod
+      max:
+        cpu: "8"
+        memory: "16Gi"
+
+    # PVC limits
+    - type: PersistentVolumeClaim
+      max:
+        storage: "100Gi"
+      min:
+        storage: "1Gi"

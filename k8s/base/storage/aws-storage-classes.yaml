@@ -1,0 +1,153 @@
+# ============================================================================
+# NEURECTOMY - AWS Storage Classes
+# Optimized for AWS EKS with EBS CSI and EFS CSI drivers
+# ============================================================================
+
+# GP3 SSD - General Purpose (Default)
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: neurectomy-standard
+  labels:
+    app.kubernetes.io/part-of: neurectomy-platform
+    storage.neurectomy.io/tier: standard
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: ebs.csi.aws.com
+parameters:
+  type: gp3
+  iops: "3000"
+  throughput: "125"
+  encrypted: "true"
+  fsType: ext4
+reclaimPolicy: Delete
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+
+# GP3 SSD - Fast Storage (Higher Performance)
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: neurectomy-fast
+  labels:
+    app.kubernetes.io/part-of: neurectomy-platform
+    storage.neurectomy.io/tier: fast
+provisioner: ebs.csi.aws.com
+parameters:
+  type: gp3
+  iops: "8000"
+  throughput: "500"
+  encrypted: "true"
+  fsType: ext4
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+
+# GP3 SSD - ML Models Storage (High IOPS for model loading)
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: neurectomy-ml-storage
+  labels:
+    app.kubernetes.io/part-of: neurectomy-platform
+    storage.neurectomy.io/tier: ml
+provisioner: ebs.csi.aws.com
+parameters:
+  type: gp3
+  iops: "16000"
+  throughput: "1000"
+  encrypted: "true"
+  fsType: ext4
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+
+# IO2 SSD - Database Storage (Highest Performance)
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: neurectomy-database
+  labels:
+    app.kubernetes.io/part-of: neurectomy-platform
+    storage.neurectomy.io/tier: database
+provisioner: ebs.csi.aws.com
+parameters:
+  type: io2
+  iops: "32000"
+  encrypted: "true"
+  fsType: ext4
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+
+# SC1 - Cold Storage (Archival, Infrequent Access)
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: neurectomy-archive
+  labels:
+    app.kubernetes.io/part-of: neurectomy-platform
+    storage.neurectomy.io/tier: archive
+provisioner: ebs.csi.aws.com
+parameters:
+  type: sc1
+  encrypted: "true"
+  fsType: ext4
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+
+# EFS - Shared Storage (ReadWriteMany)
+# Note: Requires EFS file system ID to be provided
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: neurectomy-shared
+  labels:
+    app.kubernetes.io/part-of: neurectomy-platform
+    storage.neurectomy.io/tier: shared
+provisioner: efs.csi.aws.com
+parameters:
+  provisioningMode: efs-ap
+  # fileSystemId will be patched by environment overlay
+  fileSystemId: "${EFS_FILE_SYSTEM_ID}"
+  directoryPerms: "755"
+  gidRangeStart: "1000"
+  gidRangeEnd: "2000"
+  basePath: "/neurectomy"
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+mountOptions:
+  - tls
+  - iam
+
+# EFS - ML Models Shared Storage (for distributed inference)
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: neurectomy-ml-shared
+  labels:
+    app.kubernetes.io/part-of: neurectomy-platform
+    storage.neurectomy.io/tier: ml-shared
+provisioner: efs.csi.aws.com
+parameters:
+  provisioningMode: efs-ap
+  fileSystemId: "${EFS_FILE_SYSTEM_ID}"
+  directoryPerms: "755"
+  gidRangeStart: "1000"
+  gidRangeEnd: "2000"
+  basePath: "/neurectomy/models"
+  throughputMode: provisioned
+  provisionedThroughputInMibps: "100"
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+mountOptions:
+  - tls
+  - iam

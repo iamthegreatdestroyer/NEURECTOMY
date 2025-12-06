@@ -1,0 +1,21 @@
+# ============================================================================
+# NEURECTOMY - Istio Service Mesh Installation
+# ============================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: istio-system
+
+resources:
+  - namespace.yaml
+  - istio-operator.yaml
+  - peer-authentication.yaml
+  - authorization-policies.yaml
+  - gateway.yaml
+  - virtual-services.yaml
+  - destination-rules.yaml
+  - envoy-filters.yaml
+
+commonLabels:
+  app.kubernetes.io/part-of: neurectomy-platform
+  mesh.neurectomy.io/managed: "true"

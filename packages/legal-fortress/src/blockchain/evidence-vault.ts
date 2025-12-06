@@ -690,23 +690,4 @@ export class EvidenceVault {
   }
 }
 
-// ============================================================================
-// EXPORTS
-// ============================================================================
-
-export {
-  EvidenceEncryptionService,
-  InMemoryStorageBackend,
-  MultiRegionStorageBackend,
-  EvidenceVault,
-  DEFAULT_STORAGE_OPTIONS,
-};
-
-export type {
-  EvidenceMetadata,
-  EvidenceStorageOptions,
-  StoredEvidence,
-  EvidenceAccessEntry,
-  VaultStatistics,
-  IStorageBackend,
-};
+// Types and classes are already exported inline above

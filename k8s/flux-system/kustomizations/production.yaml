@@ -1,0 +1,80 @@
+# ============================================================================
+# NEURECTOMY - Flux Kustomization: Production Environment
+# GitOps reconciliation for production namespace with strict controls
+# ============================================================================
+
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: neurectomy-production
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: kustomization
+    environment: production
+spec:
+  # Reconcile every 15 minutes for production stability
+  interval: 15m
+
+  # Retry on failure with longer backoff
+  retryInterval: 5m
+
+  # Source reference - main branch only
+  sourceRef:
+    kind: GitRepository
+    name: neurectomy
+    namespace: flux-system
+
+  # Path to Kustomize overlay
+  path: ./k8s/overlays/production
+
+  # Enable pruning (be careful in production!)
+  prune: true
+
+  # Timeout for apply operations (longer for production)
+  timeout: 15m
+
+  # Target namespace
+  targetNamespace: neurectomy-prod
+
+  # Wait for resources to be ready
+  wait: true
+
+  # Comprehensive health checks for production
+  healthChecks:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: prod-ml-service
+      namespace: neurectomy-prod
+    - apiVersion: v1
+      kind: Service
+      name: prod-ml-service
+      namespace: neurectomy-prod
+
+  # Dependency on staging being healthy (progressive delivery)
+  dependsOn:
+    - name: neurectomy-infrastructure
+    - name: neurectomy-staging
+
+  # Post-build variable substitution
+  postBuild:
+    substitute:
+      ENVIRONMENT: production
+      DOMAIN: api.neurectomy.io
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-config
+        optional: true
+      - kind: Secret
+        name: cluster-secrets
+        optional: true
+
+  # Force production deployments to require manual approval
+  # Set to false to enable automatic deployments:
+  # suspend: true
+
+  # Decryption for SOPS-encrypted secrets (if using Mozilla SOPS)
+  # decryption:
+  #   provider: sops
+  #   secretRef:
+  #     name: sops-gpg

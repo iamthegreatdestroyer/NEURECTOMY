@@ -1,0 +1,65 @@
+# ============================================================================
+# NEURECTOMY - Istio Peer Authentication (mTLS)
+# Enforce mutual TLS between services
+# ============================================================================
+
+# Strict mTLS for neurectomy namespace
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: neurectomy
+spec:
+  mtls:
+    mode: STRICT
+
+# Strict mTLS for neurectomy-prod namespace
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: neurectomy-prod
+spec:
+  mtls:
+    mode: STRICT
+
+# Permissive mTLS for development (allows gradual migration)
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: neurectomy-dev
+spec:
+  mtls:
+    mode: PERMISSIVE
+
+# Strict mTLS for monitoring namespace
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: monitoring
+spec:
+  mtls:
+    mode: STRICT
+
+# ML Service specific - strict mTLS with port-level config
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: ml-service-mtls
+  namespace: neurectomy
+spec:
+  selector:
+    matchLabels:
+      app: ml-service
+  mtls:
+    mode: STRICT
+  portLevelMtls:
+    8000:
+      mode: STRICT

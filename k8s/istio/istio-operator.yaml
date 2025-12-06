@@ -1,0 +1,254 @@
+# ============================================================================
+# NEURECTOMY - Istio Operator Configuration
+# Production-ready Istio installation with security hardening
+# ============================================================================
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: neurectomy-istio
+  namespace: istio-system
+spec:
+  profile: default
+
+  # Mesh configuration
+  meshConfig:
+    # Enable access logging
+    accessLogFile: /dev/stdout
+    accessLogFormat: |
+      {
+        "protocol": "%PROTOCOL%",
+        "upstream_service_time": "%RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)%",
+        "upstream_cluster": "%UPSTREAM_CLUSTER%",
+        "upstream_host": "%UPSTREAM_HOST%",
+        "downstream_remote_address": "%DOWNSTREAM_REMOTE_ADDRESS%",
+        "request_id": "%REQ(X-REQUEST-ID)%",
+        "response_code": "%RESPONSE_CODE%",
+        "response_flags": "%RESPONSE_FLAGS%",
+        "route_name": "%ROUTE_NAME%",
+        "method": "%REQ(:METHOD)%",
+        "path": "%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%",
+        "user_agent": "%REQ(USER-AGENT)%",
+        "authority": "%REQ(:AUTHORITY)%",
+        "request_duration": "%DURATION%",
+        "bytes_received": "%BYTES_RECEIVED%",
+        "bytes_sent": "%BYTES_SENT%",
+        "start_time": "%START_TIME%"
+      }
+
+    # Enable strict mTLS by default
+    defaultConfig:
+      # Enable distributed tracing
+      tracing:
+        sampling: 100.0
+        zipkin:
+          address: jaeger-collector.observability:9411
+
+      # Proxy concurrency (0 = auto-detect based on CPU)
+      concurrency: 0
+
+      # Hold application start until proxy is ready
+      holdApplicationUntilProxyStarts: true
+
+      # Proxy access log path
+      proxyMetadata:
+        ISTIO_META_DNS_CAPTURE: "true"
+        ISTIO_META_DNS_AUTO_ALLOCATE: "true"
+
+      # Enable proxy protocol
+      gatewayTopology:
+        numTrustedProxies: 2
+
+    # Outbound traffic policy
+    outboundTrafficPolicy:
+      mode: REGISTRY_ONLY # Only allow registered services
+
+    # Enable protocol selection
+    enableAutoMtls: true
+
+    # Trust domain for SPIFFE IDs
+    trustDomain: cluster.local
+
+    # Default providers for observability
+    defaultProviders:
+      metrics:
+        - prometheus
+      tracing:
+        - zipkin
+      accessLogging:
+        - envoy
+
+  # Component configuration
+  components:
+    # Istiod (control plane)
+    pilot:
+      enabled: true
+      k8s:
+        env:
+          - name: PILOT_TRACE_SAMPLING
+            value: "100"
+          - name: PILOT_ENABLE_STATUS
+            value: "true"
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        hpaSpec:
+          minReplicas: 2
+          maxReplicas: 5
+          metrics:
+            - type: Resource
+              resource:
+                name: cpu
+                targetAverageUtilization: 80
+        podDisruptionBudget:
+          minAvailable: 1
+        affinity:
+          podAntiAffinity:
+            preferredDuringSchedulingIgnoredDuringExecution:
+              - weight: 100
+                podAffinityTerm:
+                  labelSelector:
+                    matchLabels:
+                      app: istiod
+                  topologyKey: kubernetes.io/hostname
+
+    # Ingress Gateway
+    ingressGateways:
+      - name: istio-ingressgateway
+        enabled: true
+        k8s:
+          service:
+            type: LoadBalancer
+            ports:
+              - name: status-port
+                port: 15021
+                targetPort: 15021
+              - name: http2
+                port: 80
+                targetPort: 8080
+              - name: https
+                port: 443
+                targetPort: 8443
+              - name: tls
+                port: 15443
+                targetPort: 15443
+            annotations:
+              service.beta.kubernetes.io/aws-load-balancer-type: nlb
+              service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+              service.beta.kubernetes.io/aws-load-balancer-backend-protocol: tcp
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          hpaSpec:
+            minReplicas: 2
+            maxReplicas: 10
+            metrics:
+              - type: Resource
+                resource:
+                  name: cpu
+                  targetAverageUtilization: 80
+          podDisruptionBudget:
+            minAvailable: 1
+          affinity:
+            podAntiAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - labelSelector:
+                    matchLabels:
+                      app: istio-ingressgateway
+                  topologyKey: kubernetes.io/hostname
+
+    # Egress Gateway (for controlled external access)
+    egressGateways:
+      - name: istio-egressgateway
+        enabled: true
+        k8s:
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          hpaSpec:
+            minReplicas: 1
+            maxReplicas: 5
+          affinity:
+            podAntiAffinity:
+              preferredDuringSchedulingIgnoredDuringExecution:
+                - weight: 100
+                  podAffinityTerm:
+                    labelSelector:
+                      matchLabels:
+                        app: istio-egressgateway
+                    topologyKey: kubernetes.io/hostname
+
+    # CNI plugin (optional, enables ambient mesh)
+    cni:
+      enabled: false # Enable for ambient mesh mode
+
+  # Global values
+  values:
+    global:
+      # Proxy settings
+      proxy:
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        # Lifecycle hooks
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 5"]
+
+      # Logging level
+      logging:
+        level: "default:info"
+
+      # Pilot settings
+      pilotCertProvider: istiod
+
+      # Multi-cluster settings (for future expansion)
+      meshID: neurectomy-mesh
+      multiCluster:
+        clusterName: neurectomy-primary
+      network: network1
+
+    # Pilot/Istiod specific values
+    pilot:
+      autoscaleEnabled: true
+      replicaCount: 2
+      traceSampling: 100.0
+      enableProtocolSniffingForInbound: true
+      enableProtocolSniffingForOutbound: true
+
+    # Telemetry
+    telemetry:
+      enabled: true
+      v2:
+        enabled: true
+        prometheus:
+          enabled: true
+        stackdriver:
+          enabled: false
+
+    # Sidecar injector
+    sidecarInjectorWebhook:
+      enableNamespacesByDefault: false
+      neverInjectSelector:
+        - matchExpressions:
+            - key: sidecar.istio.io/inject
+              operator: NotIn
+              values:
+                - "true"
+      rewriteAppHTTPProbe: true

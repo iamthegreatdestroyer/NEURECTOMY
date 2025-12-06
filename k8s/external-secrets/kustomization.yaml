@@ -1,0 +1,57 @@
+# ============================================================================
+# NEURECTOMY - External Secrets Kustomization
+# ============================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: external-secrets
+
+resources:
+  - namespace.yaml
+  # Choose ONE of the following based on your cloud provider:
+  # - aws-secret-store.yaml
+  # - azure-secret-store.yaml
+  # - gcp-secret-store.yaml
+
+# Application secrets (deploy to neurectomy namespace)
+# Include via overlay or separate kustomization
+# - ml-service-secrets.yaml
+
+commonLabels:
+  app.kubernetes.io/managed-by: kustomize
+  app.kubernetes.io/version: "1.0.0"
+
+# Helm chart installation (alternative to manual kubectl apply)
+# Use Flux HelmRelease or ArgoCD Application for production
+helmCharts:
+  - name: external-secrets
+    repo: https://charts.external-secrets.io
+    version: 0.9.11
+    releaseName: external-secrets
+    namespace: external-secrets
+    valuesInline:
+      installCRDs: true
+      webhook:
+        port: 9443
+      certController:
+        requeueInterval: 5m
+      serviceAccount:
+        create: false
+        name: external-secrets-sa
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+      podSecurityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        fsGroup: 65534
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
+        readOnlyRootFilesystem: true

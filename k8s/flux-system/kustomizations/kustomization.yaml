@@ -1,0 +1,11 @@
+# ============================================================================
+# NEURECTOMY - Flux Kustomizations Index
+# ============================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - development.yaml
+  - staging.yaml
+  - production.yaml
+  - infrastructure.yaml

@@ -1,0 +1,117 @@
+# ============================================================================
+# NEURECTOMY - Velero Volume Snapshot Locations
+# Cloud provider snapshot configuration
+# ============================================================================
+
+# AWS EBS Volume Snapshot Location
+---
+apiVersion: velero.io/v1
+kind: VolumeSnapshotLocation
+metadata:
+  name: aws-ebs
+  namespace: velero
+  labels:
+    app.kubernetes.io/part-of: neurectomy
+    cloud: aws
+spec:
+  provider: aws
+  config:
+    region: us-west-2
+
+# AWS EBS Secondary Region (DR)
+---
+apiVersion: velero.io/v1
+kind: VolumeSnapshotLocation
+metadata:
+  name: aws-ebs-dr
+  namespace: velero
+  labels:
+    app.kubernetes.io/part-of: neurectomy
+    cloud: aws
+    tier: dr
+spec:
+  provider: aws
+  config:
+    region: us-east-1
+
+# Azure Disk Snapshot Location
+---
+apiVersion: velero.io/v1
+kind: VolumeSnapshotLocation
+metadata:
+  name: azure-disk
+  namespace: velero
+  labels:
+    app.kubernetes.io/part-of: neurectomy
+    cloud: azure
+spec:
+  provider: azure
+  config:
+    apiTimeout: 5m
+    resourceGroup: neurectomy-snapshots-rg
+    subscriptionId: "${AZURE_SUBSCRIPTION_ID}"
+  credential:
+    name: azure-credentials
+    key: cloud
+
+# GCP Persistent Disk Snapshot Location
+---
+apiVersion: velero.io/v1
+kind: VolumeSnapshotLocation
+metadata:
+  name: gcp-pd
+  namespace: velero
+  labels:
+    app.kubernetes.io/part-of: neurectomy
+    cloud: gcp
+spec:
+  provider: gcp
+  config:
+    project: neurectomy-production
+    snapshotLocation: us-west1
+  credential:
+    name: gcp-credentials
+    key: cloud
+
+# CSI Volume Snapshot Class for AWS
+---
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshotClass
+metadata:
+  name: velero-aws-ebs
+  labels:
+    velero.io/csi-volumesnapshot-class: "true"
+    app.kubernetes.io/part-of: neurectomy
+driver: ebs.csi.aws.com
+deletionPolicy: Retain
+parameters:
+  # Enable fast snapshot restore
+  fastSnapshotRestoreAvailabilityZones: "us-west-2a,us-west-2b,us-west-2c"
+
+# CSI Volume Snapshot Class for Azure
+---
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshotClass
+metadata:
+  name: velero-azure-disk
+  labels:
+    velero.io/csi-volumesnapshot-class: "true"
+    app.kubernetes.io/part-of: neurectomy
+driver: disk.csi.azure.com
+deletionPolicy: Retain
+parameters:
+  incremental: "true"
+
+# CSI Volume Snapshot Class for GCP
+---
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshotClass
+metadata:
+  name: velero-gcp-pd
+  labels:
+    velero.io/csi-volumesnapshot-class: "true"
+    app.kubernetes.io/part-of: neurectomy
+driver: pd.csi.storage.gke.io
+deletionPolicy: Retain
+parameters:
+  snapshot-type: STANDARD

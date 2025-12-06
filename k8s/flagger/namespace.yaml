@@ -1,0 +1,12 @@
+# ============================================================================
+# NEURECTOMY - Flagger Namespace
+# ============================================================================
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: flagger-system
+  labels:
+    app.kubernetes.io/name: flagger
+    app.kubernetes.io/component: canary-controller
+    app.kubernetes.io/part-of: neurectomy-platform

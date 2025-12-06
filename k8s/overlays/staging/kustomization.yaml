@@ -1,0 +1,129 @@
+# ============================================================================
+# NEURECTOMY Kubernetes - Staging Overlay
+# Pre-production environment for final validation
+# ============================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: neurectomy-staging
+
+resources:
+  - ../../base
+  - namespace.yaml
+  - pdb.yaml
+
+namePrefix: staging-
+
+commonLabels:
+  environment: staging
+  tier: pre-production
+
+commonAnnotations:
+  app.kubernetes.io/managed-by: flux
+  app.kubernetes.io/part-of: neurectomy-platform
+
+# Strategic merge patches
+patchesStrategicMerge:
+  - anti-affinity-patch.yaml
+
+patches:
+  # Staging replicas (between dev and prod)
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+    target:
+      kind: Deployment
+      name: ml-service
+
+  # Staging resource limits (moderate)
+  - patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: "2Gi"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: "1000m"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: "512Mi"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: "250m"
+    target:
+      kind: Deployment
+      name: ml-service
+
+  # Staging HPA settings
+  - patch: |-
+      - op: replace
+        path: /spec/minReplicas
+        value: 2
+      - op: replace
+        path: /spec/maxReplicas
+        value: 8
+    target:
+      kind: HorizontalPodAutoscaler
+      name: ml-service
+
+  # Staging storage (moderate)
+  - patch: |-
+      - op: replace
+        path: /spec/resources/requests/storage
+        value: "25Gi"
+    target:
+      kind: PersistentVolumeClaim
+      name: ml-models-pvc
+
+  - patch: |-
+      - op: replace
+        path: /spec/resources/requests/storage
+        value: "50Gi"
+    target:
+      kind: PersistentVolumeClaim
+      name: ml-data-pvc
+
+  # Staging ingress with staging domain
+  - patch: |-
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: staging-api.neurectomy.io
+      - op: replace
+        path: /spec/rules/0/host
+        value: staging-api.neurectomy.io
+    target:
+      kind: Ingress
+      name: ml-service
+
+  # Add liveness/readiness probe adjustments for staging
+  - patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/livenessProbe/initialDelaySeconds
+        value: 30
+      - op: replace
+        path: /spec/template/spec/containers/0/readinessProbe/initialDelaySeconds
+        value: 15
+    target:
+      kind: Deployment
+      name: ml-service
+
+configMapGenerator:
+  - name: ml-service-config
+    behavior: merge
+    literals:
+      - log-level=INFO
+      - rate-limit-requests=500
+      - rate-limit-window-seconds=60
+      - max-workers=3
+      - enable-metrics=true
+      - enable-tracing=true
+      - environment=staging
+
+secretGenerator:
+  - name: ml-service-secrets
+    behavior: replace
+    literals:
+      - database-url=postgresql://neurectomy:${DB_PASSWORD}@postgres-staging:5432/neurectomy_staging
+      - redis-url=redis://redis-staging:6379
+      # Note: In production, use External Secrets Operator or Sealed Secrets
+      - jwt-secret=${JWT_SECRET_STAGING}

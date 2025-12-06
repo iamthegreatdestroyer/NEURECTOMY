@@ -1,0 +1,60 @@
+# ============================================================================
+# NEURECTOMY - Flagger Alert Provider
+# Notifications for canary deployment events
+# ============================================================================
+
+apiVersion: flagger.app/v1beta1
+kind: AlertProvider
+metadata:
+  name: slack
+  namespace: neurectomy-prod
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: alerting
+spec:
+  type: slack
+  channel: neurectomy-deployments
+  secretRef:
+    name: flagger-slack-webhook
+---
+apiVersion: flagger.app/v1beta1
+kind: AlertProvider
+metadata:
+  name: slack-staging
+  namespace: neurectomy-staging
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: alerting
+    environment: staging
+spec:
+  type: slack
+  channel: neurectomy-deployments
+  secretRef:
+    name: flagger-slack-webhook
+---
+# Slack webhook secret (placeholder)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: flagger-slack-webhook
+  namespace: neurectomy-prod
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: alerting
+type: Opaque
+stringData:
+  # TODO: Replace with actual webhook URL or use external-secrets-operator
+  address: "${SLACK_WEBHOOK_URL}"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: flagger-slack-webhook
+  namespace: neurectomy-staging
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: alerting
+    environment: staging
+type: Opaque
+stringData:
+  address: "${SLACK_WEBHOOK_URL}"

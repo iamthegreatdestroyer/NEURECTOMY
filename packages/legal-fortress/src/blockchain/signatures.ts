@@ -91,7 +91,7 @@ export function encryptWithKey(data: string, key: string): string {
 
   const encrypted = CryptoJS.AES.encrypt(data, keyWordArray, {
     iv,
-    mode: CryptoJS.mode.GCM,
+    mode: CryptoJS.mode.CBC,
     padding: CryptoJS.pad.Pkcs7,
   });
 
@@ -113,7 +113,7 @@ export function decryptWithKey(encryptedData: string, key: string): string {
 
   const decrypted = CryptoJS.AES.decrypt(ciphertext, keyWordArray, {
     iv,
-    mode: CryptoJS.mode.GCM,
+    mode: CryptoJS.mode.CBC,
     padding: CryptoJS.pad.Pkcs7,
   });
 
@@ -328,7 +328,10 @@ export class DigitalSignatureService extends EventEmitter<SignatureEvents> {
       throw new Error("Key pair is not password-protected");
     }
 
-    const derivedKey = deriveKey(password, keyPair.keyDerivationParams);
+    const derivedKey = deriveKey(
+      password,
+      keyPair.keyDerivationParams as KeyDerivationParams
+    );
     const privateKey = decryptWithKey(keyPair.encryptedPrivateKey, derivedKey);
 
     this.privateKeys.set(keyPairId, privateKey);
@@ -366,7 +369,7 @@ export class DigitalSignatureService extends EventEmitter<SignatureEvents> {
     switch (keyPair.algorithm) {
       case "ecdsa_secp256k1": {
         const wallet = new ethers.Wallet(privateKey);
-        const messageHash = ethers.hashMessage(contentHash);
+        const _messageHash = ethers.hashMessage(contentHash);
         signature = await wallet.signMessage(contentHash);
         break;
       }
@@ -619,26 +622,4 @@ export class MultiSignatureCoordinator {
   }
 }
 
-// ============================================================================
-// EXPORTS
-// ============================================================================
-
-export {
-  generateSalt,
-  deriveKey,
-  encryptWithKey,
-  decryptWithKey,
-  KeyPairGenerator,
-  InMemoryKeyStore,
-  DigitalSignatureService,
-  MultiSignatureCoordinator,
-};
-
-export type {
-  KeyDerivationParams,
-  KeyStore,
-  SignatureEvents,
-  SignatureServiceConfig,
-  MultiSigRequirement,
-  MultiSignature,
-};
+// Types and functions are already exported inline above

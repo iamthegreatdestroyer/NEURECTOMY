@@ -1,0 +1,107 @@
+# ============================================================================
+# NEURECTOMY - Velero Backup Configuration
+# Multi-cloud backup and disaster recovery with Velero
+# ============================================================================
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: velero
+
+resources:
+  - namespace.yaml
+  - backup-storage-locations.yaml
+  - volume-snapshot-locations.yaml
+  - schedules.yaml
+  - backup-policies.yaml
+
+# Helm chart installation for Velero
+helmCharts:
+  - name: velero
+    repo: https://vmware-tanzu.github.io/helm-charts
+    version: 5.2.0
+    releaseName: velero
+    namespace: velero
+    valuesInline:
+      image:
+        repository: velero/velero
+        tag: v1.12.2
+
+      # Init containers for cloud plugins
+      initContainers:
+        - name: velero-plugin-for-aws
+          image: velero/velero-plugin-for-aws:v1.8.2
+          volumeMounts:
+            - mountPath: /target
+              name: plugins
+        - name: velero-plugin-for-csi
+          image: velero/velero-plugin-for-csi:v0.6.2
+          volumeMounts:
+            - mountPath: /target
+              name: plugins
+
+      # Use IRSA for AWS authentication
+      serviceAccount:
+        server:
+          create: true
+          name: velero
+          annotations:
+            eks.amazonaws.com/role-arn: "${VELERO_IAM_ROLE_ARN}"
+
+      # Velero configuration
+      configuration:
+        backupStorageLocation:
+          - name: aws-primary
+            provider: aws
+            bucket: "${VELERO_BUCKET_NAME}"
+            prefix: neurectomy
+            config:
+              region: us-west-2
+              s3ForcePathStyle: "false"
+
+        volumeSnapshotLocation:
+          - name: aws-primary
+            provider: aws
+            config:
+              region: us-west-2
+
+        # Features
+        features: "EnableCSI"
+        defaultVolumesToFsBackup: true
+        uploaderType: kopia
+
+      # Resources
+      resources:
+        requests:
+          cpu: 500m
+          memory: 512Mi
+        limits:
+          cpu: 1000m
+          memory: 1Gi
+
+      # Deploy node-agent (formerly restic) for PV backups
+      deployNodeAgent: true
+      nodeAgent:
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+
+      # Prometheus metrics
+      metrics:
+        enabled: true
+        serviceMonitor:
+          enabled: true
+          namespace: monitoring
+
+      # Credentials (use secret for non-IRSA environments)
+      credentials:
+        useSecret: false # Using IRSA instead
+
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: neurectomy
+      app.kubernetes.io/component: backup

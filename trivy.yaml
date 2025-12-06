@@ -1,0 +1,126 @@
+# ============================================================================
+# NEURECTOMY - Trivy Security Scanner Configuration
+# Consistent vulnerability scanning policies across CI/CD
+# ============================================================================
+
+# Output format options: table, json, sarif, cyclonedx, spdx
+format: table
+
+# Exit code when vulnerabilities are found
+# 0 = don't fail, 1 = fail on any vulnerability matching severity
+exit-code: 0
+
+# Severity levels to report
+# Options: UNKNOWN, LOW, MEDIUM, HIGH, CRITICAL
+severity:
+  - CRITICAL
+  - HIGH
+  - MEDIUM
+
+# Ignore unfixed vulnerabilities
+ignore-unfixed: true
+
+# Vulnerability types to scan
+# Options: os, library
+vuln-type:
+  - os
+  - library
+
+# Security checks to enable for config scanning
+# Options: vuln, config, secret, license
+security-checks:
+  - vuln
+  - config
+  - secret
+
+# Timeout for scanning operations
+timeout: 15m
+
+# ============================================================================
+# Ignore specific CVEs (with justification)
+# ============================================================================
+# To add CVEs to ignore list, use .trivyignore file in project root
+
+# ============================================================================
+# License scanning configuration
+# ============================================================================
+license:
+  # Licenses that are forbidden in production
+  forbidden:
+    - GPL-3.0
+    - AGPL-3.0
+    - AGPL-1.0
+
+  # Licenses that require legal review
+  restricted:
+    - LGPL-2.1
+    - LGPL-3.0
+    - MPL-2.0
+    - EPL-1.0
+    - EPL-2.0
+
+# ============================================================================
+# Secret scanning configuration
+# ============================================================================
+secret:
+  # Enable secret scanning
+  enabled: true
+
+  # Custom secret patterns to detect
+  # Uses RE2 regex syntax
+  config: |
+    rules:
+      - id: neurectomy-api-key
+        category: generic
+        title: NEURECTOMY API Key
+        severity: CRITICAL
+        regex: NEURECTOMY_[A-Z_]+_KEY=[A-Za-z0-9+/=]{32,}
+      
+      - id: neurectomy-jwt-secret
+        category: generic
+        title: NEURECTOMY JWT Secret
+        severity: CRITICAL
+        regex: JWT_SECRET=[A-Za-z0-9+/=]{32,}
+
+# ============================================================================
+# Kubernetes misconfiguration checks
+# ============================================================================
+misconfiguration:
+  # Enable Kubernetes checks
+  enabled: true
+
+  # Checks to skip (by ID)
+  # See: https://aquasecurity.github.io/trivy/latest/docs/scanner/misconfiguration/check/
+  skip:
+    # Skip OpenShift-specific checks
+    - KSV116
+    # Skip if using PodDisruptionBudget externally
+    - KSV036
+
+# ============================================================================
+# Database configuration
+# ============================================================================
+db:
+  # Skip database update if recently updated
+  skip-update: false
+
+  # Use light database for faster scans (less comprehensive)
+  light: false
+
+# ============================================================================
+# Cache configuration
+# ============================================================================
+cache:
+  # Cache directory
+  dir: /tmp/trivy-cache
+
+  # Clear cache before scanning
+  clear: false
+# ============================================================================
+# Registry configuration for private images
+# ============================================================================
+# registry:
+#   username: ""
+#   password: ""
+#   token: ""
+#   insecure: false

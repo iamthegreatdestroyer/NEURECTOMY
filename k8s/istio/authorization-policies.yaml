@@ -1,0 +1,221 @@
+# ============================================================================
+# NEURECTOMY - Istio Authorization Policies
+# Fine-grained access control for service-to-service communication
+# ============================================================================
+
+# Default deny all in production namespace
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: deny-all
+  namespace: neurectomy-prod
+spec: {} # Empty spec = deny all
+
+# Allow ingress gateway to access services
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-ingress-gateway
+  namespace: neurectomy
+spec:
+  selector:
+    matchLabels:
+      app: ml-service
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account"
+      to:
+        - operation:
+            methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+            paths: ["/api/*", "/health", "/metrics", "/docs", "/openapi.json"]
+
+# ML Service access policy
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: ml-service-policy
+  namespace: neurectomy
+spec:
+  selector:
+    matchLabels:
+      app: ml-service
+  action: ALLOW
+  rules:
+    # Allow health checks from anywhere
+    - to:
+        - operation:
+            methods: ["GET"]
+            paths: ["/health", "/health/live", "/health/ready"]
+    # Allow metrics scraping from Prometheus
+    - from:
+        - source:
+            namespaces: ["monitoring"]
+            principals:
+              - "cluster.local/ns/monitoring/sa/prometheus"
+      to:
+        - operation:
+            methods: ["GET"]
+            paths: ["/metrics"]
+    # Allow API access from authenticated services
+    - from:
+        - source:
+            namespaces: ["neurectomy", "neurectomy-prod"]
+      to:
+        - operation:
+            methods: ["GET", "POST", "PUT", "DELETE"]
+            paths: ["/api/*"]
+      when:
+        - key: request.auth.claims[iss]
+          values: ["https://auth.neurectomy.io"]
+
+# PostgreSQL access policy - only specific services
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: postgres-policy
+  namespace: neurectomy
+spec:
+  selector:
+    matchLabels:
+      app: postgres
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/neurectomy/sa/ml-service"
+              - "cluster.local/ns/neurectomy/sa/mlflow"
+              - "cluster.local/ns/monitoring/sa/grafana"
+      to:
+        - operation:
+            ports: ["5432"]
+
+# Redis access policy
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: redis-policy
+  namespace: neurectomy
+spec:
+  selector:
+    matchLabels:
+      app: redis
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/neurectomy/sa/ml-service"
+      to:
+        - operation:
+            ports: ["6379"]
+
+# MLflow access policy
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: mlflow-policy
+  namespace: neurectomy
+spec:
+  selector:
+    matchLabels:
+      app: mlflow
+  action: ALLOW
+  rules:
+    # Allow ML service to access MLflow API
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/neurectomy/sa/ml-service"
+      to:
+        - operation:
+            methods: ["GET", "POST", "PUT"]
+            paths: ["/api/*"]
+    # Allow ingress for UI access
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account"
+      to:
+        - operation:
+            methods: ["GET"]
+            paths: ["/*"]
+
+# Grafana access policy
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: grafana-policy
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: grafana
+  action: ALLOW
+  rules:
+    # Allow ingress access
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account"
+      to:
+        - operation:
+            methods: ["GET", "POST"]
+
+# Prometheus access policy
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: prometheus-policy
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: prometheus
+  action: ALLOW
+  rules:
+    # Allow Grafana to query
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/monitoring/sa/grafana"
+      to:
+        - operation:
+            methods: ["GET", "POST"]
+            paths: ["/api/*", "/-/*"]
+    # Allow AlertManager
+    - from:
+        - source:
+            namespaces: ["monitoring"]
+      to:
+        - operation:
+            methods: ["GET", "POST"]
+
+# Deny external traffic to internal services
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: deny-external-to-internal
+  namespace: neurectomy
+spec:
+  selector:
+    matchLabels:
+      neurectomy.io/exposure: internal
+  action: DENY
+  rules:
+    - from:
+        - source:
+            notNamespaces:
+              ["neurectomy", "neurectomy-prod", "monitoring", "istio-system"]

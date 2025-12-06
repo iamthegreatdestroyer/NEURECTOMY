@@ -680,15 +680,4 @@ export class BatchLicenseDetector {
   }
 }
 
-// ============================================================================
-// EXPORTS
-// ============================================================================
-
-export {
-  LICENSE_DATABASE,
-  LicenseDetectionEngine,
-  BatchLicenseDetector,
-  DEFAULT_DETECTION_OPTIONS,
-};
-
-export type { LicenseDefinition, DetectionResult, DetectionOptions };
+// Types are already exported inline above

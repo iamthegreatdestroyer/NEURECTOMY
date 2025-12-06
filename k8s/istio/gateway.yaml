@@ -1,0 +1,101 @@
+# ============================================================================
+# NEURECTOMY - Istio Gateway Configuration
+# Ingress gateway for external traffic management
+# ============================================================================
+
+# Main application gateway
+---
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: neurectomy-gateway
+  namespace: neurectomy
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    # HTTPS server - production
+    - port:
+        number: 443
+        name: https
+        protocol: HTTPS
+      tls:
+        mode: SIMPLE
+        credentialName: neurectomy-tls-cert # Must exist in istio-system
+      hosts:
+        - "api.neurectomy.io"
+        - "mlflow.neurectomy.io"
+        - "grafana.neurectomy.io"
+    # HTTP server - redirect to HTTPS
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      tls:
+        httpsRedirect: true
+      hosts:
+        - "api.neurectomy.io"
+        - "mlflow.neurectomy.io"
+        - "grafana.neurectomy.io"
+
+# Development gateway (non-TLS for local testing)
+---
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: neurectomy-dev-gateway
+  namespace: neurectomy-dev
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - "*.neurectomy.dev"
+        - "localhost"
+
+# Internal services gateway (cluster-internal)
+---
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: internal-gateway
+  namespace: neurectomy
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 15443
+        name: tls-internal
+        protocol: TLS
+      tls:
+        mode: ISTIO_MUTUAL
+      hosts:
+        - "*.svc.cluster.local"
+
+# Monitoring gateway
+---
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: monitoring-gateway
+  namespace: monitoring
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 443
+        name: https
+        protocol: HTTPS
+      tls:
+        mode: SIMPLE
+        credentialName: monitoring-tls-cert
+      hosts:
+        - "grafana.neurectomy.io"
+        - "prometheus.neurectomy.io"
+        - "jaeger.neurectomy.io"

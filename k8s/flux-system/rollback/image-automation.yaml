@@ -1,0 +1,47 @@
+# ============================================================================
+# NEURECTOMY - Flux Image Automation
+# Automated image updates with rollback support
+# ============================================================================
+
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageRepository
+metadata:
+  name: ml-service
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: image-automation
+spec:
+  # Container registry URL
+  image: ghcr.io/iamthegreatdestroyer/neurectomy/ml-service
+
+  # Scan interval
+  interval: 5m
+
+  # Optional: Secret for private registry
+  # secretRef:
+  #   name: ghcr-credentials
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageRepository
+metadata:
+  name: rust-core
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: image-automation
+spec:
+  image: ghcr.io/iamthegreatdestroyer/neurectomy/rust-core
+  interval: 5m
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageRepository
+metadata:
+  name: spectrum-workspace
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/name: neurectomy
+    app.kubernetes.io/component: image-automation
+spec:
+  image: ghcr.io/iamthegreatdestroyer/neurectomy/spectrum-workspace
+  interval: 5m

@@ -1,0 +1,31 @@
+# ============================================================================
+# NEURECTOMY - ArgoCD Installation Kustomization
+# ============================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: argocd
+
+resources:
+  # Install ArgoCD using official manifests
+  - https://raw.githubusercontent.com/argoproj/argo-cd/v2.10.0/manifests/install.yaml
+  - namespace.yaml
+  - argocd-cm.yaml
+  - argocd-rbac-cm.yaml
+  - argocd-secret.yaml
+  - applications.yaml
+
+# Override ArgoCD server to use insecure mode for internal access
+# Configure ingress separately for external access
+patches:
+  - patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/command/-
+        value: --insecure
+    target:
+      kind: Deployment
+      name: argocd-server
+      namespace: argocd
+
+commonLabels:
+  app.kubernetes.io/part-of: neurectomy-platform

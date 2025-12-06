@@ -1,6 +1,6 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalDependencies": [".env", ".env.local"],
+  "globalDependencies": [".env", ".env.local", "tsconfig.json"],
   "globalEnv": [
     "NODE_ENV",
     "DATABASE_URL",
@@ -11,7 +11,20 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**", "build/**", "target/release/**"]
+      "inputs": [
+        "src/**",
+        "tsconfig.json",
+        "tsup.config.ts",
+        "package.json",
+        "!**/*.test.ts",
+        "!**/*.test.tsx",
+        "!**/*.spec.ts",
+        "!**/*.spec.tsx",
+        "!**/__tests__/**",
+        "!**/__mocks__/**"
+      ],
+      "outputs": ["dist/**", ".next/**", "build/**", "target/release/**"],
+      "outputLogs": "new-only"
     },
     "dev": {
       "dependsOn": ["^build"],
@@ -20,21 +33,59 @@
     },
     "test": {
       "dependsOn": ["build"],
-      "outputs": ["coverage/**"]
+      "inputs": [
+        "src/**",
+        "test/**",
+        "vitest.config.*",
+        "jest.config.*",
+        "tsconfig.json"
+      ],
+      "outputs": ["coverage/**"],
+      "outputLogs": "new-only"
+    },
+    "test:watch": {
+      "dependsOn": ["build"],
+      "cache": false,
+      "persistent": true
     },
     "test:coverage": {
       "dependsOn": ["build"],
-      "outputs": ["coverage/**"]
+      "inputs": [
+        "src/**",
+        "test/**",
+        "vitest.config.*",
+        "jest.config.*"
+      ],
+      "outputs": ["coverage/**"],
+      "outputLogs": "new-only"
     },
     "lint": {
-      "outputs": []
+      "inputs": [
+        "src/**",
+        ".eslintrc*",
+        "eslint.config.*",
+        "package.json"
+      ],
+      "outputs": [],
+      "cache": true
     },
     "typecheck": {
       "dependsOn": ["^build"],
+      "inputs": [
+        "src/**",
+        "tsconfig.json",
+        "package.json"
+      ],
       "outputs": []
     },
     "clean": {
       "cache": false
+    },
+    "codegen": {
+      "dependsOn": ["^build"],
+      "inputs": ["src/**/*.graphql", "codegen.ts", "codegen.yml"],
+      "outputs": ["src/generated/**"],
+      "cache": true
     }
   }
 }

@@ -1,0 +1,18 @@
+# ============================================================================
+# NEURECTOMY - Monitoring Kustomization
+# Central configuration for all monitoring components
+# ============================================================================
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: monitoring
+
+resources:
+  - namespace.yaml
+  - flux/
+  - dashboards/
+# Additional monitoring components can be added here
+# - prometheus/
+# - grafana/
+# - alertmanager/

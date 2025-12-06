@@ -1,0 +1,70 @@
+# ============================================================================
+# NEURECTOMY - Karpenter Configuration
+# Intelligent node provisioning and autoscaling
+# ============================================================================
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: karpenter
+
+resources:
+  - namespace.yaml
+  - node-pools.yaml
+  - ec2-node-classes.yaml
+
+# Helm chart installation for Karpenter
+helmCharts:
+  - name: karpenter
+    repo: oci://public.ecr.aws/karpenter
+    version: v0.33.0
+    releaseName: karpenter
+    namespace: karpenter
+    valuesInline:
+      settings:
+        clusterName: "${CLUSTER_NAME}"
+        clusterEndpoint: "${CLUSTER_ENDPOINT}"
+        interruptionQueue: "${CLUSTER_NAME}-karpenter"
+        featureGates:
+          spotToSpotConsolidation: true
+
+      controller:
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+
+      replicas: 2
+
+      serviceAccount:
+        name: karpenter
+        annotations:
+          eks.amazonaws.com/role-arn: "${KARPENTER_IAM_ROLE_ARN}"
+
+      # Topology spread for HA
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+
+      # Pod disruption budget
+      podDisruptionBudget:
+        enabled: true
+        minAvailable: 1
+
+      # Webhook configuration
+      webhook:
+        enabled: true
+        port: 8443
+
+      # Logging
+      logLevel: info
+      logEncoding: json
+
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: neurectomy
+      app.kubernetes.io/component: autoscaling

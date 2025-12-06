@@ -1537,21 +1537,4 @@ export async function batchFingerprint(
   });
 }
 
-// ============================================================================
-// EXPORTS
-// ============================================================================
-
-export {
-  removeComments,
-  normalizeWhitespace,
-  normalizeIdentifiers,
-  tokenize,
-  calculateCyclomaticComplexity,
-  calculateHalsteadMetrics,
-  generateCodeFingerprint,
-  compareFingerprints,
-  batchFingerprint,
-  LANGUAGE_CONFIGS,
-};
-
-export type { SupportedLanguage, LanguageConfig, FingerprintingConfig };
+// Types and functions are already exported inline above

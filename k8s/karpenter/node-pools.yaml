@@ -1,0 +1,305 @@
+# ============================================================================
+# NEURECTOMY - Karpenter Node Pools
+# Define scaling policies for different workload types
+# ============================================================================
+
+# Default node pool - General purpose workloads
+---
+apiVersion: karpenter.sh/v1beta1
+kind: NodePool
+metadata:
+  name: default
+  labels:
+    app.kubernetes.io/part-of: neurectomy
+spec:
+  template:
+    metadata:
+      labels:
+        node-type: general
+        managed-by: karpenter
+    spec:
+      nodeClassRef:
+        name: default
+      requirements:
+        # Instance types
+        - key: karpenter.k8s.aws/instance-category
+          operator: In
+          values: ["c", "m", "r"]
+        - key: karpenter.k8s.aws/instance-size
+          operator: In
+          values: ["medium", "large", "xlarge", "2xlarge"]
+        - key: karpenter.k8s.aws/instance-generation
+          operator: Gt
+          values: ["5"]
+        # Architecture
+        - key: kubernetes.io/arch
+          operator: In
+          values: ["amd64"]
+        # Capacity type
+        - key: karpenter.sh/capacity-type
+          operator: In
+          values: ["spot", "on-demand"]
+        # Availability zones
+        - key: topology.kubernetes.io/zone
+          operator: In
+          values: ["us-west-2a", "us-west-2b", "us-west-2c"]
+
+      # Kubelet configuration
+      kubelet:
+        systemReserved:
+          cpu: "100m"
+          memory: "256Mi"
+        kubeReserved:
+          cpu: "100m"
+          memory: "256Mi"
+        evictionHard:
+          "memory.available": "5%"
+          "nodefs.available": "10%"
+        evictionSoft:
+          "memory.available": "10%"
+          "nodefs.available": "15%"
+        evictionSoftGracePeriod:
+          "memory.available": "5m"
+          "nodefs.available": "5m"
+
+  # Limits
+  limits:
+    cpu: 1000
+    memory: 2000Gi
+
+  # Disruption
+  disruption:
+    consolidationPolicy: WhenUnderutilized
+    consolidateAfter: 30s
+    budgets:
+      - nodes: "10%"
+
+# ML/GPU node pool - For ML inference workloads
+---
+apiVersion: karpenter.sh/v1beta1
+kind: NodePool
+metadata:
+  name: ml-gpu
+  labels:
+    app.kubernetes.io/part-of: neurectomy
+    workload-type: ml
+spec:
+  template:
+    metadata:
+      labels:
+        node-type: gpu
+        managed-by: karpenter
+        workload-type: ml
+    spec:
+      nodeClassRef:
+        name: gpu
+      requirements:
+        # GPU instances
+        - key: karpenter.k8s.aws/instance-category
+          operator: In
+          values: ["g", "p"]
+        - key: karpenter.k8s.aws/instance-size
+          operator: In
+          values: ["xlarge", "2xlarge", "4xlarge", "8xlarge"]
+        - key: karpenter.k8s.aws/instance-gpu-count
+          operator: Gt
+          values: ["0"]
+        # Architecture
+        - key: kubernetes.io/arch
+          operator: In
+          values: ["amd64"]
+        # Capacity type - prefer spot for cost savings
+        - key: karpenter.sh/capacity-type
+          operator: In
+          values: ["spot", "on-demand"]
+        # Availability zones
+        - key: topology.kubernetes.io/zone
+          operator: In
+          values: ["us-west-2a", "us-west-2b"]
+
+      # Taints for GPU nodes
+      taints:
+        - key: nvidia.com/gpu
+          value: "true"
+          effect: NoSchedule
+
+      kubelet:
+        systemReserved:
+          cpu: "500m"
+          memory: "1Gi"
+        kubeReserved:
+          cpu: "500m"
+          memory: "1Gi"
+        evictionHard:
+          "memory.available": "5%"
+          "nodefs.available": "10%"
+
+  limits:
+    cpu: 200
+    memory: 800Gi
+    # Limit GPU count
+    nvidia.com/gpu: 20
+
+  disruption:
+    consolidationPolicy: WhenEmpty
+    consolidateAfter: 60s
+    budgets:
+      - nodes: "1"
+
+# High-memory node pool - For data processing
+---
+apiVersion: karpenter.sh/v1beta1
+kind: NodePool
+metadata:
+  name: high-memory
+  labels:
+    app.kubernetes.io/part-of: neurectomy
+    workload-type: data-processing
+spec:
+  template:
+    metadata:
+      labels:
+        node-type: high-memory
+        managed-by: karpenter
+    spec:
+      nodeClassRef:
+        name: default
+      requirements:
+        # Memory-optimized instances
+        - key: karpenter.k8s.aws/instance-category
+          operator: In
+          values: ["r", "x"]
+        - key: karpenter.k8s.aws/instance-size
+          operator: In
+          values: ["xlarge", "2xlarge", "4xlarge"]
+        - key: karpenter.k8s.aws/instance-memory-mb
+          operator: Gt
+          values: ["32000"]
+        # Architecture
+        - key: kubernetes.io/arch
+          operator: In
+          values: ["amd64"]
+        # Capacity type
+        - key: karpenter.sh/capacity-type
+          operator: In
+          values: ["spot", "on-demand"]
+
+  limits:
+    cpu: 500
+    memory: 4000Gi
+
+  disruption:
+    consolidationPolicy: WhenUnderutilized
+    consolidateAfter: 60s
+    budgets:
+      - nodes: "20%"
+
+# Spot-only node pool - Cost optimization for non-critical workloads
+---
+apiVersion: karpenter.sh/v1beta1
+kind: NodePool
+metadata:
+  name: spot-only
+  labels:
+    app.kubernetes.io/part-of: neurectomy
+    cost-optimization: aggressive
+spec:
+  template:
+    metadata:
+      labels:
+        node-type: spot
+        managed-by: karpenter
+    spec:
+      nodeClassRef:
+        name: default
+      requirements:
+        # Flexible instance types for spot availability
+        - key: karpenter.k8s.aws/instance-category
+          operator: In
+          values: ["c", "m", "r", "t"]
+        - key: karpenter.k8s.aws/instance-size
+          operator: In
+          values: ["medium", "large", "xlarge", "2xlarge"]
+        - key: karpenter.k8s.aws/instance-generation
+          operator: Gt
+          values: ["4"]
+        # Spot only
+        - key: karpenter.sh/capacity-type
+          operator: In
+          values: ["spot"]
+        # Architecture - include ARM for cost savings
+        - key: kubernetes.io/arch
+          operator: In
+          values: ["amd64", "arm64"]
+
+      # Taints for spot workloads
+      taints:
+        - key: spot
+          value: "true"
+          effect: PreferNoSchedule
+
+  limits:
+    cpu: 500
+    memory: 1000Gi
+
+  disruption:
+    consolidationPolicy: WhenUnderutilized
+    consolidateAfter: 15s
+    budgets:
+      - nodes: "50%" # Higher budget since spot can be interrupted
+
+# Critical workloads - On-demand only, high availability
+---
+apiVersion: karpenter.sh/v1beta1
+kind: NodePool
+metadata:
+  name: critical
+  labels:
+    app.kubernetes.io/part-of: neurectomy
+    priority: critical
+spec:
+  template:
+    metadata:
+      labels:
+        node-type: critical
+        managed-by: karpenter
+    spec:
+      nodeClassRef:
+        name: default
+      requirements:
+        # Reliable instance types
+        - key: karpenter.k8s.aws/instance-category
+          operator: In
+          values: ["m", "c"]
+        - key: karpenter.k8s.aws/instance-size
+          operator: In
+          values: ["large", "xlarge", "2xlarge"]
+        - key: karpenter.k8s.aws/instance-generation
+          operator: Gt
+          values: ["5"]
+        # On-demand only for reliability
+        - key: karpenter.sh/capacity-type
+          operator: In
+          values: ["on-demand"]
+        # Multi-AZ
+        - key: topology.kubernetes.io/zone
+          operator: In
+          values: ["us-west-2a", "us-west-2b", "us-west-2c"]
+
+      kubelet:
+        systemReserved:
+          cpu: "200m"
+          memory: "512Mi"
+        kubeReserved:
+          cpu: "200m"
+          memory: "512Mi"
+
+  limits:
+    cpu: 200
+    memory: 500Gi
+
+  disruption:
+    consolidationPolicy: WhenEmpty
+    consolidateAfter: 300s # 5 minutes - conservative
+    budgets:
+      - nodes: "1" # Only disrupt one node at a time
