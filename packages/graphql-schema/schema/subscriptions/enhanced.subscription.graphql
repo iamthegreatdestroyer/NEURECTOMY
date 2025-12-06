@@ -1,0 +1,1174 @@
+# =============================================================================
+# ENHANCED SUBSCRIPTION TYPES - Neurectomy GraphQL Schema
+# =============================================================================
+# Advanced subscription infrastructure with filtering, throttling, and resumption
+# support for production-grade real-time data streaming.
+# =============================================================================
+
+# =============================================================================
+# SUBSCRIPTION FILTER TYPES
+# =============================================================================
+
+"""
+Log level filter for subscription streams
+"""
+enum LogLevel {
+  TRACE
+  DEBUG
+  INFO
+  WARN
+  ERROR
+  FATAL
+}
+
+"""
+Subscription filter input for agent streams
+"""
+input AgentSubscriptionFilter {
+  """
+  Filter by agent ID
+  """
+  agentId: ID
+  """
+  Filter by multiple agent IDs
+  """
+  agentIds: [ID!]
+  """
+  Filter by agent status
+  """
+  status: [AgentStatus!]
+  """
+  Filter by capability type
+  """
+  capabilities: [String!]
+  """
+  Minimum log level to include
+  """
+  minLogLevel: LogLevel
+  """
+  Text search in log messages
+  """
+  messageContains: String
+  """
+  Only include events after this timestamp
+  """
+  since: DateTime
+  """
+  Only include events with ID > lastEventId (for resumption)
+  """
+  lastEventId: ID
+  """
+  Custom metadata filter (JSON match)
+  """
+  metadataFilter: JSON
+}
+
+"""
+Subscription filter input for workflow streams
+"""
+input WorkflowSubscriptionFilter {
+  """
+  Filter by workflow ID
+  """
+  workflowId: ID
+  """
+  Filter by execution ID
+  """
+  executionId: ID
+  """
+  Filter by workflow status
+  """
+  status: [WorkflowStatus!]
+  """
+  Filter by node type
+  """
+  nodeTypes: [String!]
+  """
+  Only include events after this timestamp
+  """
+  since: DateTime
+  """
+  Last event ID for resumption
+  """
+  lastEventId: ID
+  """
+  Filter by user who triggered the workflow
+  """
+  triggeredBy: ID
+  """
+  Filter by tags
+  """
+  tags: [String!]
+}
+
+"""
+Subscription filter input for system events
+"""
+input SystemSubscriptionFilter {
+  """
+  Filter by service name
+  """
+  services: [String!]
+  """
+  Filter by event severity
+  """
+  severity: [EventSeverity!]
+  """
+  Filter by event type
+  """
+  eventTypes: [SystemEventType!]
+  """
+  Only include events after this timestamp
+  """
+  since: DateTime
+  """
+  Last event ID for resumption
+  """
+  lastEventId: ID
+  """
+  Filter by component
+  """
+  components: [String!]
+}
+
+"""
+Subscription filter input for conversation streams
+"""
+input ConversationSubscriptionFilter {
+  """
+  Filter by conversation ID
+  """
+  conversationId: ID
+  """
+  Filter by participant ID
+  """
+  participantId: ID
+  """
+  Filter by message role
+  """
+  roles: [MessageRole!]
+  """
+  Only include messages after this timestamp
+  """
+  since: DateTime
+  """
+  Last event ID for resumption
+  """
+  lastEventId: ID
+  """
+  Filter by conversation tags
+  """
+  tags: [String!]
+}
+
+"""
+Event severity levels
+"""
+enum EventSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+"""
+System event types
+"""
+enum SystemEventType {
+  SERVICE_STATUS
+  HEALTH_CHECK
+  RESOURCE_USAGE
+  ERROR
+  ALERT
+  DEPLOYMENT
+  SCALING
+  CONFIGURATION
+}
+
+# =============================================================================
+# THROTTLE CONFIGURATION
+# =============================================================================
+
+"""
+Throttle strategy for high-frequency subscriptions
+"""
+enum ThrottleStrategy {
+  """
+  Drop oldest events when buffer is full
+  """
+  DROP_OLDEST
+  """
+  Drop newest events when buffer is full
+  """
+  DROP_NEWEST
+  """
+  Sample events at specified rate
+  """
+  SAMPLE
+  """
+  Buffer and batch events
+  """
+  BATCH
+  """
+  No throttling (may overwhelm client)
+  """
+  NONE
+}
+
+"""
+Throttle configuration for subscription streams
+"""
+input ThrottleConfig {
+  """
+  Throttle strategy to use
+  """
+  strategy: ThrottleStrategy = DROP_OLDEST
+  """
+  Maximum events per second (for sampling)
+  """
+  maxEventsPerSecond: Int
+  """
+  Buffer size before throttling kicks in
+  """
+  bufferSize: Int = 100
+  """
+  Batch interval in milliseconds (for BATCH strategy)
+  """
+  batchIntervalMs: Int = 1000
+  """
+  Maximum batch size
+  """
+  maxBatchSize: Int = 50
+}
+
+# =============================================================================
+# RESUMPTION & DELIVERY GUARANTEES
+# =============================================================================
+
+"""
+Delivery guarantee level for subscriptions
+"""
+enum DeliveryGuarantee {
+  """
+  Fire and forget - no guarantees
+  """
+  AT_MOST_ONCE
+  """
+  Guaranteed delivery with possible duplicates
+  """
+  AT_LEAST_ONCE
+  """
+  Exactly once delivery (requires server support)
+  """
+  EXACTLY_ONCE
+}
+
+"""
+Resumption configuration for subscription recovery
+"""
+input ResumptionConfig {
+  """
+  Enable automatic resumption on reconnect
+  """
+  enabled: Boolean = true
+  """
+  Last received event ID for resumption
+  """
+  lastEventId: ID
+  """
+  Maximum events to replay on resumption
+  """
+  maxReplayCount: Int = 1000
+  """
+  Maximum time window for replay (ISO 8601 duration)
+  """
+  maxReplayWindow: String = "PT1H"
+  """
+  Delivery guarantee level
+  """
+  deliveryGuarantee: DeliveryGuarantee = AT_LEAST_ONCE
+}
+
+"""
+Event metadata for tracking and resumption
+"""
+type EventMetadata {
+  """
+  Unique event ID for ordering and resumption
+  """
+  eventId: ID!
+  """
+  Server timestamp when event was generated
+  """
+  timestamp: DateTime!
+  """
+  Sequence number within the stream
+  """
+  sequenceNumber: Int!
+  """
+  Previous event ID for chain validation
+  """
+  previousEventId: ID
+  """
+  Whether this is a replayed event
+  """
+  isReplay: Boolean!
+  """
+  Original timestamp if replayed
+  """
+  originalTimestamp: DateTime
+}
+
+# =============================================================================
+# ENHANCED SUBSCRIPTION OPTIONS
+# =============================================================================
+
+"""
+Comprehensive subscription options combining all features
+"""
+input SubscriptionOptions {
+  """
+  Throttle configuration
+  """
+  throttle: ThrottleConfig
+  """
+  Resumption configuration
+  """
+  resumption: ResumptionConfig
+  """
+  Include event metadata in response
+  """
+  includeMetadata: Boolean = true
+  """
+  Heartbeat interval in seconds (0 to disable)
+  """
+  heartbeatIntervalSeconds: Int = 30
+  """
+  Auto-reconnect on server-side disconnect
+  """
+  autoReconnect: Boolean = true
+  """
+  Maximum reconnection attempts
+  """
+  maxReconnectAttempts: Int = 10
+  """
+  Client identifier for server-side tracking
+  """
+  clientId: String
+}
+
+# =============================================================================
+# ENHANCED SUBSCRIPTION PAYLOADS
+# =============================================================================
+
+"""
+Wrapper for subscription events with metadata
+"""
+type SubscriptionEvent {
+  """
+  Event metadata for tracking
+  """
+  metadata: EventMetadata!
+  """
+  Event type discriminator
+  """
+  eventType: String!
+  """
+  Raw event payload as JSON
+  """
+  payload: JSON!
+}
+
+"""
+Agent event with full metadata
+"""
+type EnhancedAgentEvent {
+  """
+  Event metadata
+  """
+  metadata: EventMetadata!
+  """
+  Agent that generated the event
+  """
+  agent: Agent!
+  """
+  Event type
+  """
+  eventType: AgentEventType!
+  """
+  Event-specific data
+  """
+  data: AgentEventData!
+}
+
+"""
+Agent event types
+"""
+enum AgentEventType {
+  STATE_CHANGE
+  EXECUTION_START
+  EXECUTION_PROGRESS
+  EXECUTION_COMPLETE
+  EXECUTION_ERROR
+  METRIC_UPDATE
+  LOG_ENTRY
+  CAPABILITY_CHANGE
+  CONFIGURATION_CHANGE
+}
+
+"""
+Agent event data union
+"""
+union AgentEventData =
+  | AgentStateChange
+  | AgentExecutionEvent
+  | AgentMetricEvent
+  | AgentLogEvent
+
+"""
+Agent state change event
+"""
+type AgentStateChange {
+  """
+  Previous state
+  """
+  previousState: AgentStatus!
+  """
+  New state
+  """
+  newState: AgentStatus!
+  """
+  Reason for state change
+  """
+  reason: String
+  """
+  User who triggered the change
+  """
+  triggeredBy: User
+}
+
+"""
+Agent execution event
+"""
+type AgentExecutionEvent {
+  """
+  Execution ID
+  """
+  executionId: ID!
+  """
+  Current phase
+  """
+  phase: ExecutionPhase!
+  """
+  Progress percentage (0-100)
+  """
+  progress: Float
+  """
+  Current step description
+  """
+  currentStep: String
+  """
+  Execution result (if complete)
+  """
+  result: JSON
+  """
+  Error details (if failed)
+  """
+  error: ExecutionError
+}
+
+"""
+Execution phases
+"""
+enum ExecutionPhase {
+  QUEUED
+  INITIALIZING
+  RUNNING
+  PROCESSING
+  FINALIZING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+"""
+Execution error details
+"""
+type ExecutionError {
+  """
+  Error code
+  """
+  code: String!
+  """
+  Error message
+  """
+  message: String!
+  """
+  Stack trace (if available)
+  """
+  stackTrace: String
+  """
+  Recoverable flag
+  """
+  recoverable: Boolean!
+  """
+  Retry count
+  """
+  retryCount: Int
+}
+
+"""
+Agent metric event
+"""
+type AgentMetricEvent {
+  """
+  Metric name
+  """
+  metric: String!
+  """
+  Metric value
+  """
+  value: Float!
+  """
+  Unit of measurement
+  """
+  unit: String
+  """
+  Metric tags
+  """
+  tags: JSON
+}
+
+"""
+Agent log event
+"""
+type AgentLogEvent {
+  """
+  Log level
+  """
+  level: LogLevel!
+  """
+  Log message
+  """
+  message: String!
+  """
+  Structured log data
+  """
+  data: JSON
+  """
+  Logger name
+  """
+  logger: String
+  """
+  Source location
+  """
+  source: String
+}
+
+# =============================================================================
+# ENHANCED WORKFLOW SUBSCRIPTION PAYLOADS
+# =============================================================================
+
+"""
+Enhanced workflow event with metadata
+"""
+type EnhancedWorkflowEvent {
+  """
+  Event metadata
+  """
+  metadata: EventMetadata!
+  """
+  Workflow that generated the event
+  """
+  workflow: Workflow!
+  """
+  Execution instance
+  """
+  execution: WorkflowExecution
+  """
+  Event type
+  """
+  eventType: WorkflowEventType!
+  """
+  Event-specific data
+  """
+  data: WorkflowEventData!
+}
+
+"""
+Workflow event types
+"""
+enum WorkflowEventType {
+  EXECUTION_STARTED
+  EXECUTION_COMPLETED
+  EXECUTION_FAILED
+  NODE_STARTED
+  NODE_COMPLETED
+  NODE_FAILED
+  NODE_SKIPPED
+  BRANCH_SELECTED
+  LOOP_ITERATION
+  VARIABLE_CHANGED
+  TIMEOUT
+  CANCELLED
+}
+
+"""
+Workflow event data union
+"""
+union WorkflowEventData =
+  | WorkflowExecutionState
+  | WorkflowNodeEvent
+  | WorkflowVariableChange
+
+"""
+Workflow execution state
+"""
+type WorkflowExecutionState {
+  """
+  Execution ID
+  """
+  executionId: ID!
+  """
+  Current status
+  """
+  status: WorkflowStatus!
+  """
+  Progress percentage
+  """
+  progress: Float
+  """
+  Current node ID
+  """
+  currentNodeId: ID
+  """
+  Execution duration so far
+  """
+  durationMs: Int
+  """
+  Final result (if completed)
+  """
+  result: JSON
+  """
+  Error (if failed)
+  """
+  error: ExecutionError
+}
+
+"""
+Workflow node event
+"""
+type WorkflowNodeEvent {
+  """
+  Node ID
+  """
+  nodeId: ID!
+  """
+  Node type
+  """
+  nodeType: String!
+  """
+  Node status
+  """
+  status: NodeStatus!
+  """
+  Node input
+  """
+  input: JSON
+  """
+  Node output (if completed)
+  """
+  output: JSON
+  """
+  Execution time
+  """
+  executionTimeMs: Int
+  """
+  Error (if failed)
+  """
+  error: ExecutionError
+}
+
+"""
+Node execution status
+"""
+enum NodeStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  SKIPPED
+  CANCELLED
+}
+
+"""
+Workflow variable change
+"""
+type WorkflowVariableChange {
+  """
+  Variable name
+  """
+  variableName: String!
+  """
+  Previous value
+  """
+  previousValue: JSON
+  """
+  New value
+  """
+  newValue: JSON!
+  """
+  Node that caused the change
+  """
+  changedByNodeId: ID
+}
+
+# =============================================================================
+# ENHANCED SYSTEM SUBSCRIPTION PAYLOADS
+# =============================================================================
+
+"""
+Enhanced system event with metadata
+"""
+type EnhancedSystemEvent {
+  """
+  Event metadata
+  """
+  metadata: EventMetadata!
+  """
+  Event type
+  """
+  eventType: SystemEventType!
+  """
+  Event severity
+  """
+  severity: EventSeverity!
+  """
+  Event-specific data
+  """
+  data: SystemEventData!
+}
+
+"""
+System event data union
+"""
+union SystemEventData =
+  | ServiceStatusEvent
+  | ResourceUsageEvent
+  | SystemAlertEvent
+
+"""
+Service status event
+"""
+type ServiceStatusEvent {
+  """
+  Service name
+  """
+  service: String!
+  """
+  Service status
+  """
+  status: ServiceStatus!
+  """
+  Health check results
+  """
+  healthCheck: HealthCheckResult
+  """
+  Version information
+  """
+  version: String
+  """
+  Instance ID
+  """
+  instanceId: String
+}
+
+"""
+Service status enum
+"""
+enum ServiceStatus {
+  HEALTHY
+  DEGRADED
+  UNHEALTHY
+  STARTING
+  STOPPING
+  STOPPED
+  UNKNOWN
+}
+
+"""
+Health check result
+"""
+type HealthCheckResult {
+  """
+  Overall healthy flag
+  """
+  healthy: Boolean!
+  """
+  Individual check results
+  """
+  checks: [HealthCheck!]!
+  """
+  Total check duration
+  """
+  durationMs: Int!
+}
+
+"""
+Individual health check
+"""
+type HealthCheck {
+  """
+  Check name
+  """
+  name: String!
+  """
+  Check passed
+  """
+  passed: Boolean!
+  """
+  Check message
+  """
+  message: String
+  """
+  Check duration
+  """
+  durationMs: Int
+}
+
+"""
+Resource usage event
+"""
+type ResourceUsageEvent {
+  """
+  Resource type
+  """
+  resourceType: ResourceType!
+  """
+  Current usage percentage
+  """
+  usagePercent: Float!
+  """
+  Current value
+  """
+  currentValue: Float!
+  """
+  Maximum value
+  """
+  maxValue: Float!
+  """
+  Unit of measurement
+  """
+  unit: String!
+  """
+  Trend direction
+  """
+  trend: TrendDirection
+  """
+  Threshold alert
+  """
+  alert: ResourceAlert
+}
+
+"""
+Resource types
+"""
+enum ResourceType {
+  CPU
+  MEMORY
+  DISK
+  NETWORK_IN
+  NETWORK_OUT
+  GPU
+  CONNECTIONS
+  THREADS
+}
+
+"""
+Trend direction
+"""
+enum TrendDirection {
+  INCREASING
+  DECREASING
+  STABLE
+}
+
+"""
+Resource alert
+"""
+type ResourceAlert {
+  """
+  Alert level
+  """
+  level: EventSeverity!
+  """
+  Threshold exceeded
+  """
+  threshold: Float!
+  """
+  Alert message
+  """
+  message: String!
+}
+
+"""
+System alert event
+"""
+type SystemAlertEvent {
+  """
+  Alert ID
+  """
+  alertId: ID!
+  """
+  Alert title
+  """
+  title: String!
+  """
+  Alert description
+  """
+  description: String!
+  """
+  Alert severity
+  """
+  severity: EventSeverity!
+  """
+  Alert source
+  """
+  source: String!
+  """
+  Alert tags
+  """
+  tags: [String!]
+  """
+  Acknowledged flag
+  """
+  acknowledged: Boolean!
+  """
+  Resolved flag
+  """
+  resolved: Boolean!
+}
+
+# =============================================================================
+# BATCH AND AGGREGATED SUBSCRIPTIONS
+# =============================================================================
+
+"""
+Batched events for high-frequency streams
+"""
+type BatchedEvents {
+  """
+  Batch metadata
+  """
+  metadata: EventMetadata!
+  """
+  Batch start timestamp
+  """
+  batchStart: DateTime!
+  """
+  Batch end timestamp
+  """
+  batchEnd: DateTime!
+  """
+  Number of events in batch
+  """
+  eventCount: Int!
+  """
+  Events in the batch
+  """
+  events: [SubscriptionEvent!]!
+  """
+  Events dropped due to throttling
+  """
+  droppedCount: Int!
+}
+
+"""
+Aggregated metrics for time windows
+"""
+type AggregatedMetrics {
+  """
+  Window start
+  """
+  windowStart: DateTime!
+  """
+  Window end
+  """
+  windowEnd: DateTime!
+  """
+  Window duration in seconds
+  """
+  windowDurationSeconds: Int!
+  """
+  Aggregated metric values
+  """
+  metrics: [AggregatedMetric!]!
+}
+
+"""
+Single aggregated metric
+"""
+type AggregatedMetric {
+  """
+  Metric name
+  """
+  name: String!
+  """
+  Minimum value in window
+  """
+  min: Float!
+  """
+  Maximum value in window
+  """
+  max: Float!
+  """
+  Average value in window
+  """
+  avg: Float!
+  """
+  Sum of values in window
+  """
+  sum: Float!
+  """
+  Count of values in window
+  """
+  count: Int!
+  """
+  Latest value
+  """
+  latest: Float!
+  """
+  Percentiles
+  """
+  percentiles: MetricPercentiles
+}
+
+"""
+Metric percentiles
+"""
+type MetricPercentiles {
+  """
+  50th percentile
+  """
+  p50: Float!
+  """
+  90th percentile
+  """
+  p90: Float!
+  """
+  95th percentile
+  """
+  p95: Float!
+  """
+  99th percentile
+  """
+  p99: Float!
+}
+
+# =============================================================================
+# ENHANCED SUBSCRIPTION ROOT TYPE EXTENSIONS
+# =============================================================================
+
+extend type Subscription {
+  """
+  Enhanced agent event stream with filtering, throttling, and resumption
+  """
+  enhancedAgentEvents(
+    filter: AgentSubscriptionFilter
+    options: SubscriptionOptions
+  ): EnhancedAgentEvent!
+    @auth(requires: USER)
+    @rateLimit(limit: 10, window: "1s")
+
+  """
+  Enhanced workflow event stream with full observability
+  """
+  enhancedWorkflowEvents(
+    filter: WorkflowSubscriptionFilter
+    options: SubscriptionOptions
+  ): EnhancedWorkflowEvent!
+    @auth(requires: USER)
+    @rateLimit(limit: 10, window: "1s")
+
+  """
+  Enhanced system event stream for operations monitoring
+  """
+  enhancedSystemEvents(
+    filter: SystemSubscriptionFilter
+    options: SubscriptionOptions
+  ): EnhancedSystemEvent!
+    @auth(requires: ADMIN)
+    @rateLimit(limit: 20, window: "1s")
+
+  """
+  Batched events for high-frequency streams
+  """
+  batchedEvents(
+    filter: AgentSubscriptionFilter
+    batchConfig: ThrottleConfig
+    options: SubscriptionOptions
+  ): BatchedEvents! @auth(requires: USER) @rateLimit(limit: 5, window: "1s")
+
+  """
+  Aggregated metrics stream for dashboards
+  """
+  aggregatedMetrics(
+    metrics: [String!]!
+    windowSeconds: Int! = 60
+    options: SubscriptionOptions
+  ): AggregatedMetrics! @auth(requires: USER) @rateLimit(limit: 1, window: "1s")
+
+  """
+  Connection state events for monitoring subscription health
+  """
+  connectionState(clientId: String!): ConnectionStateEvent!
+    @auth(requires: USER)
+
+  """
+  Generic event stream with custom filtering
+  """
+  eventStream(
+    eventTypes: [String!]!
+    filter: JSON
+    options: SubscriptionOptions
+  ): SubscriptionEvent!
+    @auth(requires: USER)
+    @rateLimit(limit: 10, window: "1s")
+}
+
+"""
+Connection state event for client monitoring
+"""
+type ConnectionStateEvent {
+  """
+  Connection state
+  """
+  state: ConnectionState!
+  """
+  State change timestamp
+  """
+  timestamp: DateTime!
+  """
+  Reason for state change
+  """
+  reason: String
+  """
+  Reconnect attempt number
+  """
+  reconnectAttempt: Int
+  """
+  Time until next reconnect attempt
+  """
+  nextReconnectMs: Int
+}
+
+"""
+Connection states
+"""
+enum ConnectionState {
+  CONNECTING
+  CONNECTED
+  RECONNECTING
+  DISCONNECTED
+  FAILED
+}

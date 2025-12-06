@@ -1,0 +1,1085 @@
+# =============================================================================
+# AGENT INPUT TYPES
+# =============================================================================
+# Input types for all agent-related mutations and queries.
+# Follows GraphQL best practices with nullable fields for updates.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# CREATE AGENT INPUTS
+# -----------------------------------------------------------------------------
+
+"""
+Input for creating a new agent
+"""
+input CreateAgentInput {
+  """
+  Agent display name (required, 1-100 chars)
+  """
+  name: String!
+
+  """
+  Agent description (optional, max 2000 chars)
+  """
+  description: String
+
+  """
+  System prompt that defines agent behavior (required)
+  """
+  systemPrompt: String!
+
+  """
+  Model configuration
+  """
+  model: ModelConfigInput!
+
+  """
+  Agent configuration
+  """
+  config: AgentConfigInput
+
+  """
+  Initial tools to attach
+  """
+  toolIds: [ID!]
+
+  """
+  Visibility setting
+  """
+  visibility: AgentVisibility = PRIVATE
+
+  """
+  Custom metadata
+  """
+  metadata: JSON
+
+  """
+  Tags for organization
+  """
+  tags: [String!]
+}
+
+"""
+Input for model configuration
+"""
+input ModelConfigInput {
+  """
+  Model provider (e.g., OPENAI, ANTHROPIC)
+  """
+  provider: ModelProvider!
+
+  """
+  Model identifier (e.g., gpt-4, claude-3-opus)
+  """
+  modelId: String!
+
+  """
+  Maximum tokens to generate
+  """
+  maxTokens: Int
+
+  """
+  Temperature for response randomness (0.0-2.0)
+  """
+  temperature: Float
+
+  """
+  Top-p nucleus sampling (0.0-1.0)
+  """
+  topP: Float
+
+  """
+  Frequency penalty (-2.0 to 2.0)
+  """
+  frequencyPenalty: Float
+
+  """
+  Presence penalty (-2.0 to 2.0)
+  """
+  presencePenalty: Float
+
+  """
+  Stop sequences
+  """
+  stopSequences: [String!]
+
+  """
+  Custom model parameters
+  """
+  customParams: JSON
+}
+
+"""
+Input for agent configuration
+"""
+input AgentConfigInput {
+  """
+  Maximum conversation context length in tokens
+  """
+  maxContextTokens: Int
+
+  """
+  Response timeout in seconds
+  """
+  responseTimeoutSeconds: Int
+
+  """
+  Maximum retries on failure
+  """
+  maxRetries: Int
+
+  """
+  Enable streaming responses
+  """
+  streamingEnabled: Boolean
+
+  """
+  Memory configuration
+  """
+  memory: MemoryConfigInput
+
+  """
+  Guardrails configuration
+  """
+  guardrails: GuardrailsConfigInput
+
+  """
+  Rate limiting configuration
+  """
+  rateLimit: RateLimitConfigInput
+}
+
+"""
+Input for memory configuration
+"""
+input MemoryConfigInput {
+  """
+  Memory type
+  """
+  type: MemoryType!
+
+  """
+  Maximum messages to retain in short-term memory
+  """
+  maxMessages: Int
+
+  """
+  Maximum tokens in memory window
+  """
+  maxTokens: Int
+
+  """
+  Enable long-term memory storage
+  """
+  longTermEnabled: Boolean
+
+  """
+  Vector store configuration for semantic memory
+  """
+  vectorStoreId: ID
+
+  """
+  Memory summarization threshold
+  """
+  summarizationThreshold: Int
+}
+
+"""
+Memory type enumeration
+"""
+enum MemoryType {
+  """
+  No memory between conversations
+  """
+  NONE
+
+  """
+  Sliding window of recent messages
+  """
+  WINDOW
+
+  """
+  Full conversation history
+  """
+  FULL
+
+  """
+  Summarized conversation history
+  """
+  SUMMARY
+
+  """
+  Semantic/vector memory
+  """
+  SEMANTIC
+
+  """
+  Hybrid approach combining multiple types
+  """
+  HYBRID
+}
+
+"""
+Input for guardrails configuration
+"""
+input GuardrailsConfigInput {
+  """
+  Enable content filtering
+  """
+  contentFilterEnabled: Boolean
+
+  """
+  Content filter sensitivity (0.0-1.0)
+  """
+  contentFilterThreshold: Float
+
+  """
+  Enable PII detection and masking
+  """
+  piiFilterEnabled: Boolean
+
+  """
+  PII types to filter
+  """
+  piiTypes: [PiiType!]
+
+  """
+  Maximum output length
+  """
+  maxOutputTokens: Int
+
+  """
+  Prohibited topics/keywords
+  """
+  blockedTopics: [String!]
+
+  """
+  Required topics (agent must stay on-topic)
+  """
+  requiredTopics: [String!]
+
+  """
+  Enable fact-checking
+  """
+  factCheckEnabled: Boolean
+}
+
+"""
+PII (Personally Identifiable Information) types
+"""
+enum PiiType {
+  EMAIL
+  PHONE_NUMBER
+  ADDRESS
+  SSN
+  CREDIT_CARD
+  BANK_ACCOUNT
+  DATE_OF_BIRTH
+  IP_ADDRESS
+  NAME
+  CUSTOM
+}
+
+"""
+Input for rate limiting configuration
+"""
+input RateLimitConfigInput {
+  """
+  Requests per minute
+  """
+  requestsPerMinute: Int
+
+  """
+  Tokens per minute
+  """
+  tokensPerMinute: Int
+
+  """
+  Requests per day
+  """
+  requestsPerDay: Int
+
+  """
+  Tokens per day
+  """
+  tokensPerDay: Int
+
+  """
+  Burst limit
+  """
+  burstLimit: Int
+}
+
+# -----------------------------------------------------------------------------
+# UPDATE AGENT INPUTS
+# -----------------------------------------------------------------------------
+
+"""
+Input for updating an existing agent
+"""
+input UpdateAgentInput {
+  """
+  Update agent name
+  """
+  name: String
+
+  """
+  Update description
+  """
+  description: String
+
+  """
+  Update system prompt
+  """
+  systemPrompt: String
+
+  """
+  Update model configuration
+  """
+  model: ModelConfigInput
+
+  """
+  Update agent configuration
+  """
+  config: AgentConfigInput
+
+  """
+  Update visibility
+  """
+  visibility: AgentVisibility
+
+  """
+  Update metadata (replaces existing)
+  """
+  metadata: JSON
+
+  """
+  Update tags (replaces existing)
+  """
+  tags: [String!]
+}
+
+"""
+Input for partial agent configuration update
+"""
+input PatchAgentConfigInput {
+  """
+  Update max context tokens
+  """
+  maxContextTokens: Int
+
+  """
+  Update response timeout
+  """
+  responseTimeoutSeconds: Int
+
+  """
+  Update max retries
+  """
+  maxRetries: Int
+
+  """
+  Update streaming setting
+  """
+  streamingEnabled: Boolean
+}
+
+"""
+Input for updating agent status
+"""
+input AgentStatusUpdateInput {
+  """
+  Agent ID to update
+  """
+  id: ID!
+
+  """
+  New status
+  """
+  status: AgentStatus!
+
+  """
+  Reason for status change
+  """
+  reason: String
+}
+
+# -----------------------------------------------------------------------------
+# TOOL MANAGEMENT INPUTS
+# -----------------------------------------------------------------------------
+
+"""
+Input for adding a tool to an agent
+"""
+input AddToolInput {
+  """
+  Tool ID to add
+  """
+  toolId: ID!
+
+  """
+  Tool-specific configuration
+  """
+  config: JSON
+
+  """
+  Whether this tool requires approval before execution
+  """
+  requiresApproval: Boolean
+
+  """
+  Tool priority (lower = higher priority)
+  """
+  priority: Int
+}
+
+"""
+Input for creating a custom tool
+"""
+input CreateToolInput {
+  """
+  Tool name
+  """
+  name: String!
+
+  """
+  Tool description (used by AI to understand when to use it)
+  """
+  description: String!
+
+  """
+  Tool type
+  """
+  type: ToolType!
+
+  """
+  Tool category
+  """
+  category: ToolCategory!
+
+  """
+  Tool parameters schema (JSON Schema)
+  """
+  parametersSchema: JSON!
+
+  """
+  Implementation details
+  """
+  implementation: ToolImplementationInput!
+
+  """
+  Whether the tool is enabled by default
+  """
+  enabledByDefault: Boolean
+
+  """
+  Usage examples
+  """
+  examples: [ToolExampleInput!]
+}
+
+"""
+Tool type enumeration
+"""
+enum ToolType {
+  """
+  Function call tool
+  """
+  FUNCTION
+
+  """
+  HTTP API tool
+  """
+  HTTP
+
+  """
+  Code execution tool
+  """
+  CODE
+
+  """
+  Database query tool
+  """
+  DATABASE
+
+  """
+  File operation tool
+  """
+  FILE
+
+  """
+  External service integration
+  """
+  INTEGRATION
+}
+
+"""
+Tool category enumeration
+"""
+enum ToolCategory {
+  GENERAL
+  DATA_RETRIEVAL
+  DATA_MANIPULATION
+  COMMUNICATION
+  FILE_MANAGEMENT
+  CODE_EXECUTION
+  WEB_SEARCH
+  KNOWLEDGE_BASE
+  CUSTOM
+}
+
+"""
+Tool implementation details
+"""
+input ToolImplementationInput {
+  """
+  For HTTP tools: endpoint URL
+  """
+  endpoint: String
+
+  """
+  For HTTP tools: HTTP method
+  """
+  method: String
+
+  """
+  For HTTP tools: headers
+  """
+  headers: JSON
+
+  """
+  For function tools: function code
+  """
+  functionCode: String
+
+  """
+  For code tools: runtime environment
+  """
+  runtime: String
+
+  """
+  Timeout in seconds
+  """
+  timeout: Int
+
+  """
+  Retry configuration
+  """
+  retryConfig: RetryConfigInput
+}
+
+"""
+Retry configuration
+"""
+input RetryConfigInput {
+  """
+  Maximum retry attempts
+  """
+  maxAttempts: Int!
+
+  """
+  Initial backoff in milliseconds
+  """
+  initialBackoffMs: Int!
+
+  """
+  Maximum backoff in milliseconds
+  """
+  maxBackoffMs: Int!
+
+  """
+  Backoff multiplier
+  """
+  backoffMultiplier: Float
+}
+
+"""
+Tool usage example
+"""
+input ToolExampleInput {
+  """
+  Example description
+  """
+  description: String!
+
+  """
+  Example input parameters
+  """
+  input: JSON!
+
+  """
+  Expected output
+  """
+  expectedOutput: JSON
+}
+
+# -----------------------------------------------------------------------------
+# FILTER AND SORT INPUTS
+# -----------------------------------------------------------------------------
+
+"""
+Input for filtering agents
+"""
+input AgentFilterInput {
+  """
+  Filter by IDs
+  """
+  ids: [ID!]
+
+  """
+  Filter by name (contains)
+  """
+  nameContains: String
+
+  """
+  Filter by exact name
+  """
+  name: String
+
+  """
+  Filter by status
+  """
+  status: AgentStatus
+
+  """
+  Filter by multiple statuses
+  """
+  statusIn: [AgentStatus!]
+
+  """
+  Filter by visibility
+  """
+  visibility: AgentVisibility
+
+  """
+  Filter by owner ID
+  """
+  ownerId: ID
+
+  """
+  Filter by model provider
+  """
+  modelProvider: ModelProvider
+
+  """
+  Filter by tags (any match)
+  """
+  tagsAny: [String!]
+
+  """
+  Filter by tags (all must match)
+  """
+  tagsAll: [String!]
+
+  """
+  Filter by creation date
+  """
+  createdAt: DateTimeFilterInput
+
+  """
+  Filter by update date
+  """
+  updatedAt: DateTimeFilterInput
+
+  """
+  Full-text search
+  """
+  search: String
+
+  """
+  Include deleted agents
+  """
+  includeDeleted: Boolean
+
+  """
+  Composite AND filter
+  """
+  AND: [AgentFilterInput!]
+
+  """
+  Composite OR filter
+  """
+  OR: [AgentFilterInput!]
+
+  """
+  Negate filter
+  """
+  NOT: AgentFilterInput
+}
+
+"""
+Input for sorting agents
+"""
+input AgentOrderByInput {
+  """
+  Field to sort by
+  """
+  field: AgentSortField!
+
+  """
+  Sort direction
+  """
+  direction: SortDirection!
+}
+
+"""
+Fields available for agent sorting
+"""
+enum AgentSortField {
+  NAME
+  CREATED_AT
+  UPDATED_AT
+  STATUS
+  CONVERSATION_COUNT
+  TOKEN_USAGE
+}
+
+"""
+Sort direction
+"""
+enum SortDirection {
+  ASC
+  DESC
+}
+
+"""
+DateTime filter input
+"""
+input DateTimeFilterInput {
+  """
+  Equal to
+  """
+  eq: DateTime
+
+  """
+  Not equal to
+  """
+  ne: DateTime
+
+  """
+  Greater than
+  """
+  gt: DateTime
+
+  """
+  Greater than or equal
+  """
+  gte: DateTime
+
+  """
+  Less than
+  """
+  lt: DateTime
+
+  """
+  Less than or equal
+  """
+  lte: DateTime
+
+  """
+  Between (inclusive)
+  """
+  between: DateTimeRangeInput
+}
+
+"""
+DateTime range input
+"""
+input DateTimeRangeInput {
+  """
+  Start of range (inclusive)
+  """
+  start: DateTime!
+
+  """
+  End of range (inclusive)
+  """
+  end: DateTime!
+}
+
+# -----------------------------------------------------------------------------
+# DEPLOYMENT INPUTS
+# -----------------------------------------------------------------------------
+
+"""
+Input for deploying an agent
+"""
+input DeployAgentInput {
+  """
+  Target environment
+  """
+  environment: DeploymentEnvironment!
+
+  """
+  Deployment configuration
+  """
+  config: DeploymentConfigInput
+
+  """
+  Version to deploy (defaults to latest)
+  """
+  version: String
+
+  """
+  Deployment notes
+  """
+  notes: String
+}
+
+"""
+Deployment configuration input
+"""
+input DeploymentConfigInput {
+  """
+  Replica count
+  """
+  replicas: Int
+
+  """
+  Resource limits
+  """
+  resources: ResourceLimitsInput
+
+  """
+  Auto-scaling configuration
+  """
+  autoScaling: AutoScalingConfigInput
+
+  """
+  Health check configuration
+  """
+  healthCheck: HealthCheckConfigInput
+
+  """
+  Environment variables
+  """
+  envVars: JSON
+}
+
+"""
+Resource limits input
+"""
+input ResourceLimitsInput {
+  """
+  CPU limit (e.g., "500m", "2")
+  """
+  cpuLimit: String
+
+  """
+  Memory limit (e.g., "512Mi", "2Gi")
+  """
+  memoryLimit: String
+
+  """
+  CPU request
+  """
+  cpuRequest: String
+
+  """
+  Memory request
+  """
+  memoryRequest: String
+}
+
+"""
+Auto-scaling configuration input
+"""
+input AutoScalingConfigInput {
+  """
+  Enable auto-scaling
+  """
+  enabled: Boolean!
+
+  """
+  Minimum replicas
+  """
+  minReplicas: Int!
+
+  """
+  Maximum replicas
+  """
+  maxReplicas: Int!
+
+  """
+  Target CPU utilization percentage
+  """
+  targetCpuPercent: Int
+
+  """
+  Target memory utilization percentage
+  """
+  targetMemoryPercent: Int
+
+  """
+  Scale-down stabilization window in seconds
+  """
+  scaleDownStabilizationSeconds: Int
+}
+
+"""
+Health check configuration input
+"""
+input HealthCheckConfigInput {
+  """
+  Health check path
+  """
+  path: String
+
+  """
+  Initial delay in seconds
+  """
+  initialDelaySeconds: Int
+
+  """
+  Period between checks in seconds
+  """
+  periodSeconds: Int
+
+  """
+  Timeout in seconds
+  """
+  timeoutSeconds: Int
+
+  """
+  Success threshold
+  """
+  successThreshold: Int
+
+  """
+  Failure threshold
+  """
+  failureThreshold: Int
+}
+
+# -----------------------------------------------------------------------------
+# VERSIONING INPUTS
+# -----------------------------------------------------------------------------
+
+"""
+Input for creating an agent version
+"""
+input CreateAgentVersionInput {
+  """
+  Version tag (semver recommended)
+  """
+  version: String!
+
+  """
+  Version description/changelog
+  """
+  description: String
+
+  """
+  Make this the active version
+  """
+  setActive: Boolean
+}
+
+"""
+Input for rolling back an agent
+"""
+input RollbackAgentInput {
+  """
+  Target version to rollback to
+  """
+  targetVersion: String!
+
+  """
+  Reason for rollback
+  """
+  reason: String
+
+  """
+  Keep current version as draft
+  """
+  keepCurrentAsDraft: Boolean
+}
+
+# -----------------------------------------------------------------------------
+# SHARING INPUTS
+# -----------------------------------------------------------------------------
+
+"""
+Input for sharing an agent
+"""
+input ShareAgentInput {
+  """
+  User ID to share with
+  """
+  userId: ID
+
+  """
+  Team ID to share with
+  """
+  teamId: ID
+
+  """
+  Permission level
+  """
+  permission: SharePermission!
+
+  """
+  Expiration date for the share
+  """
+  expiresAt: DateTime
+
+  """
+  Custom message to include
+  """
+  message: String
+}
+
+"""
+Share permission levels
+"""
+enum SharePermission {
+  """
+  Can view the agent
+  """
+  VIEW
+
+  """
+  Can use the agent
+  """
+  USE
+
+  """
+  Can edit the agent
+  """
+  EDIT
+
+  """
+  Full admin access
+  """
+  ADMIN
+}
+
+"""
+Input for cloning an agent
+"""
+input CloneAgentInput {
+  """
+  Name for the cloned agent
+  """
+  name: String!
+
+  """
+  Description for the cloned agent
+  """
+  description: String
+
+  """
+  Include tools in clone
+  """
+  includeTools: Boolean
+
+  """
+  Include knowledge bases in clone
+  """
+  includeKnowledgeBases: Boolean
+
+  """
+  Include conversations in clone
+  """
+  includeConversations: Boolean
+}

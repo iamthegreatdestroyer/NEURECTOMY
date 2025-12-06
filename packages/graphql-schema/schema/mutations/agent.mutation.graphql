@@ -1,0 +1,1133 @@
+# =============================================================================
+# AGENT MUTATIONS - CRUD and Batch Operations
+# =============================================================================
+# Comprehensive mutation definitions for Agent entity management including
+# creation, updates, deletion, and specialized operations like deployment,
+# configuration, and tool management.
+# =============================================================================
+
+extend type Mutation {
+  # ===========================================================================
+  # AGENT CRUD OPERATIONS
+  # ===========================================================================
+
+  """
+  Create a new AI agent with the specified configuration.
+  Requires AGENT_CREATE permission or ADMIN/SUPER_ADMIN role.
+  """
+  createAgent(input: CreateAgentInput!): CreateAgentPayload!
+    @auth(requires: [ADMIN, SUPER_ADMIN], permission: "AGENT_CREATE")
+    @rateLimit(limit: 10, window: 60)
+    @complexity(value: 5)
+    @audit(action: "agent.create", level: INFO)
+
+  """
+  Update an existing agent's configuration.
+  Requires AGENT_UPDATE permission or ownership of the agent.
+  """
+  updateAgent(id: ID!, input: UpdateAgentInput!): UpdateAgentPayload!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "AGENT_UPDATE")
+    @rateLimit(limit: 30, window: 60)
+    @complexity(value: 3)
+    @audit(action: "agent.update", level: INFO)
+
+  """
+  Soft delete an agent (marks as deleted but preserves data).
+  Requires AGENT_DELETE permission.
+  """
+  deleteAgent(id: ID!): DeleteAgentPayload!
+    @auth(requires: [ADMIN, SUPER_ADMIN], permission: "AGENT_DELETE")
+    @rateLimit(limit: 5, window: 60)
+    @complexity(value: 2)
+    @audit(action: "agent.delete", level: WARNING)
+
+  """
+  Permanently delete an agent and all associated data.
+  Requires SUPER_ADMIN role. This action is irreversible.
+  """
+  permanentlyDeleteAgent(id: ID!, confirmation: String!): DeleteAgentPayload!
+    @auth(requires: [SUPER_ADMIN])
+    @rateLimit(limit: 3, window: 300)
+    @complexity(value: 10)
+    @audit(action: "agent.permanent_delete", level: CRITICAL)
+
+  """
+  Restore a soft-deleted agent.
+  """
+  restoreAgent(id: ID!): RestoreAgentPayload!
+    @auth(requires: [ADMIN, SUPER_ADMIN], permission: "AGENT_RESTORE")
+    @rateLimit(limit: 10, window: 60)
+    @complexity(value: 2)
+    @audit(action: "agent.restore", level: INFO)
+
+  # ===========================================================================
+  # AGENT BATCH OPERATIONS
+  # ===========================================================================
+
+  """
+  Create multiple agents in a single transaction.
+  Limited to 50 agents per batch.
+  """
+  batchCreateAgents(input: BatchCreateAgentsInput!): BatchCreateAgentsPayload!
+    @auth(requires: [ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 5, window: 60)
+    @complexity(value: 20, multipliers: ["input.agents"])
+    @audit(action: "agent.batch_create", level: INFO)
+
+  """
+  Update multiple agents in a single transaction.
+  """
+  batchUpdateAgents(input: BatchUpdateAgentsInput!): BatchUpdateAgentsPayload!
+    @auth(requires: [ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 10, window: 60)
+    @complexity(value: 15, multipliers: ["input.updates"])
+    @audit(action: "agent.batch_update", level: INFO)
+
+  """
+  Soft delete multiple agents.
+  """
+  batchDeleteAgents(ids: [ID!]!): BatchDeleteAgentsPayload!
+    @auth(requires: [ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 5, window: 60)
+    @complexity(value: 10, multipliers: ["ids"])
+    @audit(action: "agent.batch_delete", level: WARNING)
+
+  # ===========================================================================
+  # AGENT STATE MANAGEMENT
+  # ===========================================================================
+
+  """
+  Start an agent, making it available for interactions.
+  """
+  startAgent(id: ID!): AgentStatePayload!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "AGENT_EXECUTE")
+    @rateLimit(limit: 20, window: 60)
+    @complexity(value: 5)
+    @audit(action: "agent.start", level: INFO)
+
+  """
+  Stop a running agent gracefully.
+  """
+  stopAgent(id: ID!, force: Boolean = false): AgentStatePayload!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "AGENT_EXECUTE")
+    @rateLimit(limit: 20, window: 60)
+    @complexity(value: 3)
+    @audit(action: "agent.stop", level: INFO)
+
+  """
+  Restart an agent (stop and start).
+  """
+  restartAgent(id: ID!): AgentStatePayload!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "AGENT_EXECUTE")
+    @rateLimit(limit: 10, window: 60)
+    @complexity(value: 7)
+    @audit(action: "agent.restart", level: INFO)
+
+  """
+  Pause an agent (maintains state but stops processing).
+  """
+  pauseAgent(id: ID!): AgentStatePayload!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "AGENT_EXECUTE")
+    @rateLimit(limit: 20, window: 60)
+    @complexity(value: 2)
+    @audit(action: "agent.pause", level: INFO)
+
+  """
+  Resume a paused agent.
+  """
+  resumeAgent(id: ID!): AgentStatePayload!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "AGENT_EXECUTE")
+    @rateLimit(limit: 20, window: 60)
+    @complexity(value: 2)
+    @audit(action: "agent.resume", level: INFO)
+
+  # ===========================================================================
+  # AGENT CONFIGURATION
+  # ===========================================================================
+
+  """
+  Update an agent's model configuration.
+  """
+  updateAgentModel(id: ID!, input: ModelConfigInput!): UpdateAgentModelPayload!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "AGENT_UPDATE")
+    @rateLimit(limit: 20, window: 60)
+    @complexity(value: 3)
+    @audit(action: "agent.update_model", level: INFO)
+
+  """
+  Update an agent's system prompt.
+  """
+  updateAgentPrompt(id: ID!, systemPrompt: String!): UpdateAgentPromptPayload!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "AGENT_UPDATE")
+    @rateLimit(limit: 30, window: 60)
+    @complexity(value: 2)
+    @audit(action: "agent.update_prompt", level: INFO)
+
+  # ===========================================================================
+  # AGENT TOOL MANAGEMENT
+  # ===========================================================================
+
+  """
+  Add a tool to an agent.
+  """
+  addAgentTool(agentId: ID!, input: AddToolInput!): AgentToolPayload!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "AGENT_UPDATE")
+    @rateLimit(limit: 20, window: 60)
+    @complexity(value: 3)
+    @audit(action: "agent.add_tool", level: INFO)
+
+  """
+  Remove a tool from an agent.
+  """
+  removeAgentTool(agentId: ID!, toolId: ID!): AgentToolPayload!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "AGENT_UPDATE")
+    @rateLimit(limit: 20, window: 60)
+    @complexity(value: 2)
+    @audit(action: "agent.remove_tool", level: INFO)
+
+  """
+  Update a tool's configuration on an agent.
+  """
+  updateAgentTool(
+    agentId: ID!
+    toolId: ID!
+    input: UpdateToolInput!
+  ): AgentToolPayload!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "AGENT_UPDATE")
+    @rateLimit(limit: 20, window: 60)
+    @complexity(value: 2)
+    @audit(action: "agent.update_tool", level: INFO)
+
+  """
+  Reorder tools for an agent.
+  """
+  reorderAgentTools(agentId: ID!, toolIds: [ID!]!): AgentToolPayload!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "AGENT_UPDATE")
+    @rateLimit(limit: 20, window: 60)
+    @complexity(value: 2)
+    @audit(action: "agent.reorder_tools", level: INFO)
+
+  # ===========================================================================
+  # AGENT DEPLOYMENT
+  # ===========================================================================
+
+  """
+  Deploy an agent to a specific environment.
+  """
+  deployAgent(id: ID!, input: DeployAgentInput!): DeployAgentPayload!
+    @auth(requires: [ADMIN, SUPER_ADMIN], permission: "AGENT_DEPLOY")
+    @rateLimit(limit: 5, window: 60)
+    @complexity(value: 15)
+    @audit(action: "agent.deploy", level: WARNING)
+
+  """
+  Undeploy an agent from an environment.
+  """
+  undeployAgent(
+    id: ID!
+    environment: DeploymentEnvironment!
+  ): UndeployAgentPayload!
+    @auth(requires: [ADMIN, SUPER_ADMIN], permission: "AGENT_DEPLOY")
+    @rateLimit(limit: 10, window: 60)
+    @complexity(value: 10)
+    @audit(action: "agent.undeploy", level: WARNING)
+
+  """
+  Clone an agent with a new name.
+  """
+  cloneAgent(id: ID!, name: String!, description: String): CloneAgentPayload!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "AGENT_CREATE")
+    @rateLimit(limit: 10, window: 60)
+    @complexity(value: 8)
+    @audit(action: "agent.clone", level: INFO)
+
+  # ===========================================================================
+  # AGENT VERSIONING
+  # ===========================================================================
+
+  """
+  Create a new version of an agent.
+  """
+  createAgentVersion(
+    id: ID!
+    input: CreateVersionInput!
+  ): CreateAgentVersionPayload!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "AGENT_UPDATE")
+    @rateLimit(limit: 10, window: 60)
+    @complexity(value: 5)
+    @audit(action: "agent.create_version", level: INFO)
+
+  """
+  Rollback an agent to a previous version.
+  """
+  rollbackAgent(id: ID!, versionId: ID!): RollbackAgentPayload!
+    @auth(requires: [ADMIN, SUPER_ADMIN], permission: "AGENT_UPDATE")
+    @rateLimit(limit: 5, window: 60)
+    @complexity(value: 8)
+    @audit(action: "agent.rollback", level: WARNING)
+
+  # ===========================================================================
+  # AGENT SHARING
+  # ===========================================================================
+
+  """
+  Share an agent with other users or teams.
+  """
+  shareAgent(id: ID!, input: ShareAgentInput!): ShareAgentPayload!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "AGENT_SHARE")
+    @rateLimit(limit: 20, window: 60)
+    @complexity(value: 3)
+    @audit(action: "agent.share", level: INFO)
+
+  """
+  Revoke agent sharing.
+  """
+  revokeAgentShare(id: ID!, userId: ID!): RevokeSharePayload!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "AGENT_SHARE")
+    @rateLimit(limit: 20, window: 60)
+    @complexity(value: 2)
+    @audit(action: "agent.revoke_share", level: INFO)
+
+  """
+  Transfer ownership of an agent to another user.
+  """
+  transferAgentOwnership(id: ID!, newOwnerId: ID!): TransferOwnershipPayload!
+    @auth(requires: [ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 5, window: 60)
+    @complexity(value: 5)
+    @audit(action: "agent.transfer_ownership", level: WARNING)
+}
+
+# =============================================================================
+# PAYLOAD DEFINITIONS
+# =============================================================================
+
+"""
+Payload for createAgent mutation
+"""
+type CreateAgentPayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  The newly created agent
+  """
+  agent: Agent
+}
+
+"""
+Payload for updateAgent mutation
+"""
+type UpdateAgentPayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  The updated agent
+  """
+  agent: Agent
+
+  """
+  Fields that were changed
+  """
+  changedFields: [String!]
+}
+
+"""
+Payload for deleteAgent mutation
+"""
+type DeleteAgentPayload implements MutationPayload & DeletePayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+  deletedId: ID
+
+  """
+  When the agent was deleted
+  """
+  deletedAt: DateTime
+}
+
+"""
+Payload for restoreAgent mutation
+"""
+type RestoreAgentPayload implements MutationPayload & RestorePayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+  restoredId: ID
+
+  """
+  The restored agent
+  """
+  agent: Agent
+}
+
+"""
+Payload for batch create operations
+"""
+type BatchCreateAgentsPayload implements MutationPayload & BatchMutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+  successCount: Int!
+  failureCount: Int!
+  totalCount: Int!
+
+  """
+  Created agents
+  """
+  agents: [Agent!]!
+
+  """
+  Results for each item in the batch
+  """
+  results: [BatchItemResult!]!
+}
+
+"""
+Payload for batch update operations
+"""
+type BatchUpdateAgentsPayload implements MutationPayload & BatchMutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+  successCount: Int!
+  failureCount: Int!
+  totalCount: Int!
+
+  """
+  Updated agents
+  """
+  agents: [Agent!]!
+
+  """
+  Results for each item in the batch
+  """
+  results: [BatchItemResult!]!
+}
+
+"""
+Payload for batch delete operations
+"""
+type BatchDeleteAgentsPayload implements MutationPayload & BatchDeletePayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+  deletedIds: [ID!]!
+  successCount: Int!
+  failureCount: Int!
+
+  """
+  Results for each item in the batch
+  """
+  results: [BatchItemResult!]!
+}
+
+"""
+Payload for agent state change operations
+"""
+type AgentStatePayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  The agent with updated state
+  """
+  agent: Agent
+
+  """
+  Previous state
+  """
+  previousState: AgentStatus
+
+  """
+  New state
+  """
+  newState: AgentStatus
+}
+
+"""
+Payload for model update
+"""
+type UpdateAgentModelPayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  The agent with updated model
+  """
+  agent: Agent
+
+  """
+  Previous model configuration
+  """
+  previousModel: ModelConfig
+}
+
+"""
+Payload for prompt update
+"""
+type UpdateAgentPromptPayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  The agent with updated prompt
+  """
+  agent: Agent
+
+  """
+  Previous system prompt
+  """
+  previousPrompt: String
+}
+
+"""
+Payload for tool operations
+"""
+type AgentToolPayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  The agent with updated tools
+  """
+  agent: Agent
+
+  """
+  The affected tool
+  """
+  tool: Tool
+}
+
+"""
+Payload for deploy operations
+"""
+type DeployAgentPayload implements MutationPayload & AsyncMutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+  operation: OperationInfo
+
+  """
+  Deployment details
+  """
+  deployment: AgentDeployment
+}
+
+"""
+Payload for undeploy operations
+"""
+type UndeployAgentPayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  The agent that was undeployed
+  """
+  agent: Agent
+
+  """
+  Environment from which the agent was undeployed
+  """
+  environment: DeploymentEnvironment
+}
+
+"""
+Payload for clone operations
+"""
+type CloneAgentPayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  The newly cloned agent
+  """
+  clonedAgent: Agent
+
+  """
+  The original agent
+  """
+  originalAgent: Agent
+}
+
+"""
+Payload for version creation
+"""
+type CreateAgentVersionPayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  The agent with new version
+  """
+  agent: Agent
+
+  """
+  The created version
+  """
+  version: AgentVersion
+}
+
+"""
+Payload for rollback operations
+"""
+type RollbackAgentPayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  The agent after rollback
+  """
+  agent: Agent
+
+  """
+  The version rolled back to
+  """
+  rolledBackTo: AgentVersion
+
+  """
+  The version rolled back from
+  """
+  rolledBackFrom: AgentVersion
+}
+
+"""
+Payload for share operations
+"""
+type ShareAgentPayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  The shared agent
+  """
+  agent: Agent
+
+  """
+  Users the agent is now shared with
+  """
+  sharedWith: [User!]!
+}
+
+"""
+Payload for revoke share operations
+"""
+type RevokeSharePayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  The agent with updated sharing
+  """
+  agent: Agent
+
+  """
+  User whose access was revoked
+  """
+  revokedUser: User
+}
+
+"""
+Payload for ownership transfer
+"""
+type TransferOwnershipPayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  The agent with new owner
+  """
+  agent: Agent
+
+  """
+  Previous owner
+  """
+  previousOwner: User
+
+  """
+  New owner
+  """
+  newOwner: User
+}
+
+# =============================================================================
+# INPUT DEFINITIONS
+# =============================================================================
+
+"""
+Input for batch agent creation
+"""
+input BatchCreateAgentsInput {
+  """
+  Agents to create (max 50)
+  """
+  agents: [CreateAgentInput!]!
+
+  """
+  Whether to fail the entire batch if one fails
+  """
+  atomicBatch: Boolean = false
+
+  """
+  Mutation options
+  """
+  options: MutationOptions
+}
+
+"""
+Input for batch agent updates
+"""
+input BatchUpdateAgentsInput {
+  """
+  Updates to apply
+  """
+  updates: [BatchAgentUpdateInput!]!
+
+  """
+  Whether to fail the entire batch if one fails
+  """
+  atomicBatch: Boolean = false
+
+  """
+  Mutation options
+  """
+  options: MutationOptions
+}
+
+"""
+Single update within a batch
+"""
+input BatchAgentUpdateInput {
+  """
+  ID of the agent to update
+  """
+  id: ID!
+
+  """
+  Update data
+  """
+  input: UpdateAgentInput!
+}
+
+"""
+Input for adding a tool to an agent
+"""
+input AddToolInput {
+  """
+  Name of the tool
+  """
+  name: String!
+
+  """
+  Type of the tool
+  """
+  type: ToolType!
+
+  """
+  Tool configuration
+  """
+  config: JSON
+
+  """
+  Whether the tool is enabled
+  """
+  enabled: Boolean = true
+
+  """
+  Tool description
+  """
+  description: String
+}
+
+"""
+Input for updating a tool
+"""
+input UpdateToolInput {
+  """
+  Updated name
+  """
+  name: String
+
+  """
+  Updated configuration
+  """
+  config: JSON
+
+  """
+  Whether the tool is enabled
+  """
+  enabled: Boolean
+
+  """
+  Updated description
+  """
+  description: String
+}
+
+"""
+Input for deploying an agent
+"""
+input DeployAgentInput {
+  """
+  Target environment
+  """
+  environment: DeploymentEnvironment!
+
+  """
+  Deployment configuration
+  """
+  config: DeploymentConfigInput
+
+  """
+  Whether to wait for deployment to complete
+  """
+  waitForCompletion: Boolean = false
+
+  """
+  Maximum wait time in seconds
+  """
+  timeout: Int = 300
+}
+
+"""
+Configuration for deployment
+"""
+input DeploymentConfigInput {
+  """
+  Number of replicas
+  """
+  replicas: Int = 1
+
+  """
+  CPU limit
+  """
+  cpuLimit: String
+
+  """
+  Memory limit
+  """
+  memoryLimit: String
+
+  """
+  Auto-scaling configuration
+  """
+  autoScaling: AutoScalingInput
+
+  """
+  Environment variables
+  """
+  environmentVariables: JSON
+}
+
+"""
+Auto-scaling configuration
+"""
+input AutoScalingInput {
+  """
+  Whether auto-scaling is enabled
+  """
+  enabled: Boolean!
+
+  """
+  Minimum replicas
+  """
+  minReplicas: Int = 1
+
+  """
+  Maximum replicas
+  """
+  maxReplicas: Int = 10
+
+  """
+  Target CPU utilization percentage
+  """
+  targetCpuUtilization: Int = 70
+}
+
+"""
+Input for creating a version
+"""
+input CreateVersionInput {
+  """
+  Version tag
+  """
+  tag: String!
+
+  """
+  Version description
+  """
+  description: String
+
+  """
+  Release notes
+  """
+  releaseNotes: String
+}
+
+"""
+Input for sharing an agent
+"""
+input ShareAgentInput {
+  """
+  Users to share with
+  """
+  userIds: [ID!]
+
+  """
+  Teams to share with
+  """
+  teamIds: [ID!]
+
+  """
+  Permission level for shared users
+  """
+  permission: SharePermission!
+
+  """
+  Optional expiration for the share
+  """
+  expiresAt: DateTime
+}
+
+"""
+Permission levels for sharing
+"""
+enum SharePermission {
+  """
+  Can view the agent
+  """
+  VIEW
+
+  """
+  Can use the agent
+  """
+  USE
+
+  """
+  Can edit the agent
+  """
+  EDIT
+
+  """
+  Full control except ownership transfer
+  """
+  ADMIN
+}
+
+"""
+Deployment environment
+"""
+enum DeploymentEnvironment {
+  """
+  Development environment
+  """
+  DEVELOPMENT
+
+  """
+  Staging environment
+  """
+  STAGING
+
+  """
+  Production environment
+  """
+  PRODUCTION
+}
+
+# =============================================================================
+# SUPPORTING TYPES
+# =============================================================================
+
+"""
+Represents a deployed agent instance
+"""
+type AgentDeployment {
+  """
+  Deployment ID
+  """
+  id: ID!
+
+  """
+  The deployed agent
+  """
+  agent: Agent!
+
+  """
+  Deployment environment
+  """
+  environment: DeploymentEnvironment!
+
+  """
+  Current deployment status
+  """
+  status: DeploymentStatus!
+
+  """
+  Deployment URL
+  """
+  url: String
+
+  """
+  When the deployment was created
+  """
+  createdAt: DateTime!
+
+  """
+  When the deployment was last updated
+  """
+  updatedAt: DateTime!
+
+  """
+  Deployment health information
+  """
+  health: DeploymentHealth
+}
+
+"""
+Deployment status
+"""
+enum DeploymentStatus {
+  """
+  Deployment is pending
+  """
+  PENDING
+
+  """
+  Deployment is in progress
+  """
+  DEPLOYING
+
+  """
+  Deployment is running
+  """
+  RUNNING
+
+  """
+  Deployment failed
+  """
+  FAILED
+
+  """
+  Deployment is being rolled back
+  """
+  ROLLING_BACK
+
+  """
+  Deployment was rolled back
+  """
+  ROLLED_BACK
+
+  """
+  Deployment is stopped
+  """
+  STOPPED
+}
+
+"""
+Deployment health information
+"""
+type DeploymentHealth {
+  """
+  Overall health status
+  """
+  status: HealthStatus!
+
+  """
+  Number of healthy replicas
+  """
+  healthyReplicas: Int!
+
+  """
+  Total number of replicas
+  """
+  totalReplicas: Int!
+
+  """
+  Last health check time
+  """
+  lastChecked: DateTime!
+
+  """
+  Health check details
+  """
+  details: JSON
+}
+
+"""
+Health status
+"""
+enum HealthStatus {
+  """
+  All systems healthy
+  """
+  HEALTHY
+
+  """
+  Some issues detected
+  """
+  DEGRADED
+
+  """
+  System is unhealthy
+  """
+  UNHEALTHY
+
+  """
+  Health status unknown
+  """
+  UNKNOWN
+}
+
+"""
+Represents a version of an agent
+"""
+type AgentVersion implements Node & Timestamped {
+  id: ID!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+
+  """
+  Version tag
+  """
+  tag: String!
+
+  """
+  Version description
+  """
+  description: String
+
+  """
+  Release notes
+  """
+  releaseNotes: String
+
+  """
+  Agent snapshot at this version
+  """
+  snapshot: JSON!
+
+  """
+  User who created the version
+  """
+  createdBy: User!
+
+  """
+  Whether this is the current active version
+  """
+  isCurrent: Boolean!
+}

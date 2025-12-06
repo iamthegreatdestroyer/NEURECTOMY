@@ -1,0 +1,502 @@
+# NEURECTOMY GraphQL Conversation Types
+# Conversation, Message, and related types
+
+"""
+A conversation between a user and agent(s).
+"""
+type Conversation implements Node & Timestamped & Owned {
+  "Unique identifier"
+  id: UUID!
+  "Conversation title"
+  title: String
+  "Conversation status"
+  status: ConversationStatus!
+  "Primary agent in conversation"
+  agent: Agent!
+  "Agent ID"
+  agentId: UUID!
+  "Owner of this conversation"
+  owner: User!
+  "Owner's ID"
+  ownerId: UUID!
+  "Summary of conversation (auto-generated)"
+  summary: String
+  "Tags for organization"
+  tags: [String!]!
+  "Token count for this conversation"
+  tokenCount: Int!
+  "Whether conversation is pinned"
+  isPinned: Boolean!
+  "Whether conversation is archived"
+  isArchived: Boolean!
+  "When created"
+  createdAt: DateTime!
+  "When last updated"
+  updatedAt: DateTime!
+  "Last message timestamp"
+  lastMessageAt: DateTime
+
+  # Relationships
+  "Messages in this conversation"
+  messages(
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): MessageConnection! @complexity(value: 3, multipliers: ["first", "last"])
+
+  "Participants in this conversation"
+  participants: [ConversationParticipant!]!
+
+  "Attachments in this conversation"
+  attachments: [Attachment!]!
+}
+
+"""
+A participant in a conversation.
+"""
+type ConversationParticipant {
+  "Participant type"
+  type: ParticipantType!
+  "User (if type is USER)"
+  user: User
+  "Agent (if type is AGENT)"
+  agent: Agent
+  "When participant joined"
+  joinedAt: DateTime!
+  "Last activity"
+  lastActiveAt: DateTime
+}
+
+"""
+Types of conversation participants.
+"""
+enum ParticipantType {
+  USER
+  AGENT
+  SYSTEM
+}
+
+"""
+A message in a conversation.
+"""
+type Message implements Node & Timestamped {
+  "Unique identifier"
+  id: UUID!
+  "Conversation this message belongs to"
+  conversationId: UUID!
+  "Message role"
+  role: MessageRole!
+  "Message content"
+  content: MessageContent!
+  "Parent message ID (for threading)"
+  parentId: UUID
+  "Token count for this message"
+  tokenCount: Int
+  "Model used (for assistant messages)"
+  model: String
+  "Processing metadata"
+  metadata: MessageMetadata
+  "When created"
+  createdAt: DateTime!
+  "When updated"
+  updatedAt: DateTime!
+
+  # Relationships
+  "Parent message (if reply)"
+  parent: Message
+
+  "Replies to this message"
+  replies: [Message!]!
+
+  "Tool calls made in this message"
+  toolCalls: [ToolCall!]
+
+  "Tool results for this message"
+  toolResults: [ToolResult!]
+
+  "Attachments on this message"
+  attachments: [Attachment!]!
+
+  "User feedback on this message"
+  feedback: MessageFeedback
+}
+
+"""
+Message content with support for multiple types.
+"""
+type MessageContent {
+  "Content type"
+  type: ContentType!
+  "Text content"
+  text: String
+  "Markdown content"
+  markdown: String
+  "HTML content"
+  html: String
+  "Code content with language"
+  code: CodeContent
+  "Image content"
+  image: ImageContent
+  "Structured card content"
+  card: JSON
+  "Raw content as JSON"
+  raw: JSON
+}
+
+"""
+Code content with syntax highlighting info.
+"""
+type CodeContent {
+  "Programming language"
+  language: String!
+  "Code text"
+  code: String!
+  "File name (if applicable)"
+  filename: String
+}
+
+"""
+Image content.
+"""
+type ImageContent {
+  "Image URL"
+  url: String!
+  "Alt text"
+  alt: String
+  "Width in pixels"
+  width: Int
+  "Height in pixels"
+  height: Int
+}
+
+"""
+Metadata about message processing.
+"""
+type MessageMetadata {
+  "Processing time in milliseconds"
+  processingTimeMs: Int
+  "Tokens in prompt"
+  promptTokens: Int
+  "Tokens in completion"
+  completionTokens: Int
+  "Total tokens"
+  totalTokens: Int
+  "Model finish reason"
+  finishReason: String
+  "Cost estimate in USD"
+  estimatedCost: Float
+}
+
+"""
+A tool call made by the assistant.
+"""
+type ToolCall {
+  "Tool call ID"
+  id: String!
+  "Tool name"
+  name: String!
+  "Tool arguments"
+  arguments: JSON!
+  "Call status"
+  status: ToolCallStatus!
+}
+
+"""
+Tool call status.
+"""
+enum ToolCallStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  ERROR
+}
+
+"""
+Result from a tool call.
+"""
+type ToolResult {
+  "Corresponding tool call ID"
+  toolCallId: String!
+  "Result content"
+  content: String!
+  "Whether call succeeded"
+  success: Boolean!
+  "Error message if failed"
+  error: String
+}
+
+"""
+User feedback on a message.
+"""
+type MessageFeedback {
+  "Rating (1-5 or thumbs up/down)"
+  rating: Int
+  "Thumbs up/down"
+  isPositive: Boolean
+  "Feedback comment"
+  comment: String
+  "When feedback was given"
+  createdAt: DateTime!
+}
+
+"""
+A file attachment.
+"""
+type Attachment implements Node {
+  "Unique identifier"
+  id: UUID!
+  "Original filename"
+  filename: String!
+  "MIME type"
+  mimeType: MimeType!
+  "File size in bytes"
+  size: FileSize!
+  "Storage URL"
+  url: String!
+  "Thumbnail URL (for images)"
+  thumbnailUrl: String
+  "When uploaded"
+  uploadedAt: DateTime!
+  "Uploader"
+  uploadedBy: User!
+}
+
+"""
+Search result from knowledge base.
+"""
+type SearchResult implements Node {
+  "Unique identifier"
+  id: UUID!
+  "Source document ID"
+  documentId: UUID!
+  "Source document"
+  document: Document
+  "Matched content"
+  content: String!
+  "Relevance score"
+  score: Float!
+  "Highlighted matches"
+  highlights: [String!]
+  "Metadata from source"
+  metadata: JSON
+}
+
+"""
+Knowledge base for document storage.
+"""
+type KnowledgeBase implements Node & Timestamped & Owned {
+  "Unique identifier"
+  id: UUID!
+  "Knowledge base name"
+  name: String!
+  "Description"
+  description: String
+  "Owner"
+  owner: User!
+  "Owner ID"
+  ownerId: UUID!
+  "Whether publicly accessible"
+  isPublic: Boolean!
+  "Embedding model used"
+  embeddingModel: String!
+  "Total document count"
+  documentCount: Int!
+  "Total size in bytes"
+  totalSize: FileSize!
+  "When created"
+  createdAt: DateTime!
+  "When updated"
+  updatedAt: DateTime!
+
+  # Relationships
+  "Documents in this knowledge base"
+  documents(
+    first: Int
+    after: String
+    filter: DocumentFilterInput
+  ): DocumentConnection! @complexity(value: 5, multipliers: ["first"])
+
+  "Agents that can access this knowledge base"
+  agents: [Agent!]!
+}
+
+"""
+A document in a knowledge base.
+"""
+type Document implements Node & Timestamped {
+  "Unique identifier"
+  id: UUID!
+  "Knowledge base ID"
+  knowledgeBaseId: UUID!
+  "Document title"
+  title: String!
+  "Document type"
+  type: DocumentType!
+  "MIME type"
+  mimeType: MimeType
+  "Processing status"
+  processingStatus: ProcessingStatus!
+  "Indexing status"
+  indexingStatus: IndexingStatus!
+  "File size"
+  size: FileSize!
+  "Content URL"
+  url: String
+  "Number of chunks"
+  chunkCount: Int!
+  "Metadata"
+  metadata: JSON
+  "Error message if processing failed"
+  error: String
+  "When created"
+  createdAt: DateTime!
+  "When updated"
+  updatedAt: DateTime!
+}
+
+# ====================
+# Input Types
+# ====================
+
+"""
+Input for creating a conversation.
+"""
+input CreateConversationInput {
+  "Conversation title"
+  title: String
+  "Agent ID"
+  agentId: UUID!
+  "Initial message (optional)"
+  initialMessage: String
+  "Tags"
+  tags: [String!]
+}
+
+"""
+Input for updating a conversation.
+"""
+input UpdateConversationInput {
+  "Title"
+  title: String
+  "Tags"
+  tags: [String!]
+  "Pinned status"
+  isPinned: Boolean
+  "Archived status"
+  isArchived: Boolean
+}
+
+"""
+Input for sending a message.
+"""
+input SendMessageInput {
+  "Conversation ID"
+  conversationId: UUID!
+  "Message content"
+  content: String!
+  "Content type"
+  contentType: ContentType = TEXT
+  "Parent message ID (for replies)"
+  parentId: UUID
+  "Attachment IDs"
+  attachmentIds: [UUID!]
+}
+
+"""
+Input for message feedback.
+"""
+input MessageFeedbackInput {
+  "Message ID"
+  messageId: UUID!
+  "Rating (1-5)"
+  rating: Int
+  "Thumbs up/down"
+  isPositive: Boolean
+  "Comment"
+  comment: String
+}
+
+"""
+Filter for conversations.
+"""
+input ConversationFilterInput {
+  "Filter by agent ID"
+  agentId: UUID
+  "Filter by status"
+  status: ConversationStatus
+  "Filter by tags"
+  tags: [String!]
+  "Search in title/content"
+  search: String
+  "Filter pinned"
+  isPinned: Boolean
+  "Filter archived"
+  isArchived: Boolean
+  "Filter by date"
+  createdAt: DateRangeInput
+}
+
+"""
+Input for creating a knowledge base.
+"""
+input CreateKnowledgeBaseInput {
+  "Name"
+  name: String!
+  "Description"
+  description: String
+  "Embedding model"
+  embeddingModel: String = "text-embedding-3-small"
+  "Public visibility"
+  isPublic: Boolean = false
+}
+
+"""
+Input for adding a document.
+"""
+input AddDocumentInput {
+  "Knowledge base ID"
+  knowledgeBaseId: UUID!
+  "Document title"
+  title: String!
+  "Document type"
+  type: DocumentType!
+  "Content (for text documents)"
+  content: String
+  "URL (for remote documents)"
+  url: String
+  "Metadata"
+  metadata: JSON
+}
+
+"""
+Filter for documents.
+"""
+input DocumentFilterInput {
+  "Filter by type"
+  type: [DocumentType!]
+  "Filter by processing status"
+  processingStatus: [ProcessingStatus!]
+  "Filter by indexing status"
+  indexingStatus: [IndexingStatus!]
+  "Search in title"
+  search: String
+}
+
+"""
+Input for semantic search.
+"""
+input SemanticSearchInput {
+  "Query text"
+  query: String!
+  "Knowledge base IDs to search"
+  knowledgeBaseIds: [UUID!]!
+  "Maximum results"
+  limit: Int = 10
+  "Minimum score threshold (0-1)"
+  minScore: Float
+  "Filter by document type"
+  documentTypes: [DocumentType!]
+  "Filter by metadata"
+  metadata: JSON
+}

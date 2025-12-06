@@ -1,0 +1,3100 @@
+# ==============================================================================
+# NEURECTOMY - Knowledge & Document Mutations
+# ==============================================================================
+# Comprehensive mutation types for knowledge base and document management
+# following the unified MutationResponse pattern.
+# ==============================================================================
+
+# ==============================================================================
+# ENUMS
+# ==============================================================================
+
+"""
+Processing status for documents
+"""
+enum DocumentProcessingStatus {
+  """
+  Document is pending processing
+  """
+  PENDING
+  """
+  Document is being processed
+  """
+  PROCESSING
+  """
+  Document processing completed successfully
+  """
+  COMPLETED
+  """
+  Document processing failed
+  """
+  FAILED
+  """
+  Document processing was cancelled
+  """
+  CANCELLED
+  """
+  Document requires manual review
+  """
+  REVIEW_REQUIRED
+}
+
+"""
+Type of document source
+"""
+enum DocumentSourceType {
+  """
+  Direct file upload
+  """
+  FILE_UPLOAD
+  """
+  URL/web scraping
+  """
+  WEB_URL
+  """
+  API integration
+  """
+  API
+  """
+  Git repository
+  """
+  GIT_REPOSITORY
+  """
+  Cloud storage (S3, GCS, etc.)
+  """
+  CLOUD_STORAGE
+  """
+  Database connection
+  """
+  DATABASE
+  """
+  Manual text entry
+  """
+  MANUAL
+  """
+  Confluence/wiki integration
+  """
+  CONFLUENCE
+  """
+  Notion integration
+  """
+  NOTION
+  """
+  Google Drive integration
+  """
+  GOOGLE_DRIVE
+  """
+  Slack integration
+  """
+  SLACK
+  """
+  Email integration
+  """
+  EMAIL
+}
+
+"""
+Visibility level for knowledge base
+"""
+enum KnowledgeBaseVisibility {
+  """
+  Only owner can access
+  """
+  PRIVATE
+  """
+  Specific team members can access
+  """
+  TEAM
+  """
+  All organization members can access
+  """
+  ORGANIZATION
+  """
+  Publicly accessible
+  """
+  PUBLIC
+}
+
+"""
+Embedding model for vectorization
+"""
+enum EmbeddingModel {
+  """
+  OpenAI text-embedding-ada-002
+  """
+  OPENAI_ADA_002
+  """
+  OpenAI text-embedding-3-small
+  """
+  OPENAI_3_SMALL
+  """
+  OpenAI text-embedding-3-large
+  """
+  OPENAI_3_LARGE
+  """
+  Cohere embed-english-v3.0
+  """
+  COHERE_ENGLISH_V3
+  """
+  Cohere embed-multilingual-v3.0
+  """
+  COHERE_MULTILINGUAL_V3
+  """
+  Voyage AI voyage-large-2
+  """
+  VOYAGE_LARGE_2
+  """
+  BGE large
+  """
+  BGE_LARGE
+  """
+  Custom/self-hosted model
+  """
+  CUSTOM
+}
+
+"""
+Chunking strategy for documents
+"""
+enum ChunkingStrategy {
+  """
+  Fixed size chunks with overlap
+  """
+  FIXED_SIZE
+  """
+  Sentence-based chunking
+  """
+  SENTENCE
+  """
+  Paragraph-based chunking
+  """
+  PARAGRAPH
+  """
+  Semantic chunking using embeddings
+  """
+  SEMANTIC
+  """
+  Markdown/document structure aware
+  """
+  STRUCTURE_AWARE
+  """
+  Recursive character splitting
+  """
+  RECURSIVE
+  """
+  Code-aware chunking
+  """
+  CODE_AWARE
+  """
+  No chunking - keep as single document
+  """
+  NONE
+}
+
+"""
+Sync frequency for external sources
+"""
+enum SyncFrequency {
+  """
+  Sync manually only
+  """
+  MANUAL
+  """
+  Sync every hour
+  """
+  HOURLY
+  """
+  Sync every day
+  """
+  DAILY
+  """
+  Sync every week
+  """
+  WEEKLY
+  """
+  Sync every month
+  """
+  MONTHLY
+  """
+  Real-time sync via webhooks
+  """
+  REALTIME
+}
+
+"""
+Document permission level
+"""
+enum DocumentPermission {
+  """
+  Can view document
+  """
+  VIEW
+  """
+  Can edit document
+  """
+  EDIT
+  """
+  Can delete document
+  """
+  DELETE
+  """
+  Full admin access
+  """
+  ADMIN
+}
+
+"""
+Index type for vector storage
+"""
+enum VectorIndexType {
+  """
+  Flat index (exact search)
+  """
+  FLAT
+  """
+  IVF index (approximate search)
+  """
+  IVF
+  """
+  HNSW index (hierarchical navigable small world)
+  """
+  HNSW
+  """
+  Product quantization
+  """
+  PQ
+  """
+  Scalar quantization
+  """
+  SQ
+}
+
+"""
+Export format for knowledge base
+"""
+enum KnowledgeExportFormat {
+  """
+  JSON format
+  """
+  JSON
+  """
+  CSV format
+  """
+  CSV
+  """
+  Markdown format
+  """
+  MARKDOWN
+  """
+  PDF format
+  """
+  PDF
+  """
+  Vector embeddings only
+  """
+  EMBEDDINGS
+}
+
+# ==============================================================================
+# INPUT TYPES - KNOWLEDGE BASE
+# ==============================================================================
+
+"""
+Input for creating a new knowledge base
+"""
+input CreateKnowledgeBaseInput {
+  """
+  Unique identifier (optional - auto-generated if not provided)
+  """
+  id: ID
+  """
+  Name of the knowledge base
+  """
+  name: String!
+  """
+  Description of the knowledge base
+  """
+  description: String
+  """
+  Visibility level
+  """
+  visibility: KnowledgeBaseVisibility = PRIVATE
+  """
+  Team ID if visibility is TEAM
+  """
+  teamId: ID
+  """
+  Tags for categorization
+  """
+  tags: [String!]
+  """
+  Embedding model to use
+  """
+  embeddingModel: EmbeddingModel = OPENAI_3_SMALL
+  """
+  Default chunking configuration
+  """
+  chunkingConfig: ChunkingConfigInput
+  """
+  Metadata extraction rules
+  """
+  metadataRules: [MetadataExtractionRuleInput!]
+  """
+  Whether to enable auto-sync for connected sources
+  """
+  autoSyncEnabled: Boolean = true
+  """
+  Default sync frequency
+  """
+  defaultSyncFrequency: SyncFrequency = DAILY
+  """
+  Index configuration
+  """
+  indexConfig: IndexConfigInput
+  """
+  Client mutation ID
+  """
+  clientMutationId: String
+}
+
+"""
+Input for updating a knowledge base
+"""
+input UpdateKnowledgeBaseInput {
+  """
+  Knowledge base ID
+  """
+  id: ID!
+  """
+  Updated name
+  """
+  name: String
+  """
+  Updated description
+  """
+  description: String
+  """
+  Updated visibility level
+  """
+  visibility: KnowledgeBaseVisibility
+  """
+  Updated team ID
+  """
+  teamId: ID
+  """
+  Updated tags
+  """
+  tags: [String!]
+  """
+  Updated embedding model (triggers re-embedding if changed)
+  """
+  embeddingModel: EmbeddingModel
+  """
+  Updated chunking configuration (triggers re-chunking if changed)
+  """
+  chunkingConfig: ChunkingConfigInput
+  """
+  Updated metadata extraction rules
+  """
+  metadataRules: [MetadataExtractionRuleInput!]
+  """
+  Updated auto-sync setting
+  """
+  autoSyncEnabled: Boolean
+  """
+  Updated default sync frequency
+  """
+  defaultSyncFrequency: SyncFrequency
+  """
+  Updated index configuration
+  """
+  indexConfig: IndexConfigInput
+  """
+  Client mutation ID
+  """
+  clientMutationId: String
+}
+
+"""
+Input for chunking configuration
+"""
+input ChunkingConfigInput {
+  """
+  Chunking strategy
+  """
+  strategy: ChunkingStrategy!
+  """
+  Chunk size in characters (for FIXED_SIZE)
+  """
+  chunkSize: Int
+  """
+  Overlap between chunks in characters
+  """
+  chunkOverlap: Int
+  """
+  Minimum chunk size (skip smaller chunks)
+  """
+  minChunkSize: Int
+  """
+  Maximum chunk size (force split larger chunks)
+  """
+  maxChunkSize: Int
+  """
+  Separator patterns for recursive splitting
+  """
+  separators: [String!]
+  """
+  Whether to preserve code blocks intact
+  """
+  preserveCodeBlocks: Boolean
+  """
+  Whether to preserve tables intact
+  """
+  preserveTables: Boolean
+  """
+  Custom regex patterns for splitting
+  """
+  customPatterns: [String!]
+}
+
+"""
+Input for metadata extraction rules
+"""
+input MetadataExtractionRuleInput {
+  """
+  Rule name
+  """
+  name: String!
+  """
+  Field to extract
+  """
+  field: String!
+  """
+  Extraction method
+  """
+  method: MetadataExtractionMethod!
+  """
+  Pattern for extraction (regex or JSONPath)
+  """
+  pattern: String
+  """
+  Default value if extraction fails
+  """
+  defaultValue: String
+  """
+  Whether field is required
+  """
+  required: Boolean
+}
+
+"""
+Method for extracting metadata
+"""
+enum MetadataExtractionMethod {
+  """
+  Extract from file name
+  """
+  FILENAME
+  """
+  Extract from file path
+  """
+  FILEPATH
+  """
+  Extract using regex pattern
+  """
+  REGEX
+  """
+  Extract using JSONPath (for JSON docs)
+  """
+  JSONPATH
+  """
+  Extract from document frontmatter
+  """
+  FRONTMATTER
+  """
+  Extract using AI/LLM
+  """
+  AI_EXTRACTION
+  """
+  Extract from HTML meta tags
+  """
+  HTML_META
+  """
+  Custom JavaScript function
+  """
+  CUSTOM_FUNCTION
+}
+
+"""
+Input for index configuration
+"""
+input IndexConfigInput {
+  """
+  Index type
+  """
+  indexType: VectorIndexType = HNSW
+  """
+  Dimension of embedding vectors
+  """
+  dimensions: Int
+  """
+  Distance metric
+  """
+  metric: VectorDistanceMetric
+  """
+  Number of lists for IVF
+  """
+  nLists: Int
+  """
+  Number of probes for IVF search
+  """
+  nProbes: Int
+  """
+  M parameter for HNSW
+  """
+  hnswM: Int
+  """
+  efConstruction for HNSW
+  """
+  hnswEfConstruction: Int
+  """
+  efSearch for HNSW queries
+  """
+  hnswEfSearch: Int
+}
+
+"""
+Distance metric for vector similarity
+"""
+enum VectorDistanceMetric {
+  """
+  Cosine similarity
+  """
+  COSINE
+  """
+  Euclidean distance
+  """
+  EUCLIDEAN
+  """
+  Dot product
+  """
+  DOT_PRODUCT
+  """
+  Manhattan distance
+  """
+  MANHATTAN
+}
+
+# ==============================================================================
+# INPUT TYPES - DOCUMENTS
+# ==============================================================================
+
+"""
+Input for creating a document manually
+"""
+input CreateDocumentInput {
+  """
+  Knowledge base ID to add document to
+  """
+  knowledgeBaseId: ID!
+  """
+  Document title
+  """
+  title: String!
+  """
+  Document content
+  """
+  content: String!
+  """
+  Content type
+  """
+  contentType: String = "text/plain"
+  """
+  Source type
+  """
+  sourceType: DocumentSourceType = MANUAL
+  """
+  Source URL or path
+  """
+  sourceUrl: String
+  """
+  Custom metadata
+  """
+  metadata: JSON
+  """
+  Tags for categorization
+  """
+  tags: [String!]
+  """
+  Override chunking config for this document
+  """
+  chunkingConfig: ChunkingConfigInput
+  """
+  Whether to process immediately
+  """
+  processImmediately: Boolean = true
+  """
+  Priority for processing queue
+  """
+  priority: ProcessingPriority
+  """
+  Client mutation ID
+  """
+  clientMutationId: String
+}
+
+"""
+Processing priority
+"""
+enum ProcessingPriority {
+  """
+  Low priority
+  """
+  LOW
+  """
+  Normal priority
+  """
+  NORMAL
+  """
+  High priority
+  """
+  HIGH
+  """
+  Critical priority (process immediately)
+  """
+  CRITICAL
+}
+
+"""
+Input for updating a document
+"""
+input UpdateDocumentInput {
+  """
+  Document ID
+  """
+  id: ID!
+  """
+  Updated title
+  """
+  title: String
+  """
+  Updated content
+  """
+  content: String
+  """
+  Updated metadata
+  """
+  metadata: JSON
+  """
+  Updated tags
+  """
+  tags: [String!]
+  """
+  Updated chunking config (triggers re-chunking)
+  """
+  chunkingConfig: ChunkingConfigInput
+  """
+  Whether to reprocess after update
+  """
+  reprocess: Boolean = true
+  """
+  Client mutation ID
+  """
+  clientMutationId: String
+}
+
+"""
+Input for uploading a document file
+"""
+input UploadDocumentInput {
+  """
+  Knowledge base ID
+  """
+  knowledgeBaseId: ID!
+  """
+  File upload
+  """
+  file: Upload!
+  """
+  Override title (uses filename if not provided)
+  """
+  title: String
+  """
+  Custom metadata
+  """
+  metadata: JSON
+  """
+  Tags for categorization
+  """
+  tags: [String!]
+  """
+  Override chunking config
+  """
+  chunkingConfig: ChunkingConfigInput
+  """
+  Processing priority
+  """
+  priority: ProcessingPriority
+  """
+  Whether to extract images from document
+  """
+  extractImages: Boolean
+  """
+  Whether to perform OCR on images
+  """
+  performOcr: Boolean
+  """
+  Language hint for OCR
+  """
+  ocrLanguage: String
+  """
+  Client mutation ID
+  """
+  clientMutationId: String
+}
+
+"""
+Input for bulk uploading documents
+"""
+input BulkUploadDocumentsInput {
+  """
+  Knowledge base ID
+  """
+  knowledgeBaseId: ID!
+  """
+  Files to upload
+  """
+  files: [Upload!]!
+  """
+  Common tags for all documents
+  """
+  commonTags: [String!]
+  """
+  Common metadata for all documents
+  """
+  commonMetadata: JSON
+  """
+  Processing priority
+  """
+  priority: ProcessingPriority
+  """
+  Whether to extract images
+  """
+  extractImages: Boolean
+  """
+  Whether to perform OCR
+  """
+  performOcr: Boolean
+  """
+  Client mutation ID
+  """
+  clientMutationId: String
+}
+
+"""
+Input for importing documents from URL
+"""
+input ImportFromUrlInput {
+  """
+  Knowledge base ID
+  """
+  knowledgeBaseId: ID!
+  """
+  URLs to import
+  """
+  urls: [String!]!
+  """
+  Whether to follow links
+  """
+  followLinks: Boolean
+  """
+  Maximum depth for link following
+  """
+  maxDepth: Int
+  """
+  URL patterns to include
+  """
+  includePatterns: [String!]
+  """
+  URL patterns to exclude
+  """
+  excludePatterns: [String!]
+  """
+  Custom metadata
+  """
+  metadata: JSON
+  """
+  Tags for categorization
+  """
+  tags: [String!]
+  """
+  Processing priority
+  """
+  priority: ProcessingPriority
+  """
+  Client mutation ID
+  """
+  clientMutationId: String
+}
+
+"""
+Input for connecting an external source
+"""
+input ConnectSourceInput {
+  """
+  Knowledge base ID
+  """
+  knowledgeBaseId: ID!
+  """
+  Source type
+  """
+  sourceType: DocumentSourceType!
+  """
+  Source name
+  """
+  name: String!
+  """
+  Source description
+  """
+  description: String
+  """
+  Connection configuration
+  """
+  config: SourceConnectionConfigInput!
+  """
+  Sync frequency
+  """
+  syncFrequency: SyncFrequency = DAILY
+  """
+  File/path filters
+  """
+  filters: SourceFiltersInput
+  """
+  Whether to sync immediately after connecting
+  """
+  syncImmediately: Boolean = true
+  """
+  Client mutation ID
+  """
+  clientMutationId: String
+}
+
+"""
+Input for source connection configuration
+"""
+input SourceConnectionConfigInput {
+  """
+  API endpoint or base URL
+  """
+  endpoint: String
+  """
+  Authentication type
+  """
+  authType: SourceAuthType
+  """
+  API key or token
+  """
+  apiKey: String
+  """
+  OAuth credentials
+  """
+  oauth: OAuthCredentialsInput
+  """
+  Basic auth credentials
+  """
+  basicAuth: BasicAuthInput
+  """
+  Repository URL (for Git)
+  """
+  repositoryUrl: String
+  """
+  Branch name (for Git)
+  """
+  branch: String
+  """
+  Bucket name (for cloud storage)
+  """
+  bucket: String
+  """
+  Prefix/path within bucket
+  """
+  prefix: String
+  """
+  Database connection string
+  """
+  connectionString: String
+  """
+  Workspace ID (for Slack, Notion, etc.)
+  """
+  workspaceId: String
+  """
+  Space key (for Confluence)
+  """
+  spaceKey: String
+  """
+  Additional configuration as JSON
+  """
+  additionalConfig: JSON
+}
+
+"""
+Source authentication type
+"""
+enum SourceAuthType {
+  """
+  No authentication
+  """
+  NONE
+  """
+  API key authentication
+  """
+  API_KEY
+  """
+  OAuth 2.0
+  """
+  OAUTH
+  """
+  Basic authentication
+  """
+  BASIC
+  """
+  SSH key authentication
+  """
+  SSH_KEY
+  """
+  IAM role authentication
+  """
+  IAM_ROLE
+  """
+  Service account
+  """
+  SERVICE_ACCOUNT
+}
+
+"""
+OAuth credentials input
+"""
+input OAuthCredentialsInput {
+  """
+  Client ID
+  """
+  clientId: String!
+  """
+  Client secret
+  """
+  clientSecret: String!
+  """
+  Refresh token
+  """
+  refreshToken: String
+  """
+  Access token
+  """
+  accessToken: String
+  """
+  Token expiry
+  """
+  expiresAt: DateTime
+  """
+  OAuth scopes
+  """
+  scopes: [String!]
+}
+
+"""
+Basic auth credentials input
+"""
+input BasicAuthInput {
+  """
+  Username
+  """
+  username: String!
+  """
+  Password
+  """
+  password: String!
+}
+
+"""
+Input for source filters
+"""
+input SourceFiltersInput {
+  """
+  Include file patterns (glob)
+  """
+  includePatterns: [String!]
+  """
+  Exclude file patterns (glob)
+  """
+  excludePatterns: [String!]
+  """
+  Include file extensions
+  """
+  includeExtensions: [String!]
+  """
+  Exclude file extensions
+  """
+  excludeExtensions: [String!]
+  """
+  Minimum file size in bytes
+  """
+  minFileSize: Int
+  """
+  Maximum file size in bytes
+  """
+  maxFileSize: Int
+  """
+  Modified after date
+  """
+  modifiedAfter: DateTime
+  """
+  Modified before date
+  """
+  modifiedBefore: DateTime
+}
+
+"""
+Input for updating a source
+"""
+input UpdateSourceInput {
+  """
+  Source ID
+  """
+  id: ID!
+  """
+  Updated name
+  """
+  name: String
+  """
+  Updated description
+  """
+  description: String
+  """
+  Updated connection config
+  """
+  config: SourceConnectionConfigInput
+  """
+  Updated sync frequency
+  """
+  syncFrequency: SyncFrequency
+  """
+  Updated filters
+  """
+  filters: SourceFiltersInput
+  """
+  Whether source is enabled
+  """
+  enabled: Boolean
+  """
+  Client mutation ID
+  """
+  clientMutationId: String
+}
+
+"""
+Input for syncing a source
+"""
+input SyncSourceInput {
+  """
+  Source ID
+  """
+  sourceId: ID!
+  """
+  Whether to force full resync
+  """
+  fullSync: Boolean = false
+  """
+  Specific paths to sync (if supported)
+  """
+  paths: [String!]
+  """
+  Processing priority
+  """
+  priority: ProcessingPriority
+  """
+  Client mutation ID
+  """
+  clientMutationId: String
+}
+
+# ==============================================================================
+# INPUT TYPES - PROCESSING & INDEXING
+# ==============================================================================
+
+"""
+Input for processing a document
+"""
+input ProcessDocumentInput {
+  """
+  Document ID
+  """
+  documentId: ID!
+  """
+  Whether to force reprocessing
+  """
+  force: Boolean = false
+  """
+  Override chunking config
+  """
+  chunkingConfig: ChunkingConfigInput
+  """
+  Processing priority
+  """
+  priority: ProcessingPriority
+  """
+  Client mutation ID
+  """
+  clientMutationId: String
+}
+
+"""
+Input for bulk processing documents
+"""
+input BulkProcessDocumentsInput {
+  """
+  Document IDs
+  """
+  documentIds: [ID!]!
+  """
+  Whether to force reprocessing
+  """
+  force: Boolean = false
+  """
+  Processing priority
+  """
+  priority: ProcessingPriority
+  """
+  Client mutation ID
+  """
+  clientMutationId: String
+}
+
+"""
+Input for reindexing a knowledge base
+"""
+input ReindexKnowledgeBaseInput {
+  """
+  Knowledge base ID
+  """
+  knowledgeBaseId: ID!
+  """
+  Whether to rebuild from scratch
+  """
+  fullRebuild: Boolean = false
+  """
+  New index configuration (optional)
+  """
+  indexConfig: IndexConfigInput
+  """
+  Client mutation ID
+  """
+  clientMutationId: String
+}
+
+"""
+Input for updating document embeddings
+"""
+input ReembedDocumentsInput {
+  """
+  Knowledge base ID (re-embed all) or document IDs
+  """
+  knowledgeBaseId: ID
+  """
+  Specific document IDs to re-embed
+  """
+  documentIds: [ID!]
+  """
+  New embedding model (optional)
+  """
+  embeddingModel: EmbeddingModel
+  """
+  Client mutation ID
+  """
+  clientMutationId: String
+}
+
+# ==============================================================================
+# INPUT TYPES - SHARING & PERMISSIONS
+# ==============================================================================
+
+"""
+Input for sharing a knowledge base
+"""
+input ShareKnowledgeBaseInput {
+  """
+  Knowledge base ID
+  """
+  knowledgeBaseId: ID!
+  """
+  Users to share with
+  """
+  users: [ShareTargetInput!]
+  """
+  Teams to share with
+  """
+  teams: [ShareTargetInput!]
+  """
+  Client mutation ID
+  """
+  clientMutationId: String
+}
+
+"""
+Input for share target
+"""
+input ShareTargetInput {
+  """
+  User or team ID
+  """
+  id: ID!
+  """
+  Permission level
+  """
+  permission: DocumentPermission!
+}
+
+"""
+Input for updating share permissions
+"""
+input UpdateSharePermissionInput {
+  """
+  Knowledge base ID
+  """
+  knowledgeBaseId: ID!
+  """
+  Target user or team ID
+  """
+  targetId: ID!
+  """
+  New permission level
+  """
+  permission: DocumentPermission!
+  """
+  Client mutation ID
+  """
+  clientMutationId: String
+}
+
+"""
+Input for revoking share access
+"""
+input RevokeShareAccessInput {
+  """
+  Knowledge base ID
+  """
+  knowledgeBaseId: ID!
+  """
+  User or team IDs to revoke access from
+  """
+  targetIds: [ID!]!
+  """
+  Client mutation ID
+  """
+  clientMutationId: String
+}
+
+# ==============================================================================
+# INPUT TYPES - EXPORT & IMPORT
+# ==============================================================================
+
+"""
+Input for exporting a knowledge base
+"""
+input ExportKnowledgeBaseInput {
+  """
+  Knowledge base ID
+  """
+  knowledgeBaseId: ID!
+  """
+  Export format
+  """
+  format: KnowledgeExportFormat!
+  """
+  Whether to include embeddings
+  """
+  includeEmbeddings: Boolean = false
+  """
+  Whether to include metadata
+  """
+  includeMetadata: Boolean = true
+  """
+  Whether to include processing history
+  """
+  includeHistory: Boolean = false
+  """
+  Document filter (export subset)
+  """
+  documentFilter: DocumentFilterInput
+  """
+  Client mutation ID
+  """
+  clientMutationId: String
+}
+
+"""
+Input for importing a knowledge base
+"""
+input ImportKnowledgeBaseInput {
+  """
+  Name for imported knowledge base
+  """
+  name: String!
+  """
+  Description
+  """
+  description: String
+  """
+  Import file
+  """
+  file: Upload!
+  """
+  Import format
+  """
+  format: KnowledgeExportFormat!
+  """
+  Whether to import embeddings
+  """
+  importEmbeddings: Boolean = false
+  """
+  Visibility level
+  """
+  visibility: KnowledgeBaseVisibility = PRIVATE
+  """
+  Client mutation ID
+  """
+  clientMutationId: String
+}
+
+"""
+Input for document filter
+"""
+input DocumentFilterInput {
+  """
+  Filter by IDs
+  """
+  ids: [ID!]
+  """
+  Filter by tags
+  """
+  tags: [String!]
+  """
+  Filter by source type
+  """
+  sourceTypes: [DocumentSourceType!]
+  """
+  Filter by processing status
+  """
+  processingStatus: [DocumentProcessingStatus!]
+  """
+  Filter by created date
+  """
+  createdAfter: DateTime
+  """
+  Filter by created date
+  """
+  createdBefore: DateTime
+  """
+  Filter by updated date
+  """
+  updatedAfter: DateTime
+  """
+  Filter by updated date
+  """
+  updatedBefore: DateTime
+  """
+  Full text search
+  """
+  search: String
+}
+
+# ==============================================================================
+# INPUT TYPES - SEARCH & RETRIEVAL CONFIG
+# ==============================================================================
+
+"""
+Input for updating search configuration
+"""
+input UpdateSearchConfigInput {
+  """
+  Knowledge base ID
+  """
+  knowledgeBaseId: ID!
+  """
+  Default number of results
+  """
+  defaultTopK: Int
+  """
+  Default similarity threshold
+  """
+  defaultSimilarityThreshold: Float
+  """
+  Enable hybrid search (vector + keyword)
+  """
+  hybridSearchEnabled: Boolean
+  """
+  Weight for semantic search in hybrid mode
+  """
+  semanticWeight: Float
+  """
+  Weight for keyword search in hybrid mode
+  """
+  keywordWeight: Float
+  """
+  Enable reranking
+  """
+  rerankingEnabled: Boolean
+  """
+  Reranking model
+  """
+  rerankingModel: String
+  """
+  Enable query expansion
+  """
+  queryExpansionEnabled: Boolean
+  """
+  Metadata fields to boost
+  """
+  boostFields: [BoostFieldInput!]
+  """
+  Client mutation ID
+  """
+  clientMutationId: String
+}
+
+"""
+Input for boost field configuration
+"""
+input BoostFieldInput {
+  """
+  Field name
+  """
+  field: String!
+  """
+  Boost weight
+  """
+  weight: Float!
+}
+
+# ==============================================================================
+# PAYLOAD TYPES
+# ==============================================================================
+
+"""
+Payload for knowledge base operations
+"""
+type KnowledgeBasePayload implements MutationResponse {
+  """
+  Whether the operation was successful
+  """
+  success: Boolean!
+  """
+  Human-readable message
+  """
+  message: String!
+  """
+  Errors if operation failed
+  """
+  errors: [MutationError!]
+  """
+  Client mutation ID for correlation
+  """
+  clientMutationId: String
+  """
+  The knowledge base
+  """
+  knowledgeBase: KnowledgeBase
+}
+
+"""
+Payload for deleting a knowledge base
+"""
+type DeleteKnowledgeBasePayload implements MutationResponse {
+  """
+  Whether the operation was successful
+  """
+  success: Boolean!
+  """
+  Human-readable message
+  """
+  message: String!
+  """
+  Errors if operation failed
+  """
+  errors: [MutationError!]
+  """
+  Client mutation ID for correlation
+  """
+  clientMutationId: String
+  """
+  ID of deleted knowledge base
+  """
+  deletedId: ID
+}
+
+"""
+Payload for document operations
+"""
+type DocumentPayload implements MutationResponse {
+  """
+  Whether the operation was successful
+  """
+  success: Boolean!
+  """
+  Human-readable message
+  """
+  message: String!
+  """
+  Errors if operation failed
+  """
+  errors: [MutationError!]
+  """
+  Client mutation ID for correlation
+  """
+  clientMutationId: String
+  """
+  The document
+  """
+  document: KnowledgeDocument
+}
+
+"""
+Payload for bulk document operations
+"""
+type BulkDocumentPayload implements MutationResponse {
+  """
+  Whether the operation was successful
+  """
+  success: Boolean!
+  """
+  Human-readable message
+  """
+  message: String!
+  """
+  Errors if operation failed
+  """
+  errors: [MutationError!]
+  """
+  Client mutation ID for correlation
+  """
+  clientMutationId: String
+  """
+  Successfully processed documents
+  """
+  documents: [KnowledgeDocument!]
+  """
+  Failed document operations
+  """
+  failed: [BulkOperationFailure!]
+  """
+  Total attempted
+  """
+  totalAttempted: Int!
+  """
+  Total succeeded
+  """
+  totalSucceeded: Int!
+  """
+  Total failed
+  """
+  totalFailed: Int!
+}
+
+"""
+Details of a failed bulk operation
+"""
+type BulkOperationFailure {
+  """
+  Item identifier (ID, filename, URL, etc.)
+  """
+  identifier: String!
+  """
+  Error message
+  """
+  error: String!
+  """
+  Error code
+  """
+  errorCode: String
+}
+
+"""
+Payload for document deletion
+"""
+type DeleteDocumentPayload implements MutationResponse {
+  """
+  Whether the operation was successful
+  """
+  success: Boolean!
+  """
+  Human-readable message
+  """
+  message: String!
+  """
+  Errors if operation failed
+  """
+  errors: [MutationError!]
+  """
+  Client mutation ID for correlation
+  """
+  clientMutationId: String
+  """
+  ID of deleted document
+  """
+  deletedId: ID
+}
+
+"""
+Payload for bulk document deletion
+"""
+type BulkDeleteDocumentPayload implements MutationResponse {
+  """
+  Whether the operation was successful
+  """
+  success: Boolean!
+  """
+  Human-readable message
+  """
+  message: String!
+  """
+  Errors if operation failed
+  """
+  errors: [MutationError!]
+  """
+  Client mutation ID for correlation
+  """
+  clientMutationId: String
+  """
+  IDs of deleted documents
+  """
+  deletedIds: [ID!]!
+  """
+  Failed deletions
+  """
+  failed: [BulkOperationFailure!]
+}
+
+"""
+Payload for document processing
+"""
+type ProcessDocumentPayload implements MutationResponse {
+  """
+  Whether the operation was successful
+  """
+  success: Boolean!
+  """
+  Human-readable message
+  """
+  message: String!
+  """
+  Errors if operation failed
+  """
+  errors: [MutationError!]
+  """
+  Client mutation ID for correlation
+  """
+  clientMutationId: String
+  """
+  The document with updated processing status
+  """
+  document: KnowledgeDocument
+  """
+  Processing job ID for tracking
+  """
+  jobId: ID
+}
+
+"""
+Payload for bulk processing
+"""
+type BulkProcessPayload implements MutationResponse {
+  """
+  Whether the operation was successful
+  """
+  success: Boolean!
+  """
+  Human-readable message
+  """
+  message: String!
+  """
+  Errors if operation failed
+  """
+  errors: [MutationError!]
+  """
+  Client mutation ID for correlation
+  """
+  clientMutationId: String
+  """
+  Batch job ID for tracking
+  """
+  batchJobId: ID
+  """
+  Number of documents queued
+  """
+  queuedCount: Int!
+  """
+  Estimated completion time
+  """
+  estimatedCompletion: DateTime
+}
+
+"""
+Payload for source operations
+"""
+type SourcePayload implements MutationResponse {
+  """
+  Whether the operation was successful
+  """
+  success: Boolean!
+  """
+  Human-readable message
+  """
+  message: String!
+  """
+  Errors if operation failed
+  """
+  errors: [MutationError!]
+  """
+  Client mutation ID for correlation
+  """
+  clientMutationId: String
+  """
+  The source
+  """
+  source: KnowledgeSource
+}
+
+"""
+Payload for source deletion
+"""
+type DeleteSourcePayload implements MutationResponse {
+  """
+  Whether the operation was successful
+  """
+  success: Boolean!
+  """
+  Human-readable message
+  """
+  message: String!
+  """
+  Errors if operation failed
+  """
+  errors: [MutationError!]
+  """
+  Client mutation ID for correlation
+  """
+  clientMutationId: String
+  """
+  ID of deleted source
+  """
+  deletedId: ID
+  """
+  Number of documents removed
+  """
+  documentsRemoved: Int
+}
+
+"""
+Payload for sync operations
+"""
+type SyncPayload implements MutationResponse {
+  """
+  Whether the operation was successful
+  """
+  success: Boolean!
+  """
+  Human-readable message
+  """
+  message: String!
+  """
+  Errors if operation failed
+  """
+  errors: [MutationError!]
+  """
+  Client mutation ID for correlation
+  """
+  clientMutationId: String
+  """
+  Sync job ID for tracking
+  """
+  syncJobId: ID
+  """
+  Source being synced
+  """
+  source: KnowledgeSource
+  """
+  Estimated completion time
+  """
+  estimatedCompletion: DateTime
+}
+
+"""
+Payload for reindex operations
+"""
+type ReindexPayload implements MutationResponse {
+  """
+  Whether the operation was successful
+  """
+  success: Boolean!
+  """
+  Human-readable message
+  """
+  message: String!
+  """
+  Errors if operation failed
+  """
+  errors: [MutationError!]
+  """
+  Client mutation ID for correlation
+  """
+  clientMutationId: String
+  """
+  Reindex job ID for tracking
+  """
+  jobId: ID
+  """
+  Knowledge base being reindexed
+  """
+  knowledgeBase: KnowledgeBase
+  """
+  Estimated completion time
+  """
+  estimatedCompletion: DateTime
+}
+
+"""
+Payload for re-embedding operations
+"""
+type ReembedPayload implements MutationResponse {
+  """
+  Whether the operation was successful
+  """
+  success: Boolean!
+  """
+  Human-readable message
+  """
+  message: String!
+  """
+  Errors if operation failed
+  """
+  errors: [MutationError!]
+  """
+  Client mutation ID for correlation
+  """
+  clientMutationId: String
+  """
+  Re-embed job ID for tracking
+  """
+  jobId: ID
+  """
+  Number of documents queued for re-embedding
+  """
+  documentCount: Int!
+  """
+  Estimated completion time
+  """
+  estimatedCompletion: DateTime
+}
+
+"""
+Payload for share operations
+"""
+type ShareKnowledgeBasePayload implements MutationResponse {
+  """
+  Whether the operation was successful
+  """
+  success: Boolean!
+  """
+  Human-readable message
+  """
+  message: String!
+  """
+  Errors if operation failed
+  """
+  errors: [MutationError!]
+  """
+  Client mutation ID for correlation
+  """
+  clientMutationId: String
+  """
+  The knowledge base with updated sharing
+  """
+  knowledgeBase: KnowledgeBase
+  """
+  Users with access
+  """
+  sharedWithUsers: [KnowledgeBaseShare!]
+  """
+  Teams with access
+  """
+  sharedWithTeams: [KnowledgeBaseShare!]
+}
+
+"""
+Knowledge base share details
+"""
+type KnowledgeBaseShare {
+  """
+  User or team ID
+  """
+  targetId: ID!
+  """
+  Target type
+  """
+  targetType: ShareTargetType!
+  """
+  Permission level
+  """
+  permission: DocumentPermission!
+  """
+  When access was granted
+  """
+  grantedAt: DateTime!
+  """
+  Who granted access
+  """
+  grantedBy: User!
+}
+
+"""
+Share target type
+"""
+enum ShareTargetType {
+  """
+  Shared with user
+  """
+  USER
+  """
+  Shared with team
+  """
+  TEAM
+}
+
+"""
+Payload for export operations
+"""
+type ExportKnowledgeBasePayload implements MutationResponse {
+  """
+  Whether the operation was successful
+  """
+  success: Boolean!
+  """
+  Human-readable message
+  """
+  message: String!
+  """
+  Errors if operation failed
+  """
+  errors: [MutationError!]
+  """
+  Client mutation ID for correlation
+  """
+  clientMutationId: String
+  """
+  Export job ID for tracking
+  """
+  exportJobId: ID
+  """
+  Download URL (when ready)
+  """
+  downloadUrl: String
+  """
+  URL expiry time
+  """
+  urlExpiresAt: DateTime
+  """
+  Export status
+  """
+  status: ExportStatus
+  """
+  Export statistics
+  """
+  stats: ExportStats
+}
+
+"""
+Export status
+"""
+enum ExportStatus {
+  """
+  Export is pending
+  """
+  PENDING
+  """
+  Export is in progress
+  """
+  IN_PROGRESS
+  """
+  Export completed
+  """
+  COMPLETED
+  """
+  Export failed
+  """
+  FAILED
+}
+
+"""
+Export statistics
+"""
+type ExportStats {
+  """
+  Number of documents exported
+  """
+  documentCount: Int!
+  """
+  Total chunks exported
+  """
+  chunkCount: Int!
+  """
+  Export file size in bytes
+  """
+  fileSizeBytes: Int
+  """
+  Time taken in seconds
+  """
+  durationSeconds: Float
+}
+
+"""
+Payload for import operations
+"""
+type ImportKnowledgeBasePayload implements MutationResponse {
+  """
+  Whether the operation was successful
+  """
+  success: Boolean!
+  """
+  Human-readable message
+  """
+  message: String!
+  """
+  Errors if operation failed
+  """
+  errors: [MutationError!]
+  """
+  Client mutation ID for correlation
+  """
+  clientMutationId: String
+  """
+  Import job ID for tracking
+  """
+  importJobId: ID
+  """
+  Created knowledge base
+  """
+  knowledgeBase: KnowledgeBase
+  """
+  Import statistics
+  """
+  stats: ImportStats
+}
+
+"""
+Import statistics
+"""
+type ImportStats {
+  """
+  Number of documents imported
+  """
+  documentsImported: Int!
+  """
+  Number of chunks imported
+  """
+  chunksImported: Int!
+  """
+  Number of documents failed
+  """
+  documentsFailed: Int!
+  """
+  Errors encountered
+  """
+  errors: [String!]
+}
+
+"""
+Payload for search config update
+"""
+type UpdateSearchConfigPayload implements MutationResponse {
+  """
+  Whether the operation was successful
+  """
+  success: Boolean!
+  """
+  Human-readable message
+  """
+  message: String!
+  """
+  Errors if operation failed
+  """
+  errors: [MutationError!]
+  """
+  Client mutation ID for correlation
+  """
+  clientMutationId: String
+  """
+  Updated search configuration
+  """
+  searchConfig: SearchConfig
+}
+
+"""
+Search configuration
+"""
+type SearchConfig {
+  """
+  Default number of results
+  """
+  defaultTopK: Int!
+  """
+  Default similarity threshold
+  """
+  defaultSimilarityThreshold: Float!
+  """
+  Whether hybrid search is enabled
+  """
+  hybridSearchEnabled: Boolean!
+  """
+  Semantic weight in hybrid mode
+  """
+  semanticWeight: Float
+  """
+  Keyword weight in hybrid mode
+  """
+  keywordWeight: Float
+  """
+  Whether reranking is enabled
+  """
+  rerankingEnabled: Boolean!
+  """
+  Reranking model
+  """
+  rerankingModel: String
+  """
+  Whether query expansion is enabled
+  """
+  queryExpansionEnabled: Boolean!
+  """
+  Boosted fields
+  """
+  boostFields: [BoostField!]
+}
+
+"""
+Boost field configuration
+"""
+type BoostField {
+  """
+  Field name
+  """
+  field: String!
+  """
+  Boost weight
+  """
+  weight: Float!
+}
+
+# ==============================================================================
+# SUPPORTING TYPES
+# ==============================================================================
+
+"""
+Knowledge base type
+"""
+type KnowledgeBase implements Node {
+  """
+  Unique identifier
+  """
+  id: ID!
+  """
+  Knowledge base name
+  """
+  name: String!
+  """
+  Description
+  """
+  description: String
+  """
+  Visibility level
+  """
+  visibility: KnowledgeBaseVisibility!
+  """
+  Owner
+  """
+  owner: User!
+  """
+  Team (if team visibility)
+  """
+  team: Team
+  """
+  Tags
+  """
+  tags: [String!]!
+  """
+  Embedding model
+  """
+  embeddingModel: EmbeddingModel!
+  """
+  Chunking configuration
+  """
+  chunkingConfig: ChunkingConfig
+  """
+  Index configuration
+  """
+  indexConfig: IndexConfig
+  """
+  Search configuration
+  """
+  searchConfig: SearchConfig
+  """
+  Number of documents
+  """
+  documentCount: Int!
+  """
+  Number of chunks
+  """
+  chunkCount: Int!
+  """
+  Total storage used in bytes
+  """
+  storageBytes: Int!
+  """
+  Connected sources
+  """
+  sources: [KnowledgeSource!]!
+  """
+  When created
+  """
+  createdAt: DateTime!
+  """
+  When last updated
+  """
+  updatedAt: DateTime!
+  """
+  When last synced
+  """
+  lastSyncedAt: DateTime
+}
+
+"""
+Chunking configuration type
+"""
+type ChunkingConfig {
+  """
+  Chunking strategy
+  """
+  strategy: ChunkingStrategy!
+  """
+  Chunk size
+  """
+  chunkSize: Int
+  """
+  Chunk overlap
+  """
+  chunkOverlap: Int
+  """
+  Minimum chunk size
+  """
+  minChunkSize: Int
+  """
+  Maximum chunk size
+  """
+  maxChunkSize: Int
+  """
+  Whether code blocks are preserved
+  """
+  preserveCodeBlocks: Boolean
+  """
+  Whether tables are preserved
+  """
+  preserveTables: Boolean
+}
+
+"""
+Index configuration type
+"""
+type IndexConfig {
+  """
+  Index type
+  """
+  indexType: VectorIndexType!
+  """
+  Vector dimensions
+  """
+  dimensions: Int!
+  """
+  Distance metric
+  """
+  metric: VectorDistanceMetric!
+  """
+  Index parameters
+  """
+  parameters: JSON
+}
+
+"""
+Knowledge document type
+"""
+type KnowledgeDocument implements Node {
+  """
+  Unique identifier
+  """
+  id: ID!
+  """
+  Document title
+  """
+  title: String!
+  """
+  Content (may be truncated)
+  """
+  content: String
+  """
+  Content type
+  """
+  contentType: String!
+  """
+  Source type
+  """
+  sourceType: DocumentSourceType!
+  """
+  Source URL or path
+  """
+  sourceUrl: String
+  """
+  Source reference
+  """
+  source: KnowledgeSource
+  """
+  Knowledge base
+  """
+  knowledgeBase: KnowledgeBase!
+  """
+  Custom metadata
+  """
+  metadata: JSON
+  """
+  Tags
+  """
+  tags: [String!]!
+  """
+  Processing status
+  """
+  processingStatus: DocumentProcessingStatus!
+  """
+  Processing error if failed
+  """
+  processingError: String
+  """
+  Chunking config used
+  """
+  chunkingConfig: ChunkingConfig
+  """
+  Number of chunks
+  """
+  chunkCount: Int!
+  """
+  Document size in bytes
+  """
+  sizeBytes: Int!
+  """
+  Content hash for deduplication
+  """
+  contentHash: String
+  """
+  When created
+  """
+  createdAt: DateTime!
+  """
+  When last updated
+  """
+  updatedAt: DateTime!
+  """
+  When last processed
+  """
+  processedAt: DateTime
+}
+
+"""
+Knowledge source type
+"""
+type KnowledgeSource implements Node {
+  """
+  Unique identifier
+  """
+  id: ID!
+  """
+  Source name
+  """
+  name: String!
+  """
+  Description
+  """
+  description: String
+  """
+  Source type
+  """
+  sourceType: DocumentSourceType!
+  """
+  Knowledge base
+  """
+  knowledgeBase: KnowledgeBase!
+  """
+  Sync frequency
+  """
+  syncFrequency: SyncFrequency!
+  """
+  Whether source is enabled
+  """
+  enabled: Boolean!
+  """
+  Connection status
+  """
+  connectionStatus: SourceConnectionStatus!
+  """
+  Last sync time
+  """
+  lastSyncAt: DateTime
+  """
+  Next scheduled sync
+  """
+  nextSyncAt: DateTime
+  """
+  Last sync error
+  """
+  lastSyncError: String
+  """
+  Number of documents from this source
+  """
+  documentCount: Int!
+  """
+  Source filters
+  """
+  filters: SourceFilters
+  """
+  When created
+  """
+  createdAt: DateTime!
+  """
+  When last updated
+  """
+  updatedAt: DateTime!
+}
+
+"""
+Source connection status
+"""
+enum SourceConnectionStatus {
+  """
+  Source is connected and healthy
+  """
+  CONNECTED
+  """
+  Source is disconnected
+  """
+  DISCONNECTED
+  """
+  Source connection is being tested
+  """
+  TESTING
+  """
+  Source has connection error
+  """
+  ERROR
+  """
+  Source credentials expired
+  """
+  EXPIRED
+}
+
+"""
+Source filters type
+"""
+type SourceFilters {
+  """
+  Include patterns
+  """
+  includePatterns: [String!]
+  """
+  Exclude patterns
+  """
+  excludePatterns: [String!]
+  """
+  Included extensions
+  """
+  includeExtensions: [String!]
+  """
+  Excluded extensions
+  """
+  excludeExtensions: [String!]
+  """
+  Minimum file size
+  """
+  minFileSize: Int
+  """
+  Maximum file size
+  """
+  maxFileSize: Int
+}
+
+# ==============================================================================
+# MUTATIONS
+# ==============================================================================
+
+extend type Mutation {
+  # --------------------------------------------------------------------------
+  # Knowledge Base CRUD
+  # --------------------------------------------------------------------------
+
+  """
+  Create a new knowledge base
+  """
+  createKnowledgeBase(input: CreateKnowledgeBaseInput!): KnowledgeBasePayload!
+
+  """
+  Update an existing knowledge base
+  """
+  updateKnowledgeBase(input: UpdateKnowledgeBaseInput!): KnowledgeBasePayload!
+
+  """
+  Delete a knowledge base and all its documents
+  """
+  deleteKnowledgeBase(
+    """
+    Knowledge base ID
+    """
+    id: ID!
+    """
+    Confirmation (must be knowledge base name)
+    """
+    confirmation: String!
+    """
+    Client mutation ID
+    """
+    clientMutationId: String
+  ): DeleteKnowledgeBasePayload!
+
+  """
+  Duplicate a knowledge base
+  """
+  duplicateKnowledgeBase(
+    """
+    Knowledge base ID to duplicate
+    """
+    id: ID!
+    """
+    Name for the duplicate
+    """
+    name: String!
+    """
+    Whether to copy documents
+    """
+    includeDocuments: Boolean = true
+    """
+    Whether to copy sources
+    """
+    includeSources: Boolean = false
+    """
+    Client mutation ID
+    """
+    clientMutationId: String
+  ): KnowledgeBasePayload!
+
+  # --------------------------------------------------------------------------
+  # Document CRUD
+  # --------------------------------------------------------------------------
+
+  """
+  Create a document manually
+  """
+  createDocument(input: CreateDocumentInput!): DocumentPayload!
+
+  """
+  Update an existing document
+  """
+  updateDocument(input: UpdateDocumentInput!): DocumentPayload!
+
+  """
+  Delete a document
+  """
+  deleteDocument(
+    """
+    Document ID
+    """
+    id: ID!
+    """
+    Client mutation ID
+    """
+    clientMutationId: String
+  ): DeleteDocumentPayload!
+
+  """
+  Bulk delete documents
+  """
+  bulkDeleteDocuments(
+    """
+    Document IDs to delete
+    """
+    ids: [ID!]!
+    """
+    Client mutation ID
+    """
+    clientMutationId: String
+  ): BulkDeleteDocumentPayload!
+
+  """
+  Upload a document file
+  """
+  uploadDocument(input: UploadDocumentInput!): DocumentPayload!
+
+  """
+  Bulk upload document files
+  """
+  bulkUploadDocuments(input: BulkUploadDocumentsInput!): BulkDocumentPayload!
+
+  """
+  Import documents from URLs
+  """
+  importFromUrl(input: ImportFromUrlInput!): BulkDocumentPayload!
+
+  """
+  Move document to different knowledge base
+  """
+  moveDocument(
+    """
+    Document ID
+    """
+    documentId: ID!
+    """
+    Target knowledge base ID
+    """
+    targetKnowledgeBaseId: ID!
+    """
+    Client mutation ID
+    """
+    clientMutationId: String
+  ): DocumentPayload!
+
+  """
+  Copy document to different knowledge base
+  """
+  copyDocument(
+    """
+    Document ID
+    """
+    documentId: ID!
+    """
+    Target knowledge base ID
+    """
+    targetKnowledgeBaseId: ID!
+    """
+    Client mutation ID
+    """
+    clientMutationId: String
+  ): DocumentPayload!
+
+  # --------------------------------------------------------------------------
+  # Document Processing
+  # --------------------------------------------------------------------------
+
+  """
+  Process/reprocess a document
+  """
+  processDocument(input: ProcessDocumentInput!): ProcessDocumentPayload!
+
+  """
+  Bulk process documents
+  """
+  bulkProcessDocuments(input: BulkProcessDocumentsInput!): BulkProcessPayload!
+
+  """
+  Cancel document processing
+  """
+  cancelDocumentProcessing(
+    """
+    Document ID or job ID
+    """
+    id: ID!
+    """
+    Client mutation ID
+    """
+    clientMutationId: String
+  ): ProcessDocumentPayload!
+
+  # --------------------------------------------------------------------------
+  # Source Management
+  # --------------------------------------------------------------------------
+
+  """
+  Connect an external source
+  """
+  connectSource(input: ConnectSourceInput!): SourcePayload!
+
+  """
+  Update a source configuration
+  """
+  updateSource(input: UpdateSourceInput!): SourcePayload!
+
+  """
+  Disconnect and remove a source
+  """
+  disconnectSource(
+    """
+    Source ID
+    """
+    id: ID!
+    """
+    Whether to keep documents from this source
+    """
+    keepDocuments: Boolean = false
+    """
+    Client mutation ID
+    """
+    clientMutationId: String
+  ): DeleteSourcePayload!
+
+  """
+  Test source connection
+  """
+  testSourceConnection(
+    """
+    Source ID
+    """
+    sourceId: ID!
+    """
+    Client mutation ID
+    """
+    clientMutationId: String
+  ): SourcePayload!
+
+  """
+  Sync a source
+  """
+  syncSource(input: SyncSourceInput!): SyncPayload!
+
+  """
+  Cancel ongoing sync
+  """
+  cancelSync(
+    """
+    Sync job ID
+    """
+    syncJobId: ID!
+    """
+    Client mutation ID
+    """
+    clientMutationId: String
+  ): SyncPayload!
+
+  # --------------------------------------------------------------------------
+  # Indexing & Embeddings
+  # --------------------------------------------------------------------------
+
+  """
+  Reindex a knowledge base
+  """
+  reindexKnowledgeBase(input: ReindexKnowledgeBaseInput!): ReindexPayload!
+
+  """
+  Re-embed documents with new model
+  """
+  reembedDocuments(input: ReembedDocumentsInput!): ReembedPayload!
+
+  """
+  Update search configuration
+  """
+  updateSearchConfig(
+    input: UpdateSearchConfigInput!
+  ): UpdateSearchConfigPayload!
+
+  # --------------------------------------------------------------------------
+  # Sharing & Permissions
+  # --------------------------------------------------------------------------
+
+  """
+  Share a knowledge base
+  """
+  shareKnowledgeBase(
+    input: ShareKnowledgeBaseInput!
+  ): ShareKnowledgeBasePayload!
+
+  """
+  Update share permissions
+  """
+  updateSharePermission(
+    input: UpdateSharePermissionInput!
+  ): ShareKnowledgeBasePayload!
+
+  """
+  Revoke share access
+  """
+  revokeShareAccess(input: RevokeShareAccessInput!): ShareKnowledgeBasePayload!
+
+  """
+  Transfer knowledge base ownership
+  """
+  transferKnowledgeBaseOwnership(
+    """
+    Knowledge base ID
+    """
+    knowledgeBaseId: ID!
+    """
+    New owner user ID
+    """
+    newOwnerId: ID!
+    """
+    Client mutation ID
+    """
+    clientMutationId: String
+  ): KnowledgeBasePayload!
+
+  # --------------------------------------------------------------------------
+  # Export & Import
+  # --------------------------------------------------------------------------
+
+  """
+  Export a knowledge base
+  """
+  exportKnowledgeBase(
+    input: ExportKnowledgeBaseInput!
+  ): ExportKnowledgeBasePayload!
+
+  """
+  Import a knowledge base from file
+  """
+  importKnowledgeBase(
+    input: ImportKnowledgeBaseInput!
+  ): ImportKnowledgeBasePayload!
+
+  # --------------------------------------------------------------------------
+  # Maintenance
+  # --------------------------------------------------------------------------
+
+  """
+  Remove duplicate documents from knowledge base
+  """
+  deduplicateKnowledgeBase(
+    """
+    Knowledge base ID
+    """
+    knowledgeBaseId: ID!
+    """
+    Similarity threshold for duplicates
+    """
+    similarityThreshold: Float = 0.95
+    """
+    Whether to actually delete (false = dry run)
+    """
+    execute: Boolean = false
+    """
+    Client mutation ID
+    """
+    clientMutationId: String
+  ): DeduplicationPayload!
+
+  """
+  Optimize knowledge base storage
+  """
+  optimizeKnowledgeBase(
+    """
+    Knowledge base ID
+    """
+    knowledgeBaseId: ID!
+    """
+    Client mutation ID
+    """
+    clientMutationId: String
+  ): KnowledgeBasePayload!
+
+  """
+  Validate knowledge base integrity
+  """
+  validateKnowledgeBase(
+    """
+    Knowledge base ID
+    """
+    knowledgeBaseId: ID!
+    """
+    Whether to auto-fix issues
+    """
+    autoFix: Boolean = false
+    """
+    Client mutation ID
+    """
+    clientMutationId: String
+  ): ValidationPayload!
+}
+
+"""
+Payload for deduplication
+"""
+type DeduplicationPayload implements MutationResponse {
+  """
+  Whether the operation was successful
+  """
+  success: Boolean!
+  """
+  Human-readable message
+  """
+  message: String!
+  """
+  Errors if operation failed
+  """
+  errors: [MutationError!]
+  """
+  Client mutation ID for correlation
+  """
+  clientMutationId: String
+  """
+  Number of duplicates found
+  """
+  duplicatesFound: Int!
+  """
+  Number of documents removed
+  """
+  documentsRemoved: Int!
+  """
+  Space freed in bytes
+  """
+  spaceFreedBytes: Int!
+  """
+  Duplicate groups (in dry run mode)
+  """
+  duplicateGroups: [DuplicateGroup!]
+}
+
+"""
+Group of duplicate documents
+"""
+type DuplicateGroup {
+  """
+  Documents in this group
+  """
+  documents: [KnowledgeDocument!]!
+  """
+  Similarity score
+  """
+  similarity: Float!
+  """
+  Which document would be kept
+  """
+  keepDocumentId: ID!
+}
+
+"""
+Payload for validation
+"""
+type ValidationPayload implements MutationResponse {
+  """
+  Whether the operation was successful
+  """
+  success: Boolean!
+  """
+  Human-readable message
+  """
+  message: String!
+  """
+  Errors if operation failed
+  """
+  errors: [MutationError!]
+  """
+  Client mutation ID for correlation
+  """
+  clientMutationId: String
+  """
+  Whether knowledge base is valid
+  """
+  isValid: Boolean!
+  """
+  Issues found
+  """
+  issues: [ValidationIssue!]!
+  """
+  Issues fixed (if autoFix enabled)
+  """
+  issuesFixed: Int!
+}
+
+"""
+Validation issue
+"""
+type ValidationIssue {
+  """
+  Issue type
+  """
+  type: ValidationIssueType!
+  """
+  Issue severity
+  """
+  severity: ValidationSeverity!
+  """
+  Description
+  """
+  description: String!
+  """
+  Affected document ID if applicable
+  """
+  documentId: ID
+  """
+  Whether issue can be auto-fixed
+  """
+  canAutoFix: Boolean!
+}
+
+"""
+Type of validation issue
+"""
+enum ValidationIssueType {
+  """
+  Document has no chunks
+  """
+  MISSING_CHUNKS
+  """
+  Document has no embeddings
+  """
+  MISSING_EMBEDDINGS
+  """
+  Embedding dimension mismatch
+  """
+  EMBEDDING_DIMENSION_MISMATCH
+  """
+  Orphaned chunks
+  """
+  ORPHANED_CHUNKS
+  """
+  Corrupted content
+  """
+  CORRUPTED_CONTENT
+  """
+  Invalid metadata
+  """
+  INVALID_METADATA
+  """
+  Index inconsistency
+  """
+  INDEX_INCONSISTENCY
+  """
+  Source connection broken
+  """
+  BROKEN_SOURCE
+}
+
+"""
+Validation severity
+"""
+enum ValidationSeverity {
+  """
+  Informational
+  """
+  INFO
+  """
+  Warning
+  """
+  WARNING
+  """
+  Error
+  """
+  ERROR
+  """
+  Critical issue
+  """
+  CRITICAL
+}

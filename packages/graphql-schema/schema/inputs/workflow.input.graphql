@@ -1,0 +1,1177 @@
+# =============================================================================
+# WORKFLOW INPUT TYPES
+# =============================================================================
+# Input types for workflow creation, updates, steps, triggers, and execution.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# CREATE WORKFLOW INPUTS
+# -----------------------------------------------------------------------------
+
+"""
+Input for creating a new workflow
+"""
+input CreateWorkflowInput {
+  """
+  Workflow name (required, 1-200 chars)
+  """
+  name: String!
+
+  """
+  Workflow description
+  """
+  description: String
+
+  """
+  Workflow category
+  """
+  category: WorkflowCategory
+
+  """
+  Workflow steps
+  """
+  steps: [WorkflowStepInput!]!
+
+  """
+  Workflow triggers
+  """
+  triggers: [WorkflowTriggerInput!]
+
+  """
+  Input schema (JSON Schema)
+  """
+  inputSchema: JSON
+
+  """
+  Output schema (JSON Schema)
+  """
+  outputSchema: JSON
+
+  """
+  Error handling configuration
+  """
+  errorHandling: WorkflowErrorHandlingInput
+
+  """
+  Timeout configuration
+  """
+  timeout: WorkflowTimeoutInput
+
+  """
+  Concurrency settings
+  """
+  concurrency: WorkflowConcurrencyInput
+
+  """
+  Tags for organization
+  """
+  tags: [String!]
+
+  """
+  Custom metadata
+  """
+  metadata: JSON
+
+  """
+  Visibility setting
+  """
+  visibility: WorkflowVisibility = PRIVATE
+}
+
+"""
+Workflow categories
+"""
+enum WorkflowCategory {
+  """
+  Data processing workflows
+  """
+  DATA_PROCESSING
+
+  """
+  Agent orchestration workflows
+  """
+  AGENT_ORCHESTRATION
+
+  """
+  Automation workflows
+  """
+  AUTOMATION
+
+  """
+  Integration workflows
+  """
+  INTEGRATION
+
+  """
+  ETL workflows
+  """
+  ETL
+
+  """
+  Notification workflows
+  """
+  NOTIFICATION
+
+  """
+  Analysis workflows
+  """
+  ANALYSIS
+
+  """
+  Custom/other workflows
+  """
+  CUSTOM
+}
+
+"""
+Workflow visibility
+"""
+enum WorkflowVisibility {
+  """
+  Only owner can see/use
+  """
+  PRIVATE
+
+  """
+  Organization members can see/use
+  """
+  TEAM
+
+  """
+  All users can see/use
+  """
+  PUBLIC
+}
+
+# -----------------------------------------------------------------------------
+# WORKFLOW STEP INPUTS
+# -----------------------------------------------------------------------------
+
+"""
+Input for defining a workflow step
+"""
+input WorkflowStepInput {
+  """
+  Step identifier (unique within workflow)
+  """
+  id: String!
+
+  """
+  Step display name
+  """
+  name: String!
+
+  """
+  Step description
+  """
+  description: String
+
+  """
+  Step type
+  """
+  type: WorkflowStepType!
+
+  """
+  Step configuration (varies by type)
+  """
+  config: WorkflowStepConfigInput!
+
+  """
+  Dependencies (step IDs that must complete first)
+  """
+  dependsOn: [String!]
+
+  """
+  Condition for executing this step
+  """
+  condition: WorkflowConditionInput
+
+  """
+  Retry configuration
+  """
+  retry: StepRetryInput
+
+  """
+  Timeout in seconds
+  """
+  timeoutSeconds: Int
+
+  """
+  Whether to continue workflow on step failure
+  """
+  continueOnFailure: Boolean = false
+
+  """
+  Output mapping configuration
+  """
+  outputMapping: OutputMappingInput
+}
+
+"""
+Workflow step types
+"""
+enum WorkflowStepType {
+  """
+  Execute an agent
+  """
+  AGENT
+
+  """
+  Execute a tool/function
+  """
+  TOOL
+
+  """
+  HTTP/API call
+  """
+  HTTP
+
+  """
+  Transform/map data
+  """
+  TRANSFORM
+
+  """
+  Filter/validate data
+  """
+  FILTER
+
+  """
+  Conditional branching
+  """
+  CONDITION
+
+  """
+  Parallel execution
+  """
+  PARALLEL
+
+  """
+  Loop/iteration
+  """
+  LOOP
+
+  """
+  Wait/delay
+  """
+  WAIT
+
+  """
+  Human approval
+  """
+  APPROVAL
+
+  """
+  Sub-workflow
+  """
+  SUB_WORKFLOW
+
+  """
+  Script execution
+  """
+  SCRIPT
+
+  """
+  Send notification
+  """
+  NOTIFICATION
+
+  """
+  Store/retrieve data
+  """
+  DATA_OPERATION
+}
+
+"""
+Step configuration (type-specific)
+"""
+input WorkflowStepConfigInput {
+  # Agent step config
+  """
+  Agent ID (for AGENT type)
+  """
+  agentId: ID
+
+  """
+  Prompt template (for AGENT type)
+  """
+  promptTemplate: String
+
+  # Tool step config
+  """
+  Tool ID (for TOOL type)
+  """
+  toolId: ID
+
+  """
+  Tool parameters (for TOOL type)
+  """
+  toolParams: JSON
+
+  # HTTP step config
+  """
+  HTTP endpoint URL
+  """
+  url: String
+
+  """
+  HTTP method
+  """
+  method: HttpMethod
+
+  """
+  HTTP headers
+  """
+  headers: JSON
+
+  """
+  HTTP body template
+  """
+  bodyTemplate: String
+
+  # Transform step config
+  """
+  Transform expression (JSONata/JMESPath)
+  """
+  transformExpression: String
+
+  """
+  Transform language
+  """
+  transformLanguage: TransformLanguage
+
+  # Condition step config
+  """
+  Condition expression
+  """
+  conditionExpression: String
+
+  """
+  True branch steps
+  """
+  trueBranch: [String!]
+
+  """
+  False branch steps
+  """
+  falseBranch: [String!]
+
+  # Loop step config
+  """
+  Items expression (array to iterate)
+  """
+  itemsExpression: String
+
+  """
+  Loop body steps
+  """
+  loopSteps: [String!]
+
+  """
+  Maximum iterations
+  """
+  maxIterations: Int
+
+  # Wait step config
+  """
+  Wait duration in seconds
+  """
+  waitSeconds: Int
+
+  """
+  Wait until specific time
+  """
+  waitUntil: DateTime
+
+  # Approval step config
+  """
+  Approvers (user IDs)
+  """
+  approverIds: [ID!]
+
+  """
+  Approval timeout in hours
+  """
+  approvalTimeoutHours: Int
+
+  # Sub-workflow config
+  """
+  Sub-workflow ID
+  """
+  subWorkflowId: ID
+
+  """
+  Sub-workflow input mapping
+  """
+  subWorkflowInputMapping: JSON
+
+  # Script step config
+  """
+  Script language
+  """
+  scriptLanguage: ScriptLanguage
+
+  """
+  Script code
+  """
+  scriptCode: String
+
+  # Notification step config
+  """
+  Notification channel
+  """
+  notificationChannel: NotificationChannel
+
+  """
+  Notification template
+  """
+  notificationTemplate: String
+
+  """
+  Notification recipients
+  """
+  recipientIds: [ID!]
+
+  # Data operation config
+  """
+  Data operation type
+  """
+  dataOperation: DataOperationType
+
+  """
+  Data store ID
+  """
+  dataStoreId: ID
+
+  """
+  Data key expression
+  """
+  dataKeyExpression: String
+
+  """
+  Data value expression
+  """
+  dataValueExpression: String
+}
+
+"""
+HTTP methods
+"""
+enum HttpMethod {
+  GET
+  POST
+  PUT
+  PATCH
+  DELETE
+  HEAD
+  OPTIONS
+}
+
+"""
+Transform languages
+"""
+enum TransformLanguage {
+  """
+  JSONata expression
+  """
+  JSONATA
+
+  """
+  JMESPath expression
+  """
+  JMESPATH
+
+  """
+  JSONPath expression
+  """
+  JSONPATH
+
+  """
+  JavaScript expression
+  """
+  JAVASCRIPT
+}
+
+"""
+Script languages
+"""
+enum ScriptLanguage {
+  JAVASCRIPT
+  PYTHON
+  TYPESCRIPT
+}
+
+"""
+Notification channels
+"""
+enum NotificationChannel {
+  EMAIL
+  SLACK
+  WEBHOOK
+  SMS
+  IN_APP
+}
+
+"""
+Data operation types
+"""
+enum DataOperationType {
+  GET
+  SET
+  DELETE
+  INCREMENT
+  APPEND
+}
+
+"""
+Workflow condition input
+"""
+input WorkflowConditionInput {
+  """
+  Condition expression
+  """
+  expression: String!
+
+  """
+  Expression language
+  """
+  language: ConditionLanguage = JSONATA
+}
+
+"""
+Condition expression languages
+"""
+enum ConditionLanguage {
+  JSONATA
+  JAVASCRIPT
+  SIMPLE
+}
+
+"""
+Step retry configuration
+"""
+input StepRetryInput {
+  """
+  Maximum retry attempts
+  """
+  maxAttempts: Int = 3
+
+  """
+  Initial backoff in seconds
+  """
+  initialBackoffSeconds: Int = 1
+
+  """
+  Maximum backoff in seconds
+  """
+  maxBackoffSeconds: Int = 60
+
+  """
+  Backoff multiplier
+  """
+  backoffMultiplier: Float = 2.0
+
+  """
+  Retryable error codes
+  """
+  retryableErrors: [String!]
+}
+
+"""
+Output mapping configuration
+"""
+input OutputMappingInput {
+  """
+  Output variable name
+  """
+  variableName: String!
+
+  """
+  Expression to extract value
+  """
+  expression: String
+
+  """
+  Whether this output is required
+  """
+  required: Boolean = false
+}
+
+# -----------------------------------------------------------------------------
+# WORKFLOW TRIGGER INPUTS
+# -----------------------------------------------------------------------------
+
+"""
+Input for workflow triggers
+"""
+input WorkflowTriggerInput {
+  """
+  Trigger type
+  """
+  type: WorkflowTriggerType!
+
+  """
+  Trigger name
+  """
+  name: String!
+
+  """
+  Whether trigger is enabled
+  """
+  enabled: Boolean = true
+
+  """
+  Trigger configuration
+  """
+  config: WorkflowTriggerConfigInput!
+}
+
+"""
+Workflow trigger types
+"""
+enum WorkflowTriggerType {
+  """
+  Manual trigger via API
+  """
+  MANUAL
+
+  """
+  Scheduled/cron trigger
+  """
+  SCHEDULE
+
+  """
+  Webhook trigger
+  """
+  WEBHOOK
+
+  """
+  Event-based trigger
+  """
+  EVENT
+
+  """
+  Another workflow completion
+  """
+  WORKFLOW_COMPLETION
+}
+
+"""
+Trigger configuration
+"""
+input WorkflowTriggerConfigInput {
+  # Schedule trigger
+  """
+  Cron expression (for SCHEDULE type)
+  """
+  cronExpression: String
+
+  """
+  Timezone (for SCHEDULE type)
+  """
+  timezone: String
+
+  # Webhook trigger
+  """
+  Webhook secret (for WEBHOOK type)
+  """
+  webhookSecret: String
+
+  """
+  Webhook payload validation schema
+  """
+  payloadSchema: JSON
+
+  # Event trigger
+  """
+  Event type pattern
+  """
+  eventPattern: String
+
+  """
+  Event source
+  """
+  eventSource: String
+
+  # Workflow completion trigger
+  """
+  Source workflow ID
+  """
+  sourceWorkflowId: ID
+
+  """
+  Trigger on success only
+  """
+  onSuccessOnly: Boolean
+}
+
+# -----------------------------------------------------------------------------
+# ERROR HANDLING AND TIMEOUT
+# -----------------------------------------------------------------------------
+
+"""
+Workflow error handling configuration
+"""
+input WorkflowErrorHandlingInput {
+  """
+  Default error behavior
+  """
+  defaultBehavior: ErrorBehavior = FAIL
+
+  """
+  Fallback workflow ID
+  """
+  fallbackWorkflowId: ID
+
+  """
+  Error notification settings
+  """
+  notification: ErrorNotificationInput
+
+  """
+  Custom error handlers
+  """
+  handlers: [ErrorHandlerInput!]
+}
+
+"""
+Error behaviors
+"""
+enum ErrorBehavior {
+  """
+  Fail the entire workflow
+  """
+  FAIL
+
+  """
+  Continue with next step
+  """
+  CONTINUE
+
+  """
+  Retry the failed step
+  """
+  RETRY
+
+  """
+  Execute fallback
+  """
+  FALLBACK
+
+  """
+  Pause for human intervention
+  """
+  PAUSE
+}
+
+"""
+Error notification input
+"""
+input ErrorNotificationInput {
+  """
+  Enable error notifications
+  """
+  enabled: Boolean!
+
+  """
+  Notification channels
+  """
+  channels: [NotificationChannel!]!
+
+  """
+  Recipient IDs
+  """
+  recipientIds: [ID!]
+
+  """
+  Include error details
+  """
+  includeDetails: Boolean = true
+}
+
+"""
+Custom error handler
+"""
+input ErrorHandlerInput {
+  """
+  Error code pattern to match
+  """
+  errorPattern: String!
+
+  """
+  Behavior for this error
+  """
+  behavior: ErrorBehavior!
+
+  """
+  Custom handler workflow
+  """
+  handlerWorkflowId: ID
+}
+
+"""
+Workflow timeout configuration
+"""
+input WorkflowTimeoutInput {
+  """
+  Total workflow timeout in seconds
+  """
+  totalTimeoutSeconds: Int
+
+  """
+  Default step timeout in seconds
+  """
+  defaultStepTimeoutSeconds: Int
+
+  """
+  Timeout behavior
+  """
+  timeoutBehavior: TimeoutBehavior = FAIL
+}
+
+"""
+Timeout behaviors
+"""
+enum TimeoutBehavior {
+  """
+  Fail on timeout
+  """
+  FAIL
+
+  """
+  Cancel gracefully
+  """
+  CANCEL
+
+  """
+  Continue with timeout error
+  """
+  CONTINUE
+}
+
+"""
+Workflow concurrency configuration
+"""
+input WorkflowConcurrencyInput {
+  """
+  Maximum concurrent executions
+  """
+  maxConcurrent: Int
+
+  """
+  Behavior when limit reached
+  """
+  overflowBehavior: ConcurrencyOverflowBehavior = QUEUE
+}
+
+"""
+Concurrency overflow behaviors
+"""
+enum ConcurrencyOverflowBehavior {
+  """
+  Queue for later execution
+  """
+  QUEUE
+
+  """
+  Reject immediately
+  """
+  REJECT
+
+  """
+  Cancel oldest execution
+  """
+  CANCEL_OLDEST
+}
+
+# -----------------------------------------------------------------------------
+# UPDATE WORKFLOW INPUTS
+# -----------------------------------------------------------------------------
+
+"""
+Input for updating an existing workflow
+"""
+input UpdateWorkflowInput {
+  """
+  Update workflow name
+  """
+  name: String
+
+  """
+  Update description
+  """
+  description: String
+
+  """
+  Update category
+  """
+  category: WorkflowCategory
+
+  """
+  Replace steps
+  """
+  steps: [WorkflowStepInput!]
+
+  """
+  Replace triggers
+  """
+  triggers: [WorkflowTriggerInput!]
+
+  """
+  Update input schema
+  """
+  inputSchema: JSON
+
+  """
+  Update output schema
+  """
+  outputSchema: JSON
+
+  """
+  Update error handling
+  """
+  errorHandling: WorkflowErrorHandlingInput
+
+  """
+  Update timeout settings
+  """
+  timeout: WorkflowTimeoutInput
+
+  """
+  Update concurrency settings
+  """
+  concurrency: WorkflowConcurrencyInput
+
+  """
+  Update tags
+  """
+  tags: [String!]
+
+  """
+  Update metadata
+  """
+  metadata: JSON
+
+  """
+  Update visibility
+  """
+  visibility: WorkflowVisibility
+}
+
+# -----------------------------------------------------------------------------
+# WORKFLOW EXECUTION INPUTS
+# -----------------------------------------------------------------------------
+
+"""
+Input for executing a workflow
+"""
+input ExecuteWorkflowInput {
+  """
+  Workflow ID to execute
+  """
+  workflowId: ID!
+
+  """
+  Input data for the workflow
+  """
+  input: JSON
+
+  """
+  Execution priority
+  """
+  priority: ExecutionPriority = NORMAL
+
+  """
+  Execute asynchronously
+  """
+  async: Boolean = false
+
+  """
+  Idempotency key
+  """
+  idempotencyKey: String
+
+  """
+  Custom execution metadata
+  """
+  metadata: JSON
+}
+
+"""
+Execution priorities
+"""
+enum ExecutionPriority {
+  LOW
+  NORMAL
+  HIGH
+  CRITICAL
+}
+
+"""
+Input for retrying a workflow execution
+"""
+input RetryWorkflowExecutionInput {
+  """
+  Execution ID to retry
+  """
+  executionId: ID!
+
+  """
+  Start from specific step
+  """
+  fromStepId: String
+
+  """
+  Override input data
+  """
+  inputOverride: JSON
+}
+
+"""
+Input for canceling a workflow execution
+"""
+input CancelWorkflowExecutionInput {
+  """
+  Execution ID to cancel
+  """
+  executionId: ID!
+
+  """
+  Cancellation reason
+  """
+  reason: String
+
+  """
+  Force cancellation (skip cleanup)
+  """
+  force: Boolean = false
+}
+
+# -----------------------------------------------------------------------------
+# WORKFLOW FILTER AND SORT
+# -----------------------------------------------------------------------------
+
+"""
+Input for filtering workflows
+"""
+input WorkflowFilterInput {
+  """
+  Filter by IDs
+  """
+  ids: [ID!]
+
+  """
+  Filter by name (contains)
+  """
+  nameContains: String
+
+  """
+  Filter by status
+  """
+  status: WorkflowStatus
+
+  """
+  Filter by multiple statuses
+  """
+  statusIn: [WorkflowStatus!]
+
+  """
+  Filter by category
+  """
+  category: WorkflowCategory
+
+  """
+  Filter by visibility
+  """
+  visibility: WorkflowVisibility
+
+  """
+  Filter by owner
+  """
+  ownerId: ID
+
+  """
+  Filter by tags
+  """
+  tags: [String!]
+
+  """
+  Filter by creation date
+  """
+  createdAt: DateTimeFilter
+
+  """
+  Filter by has triggers
+  """
+  hasTriggers: Boolean
+
+  """
+  Full-text search
+  """
+  search: String
+
+  """
+  Include deleted workflows
+  """
+  includeDeleted: Boolean
+
+  """
+  Composite AND
+  """
+  AND: [WorkflowFilterInput!]
+
+  """
+  Composite OR
+  """
+  OR: [WorkflowFilterInput!]
+}
+
+"""
+Input for filtering workflow executions
+"""
+input WorkflowExecutionFilterInput {
+  """
+  Filter by workflow ID
+  """
+  workflowId: ID
+
+  """
+  Filter by status
+  """
+  status: ExecutionStatus
+
+  """
+  Filter by multiple statuses
+  """
+  statusIn: [ExecutionStatus!]
+
+  """
+  Filter by started after
+  """
+  startedAfter: DateTime
+
+  """
+  Filter by started before
+  """
+  startedBefore: DateTime
+
+  """
+  Filter by completed after
+  """
+  completedAfter: DateTime
+
+  """
+  Filter by completed before
+  """
+  completedBefore: DateTime
+
+  """
+  Filter by triggered by (user ID)
+  """
+  triggeredById: ID
+
+  """
+  Filter by trigger type
+  """
+  triggerType: WorkflowTriggerType
+}

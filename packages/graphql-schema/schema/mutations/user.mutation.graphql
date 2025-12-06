@@ -1,0 +1,1992 @@
+# =============================================================================
+# USER MUTATIONS
+# =============================================================================
+# Unified mutation patterns for user profile, preferences, security, and teams.
+# All mutations follow the MutationResponse pattern with success, message, errors.
+# =============================================================================
+
+extend type Mutation {
+  # ---------------------------------------------------------------------------
+  # USER PROFILE
+  # ---------------------------------------------------------------------------
+
+  """
+  Update current user's profile
+  """
+  updateProfile(input: UpdateUserInput!): UpdateProfilePayload!
+
+  """
+  Update display name
+  """
+  updateDisplayName(displayName: String!): UpdateDisplayNamePayload!
+
+  """
+  Upload avatar
+  """
+  uploadAvatar(input: UploadAvatarInput!): UploadAvatarPayload!
+
+  """
+  Remove avatar
+  """
+  removeAvatar: RemoveAvatarPayload!
+
+  # ---------------------------------------------------------------------------
+  # PREFERENCES
+  # ---------------------------------------------------------------------------
+
+  """
+  Update user preferences
+  """
+  updatePreferences(input: UpdatePreferencesInput!): UpdatePreferencesPayload!
+
+  """
+  Reset preferences to defaults
+  """
+  resetPreferences: ResetPreferencesPayload!
+
+  # ---------------------------------------------------------------------------
+  # NOTIFICATION SETTINGS
+  # ---------------------------------------------------------------------------
+
+  """
+  Update notification settings
+  """
+  updateNotificationSettings(
+    input: UpdateNotificationSettingsInput!
+  ): UpdateNotificationSettingsPayload!
+
+  """
+  Mark all notifications as read
+  """
+  markAllNotificationsRead: MarkAllNotificationsReadPayload!
+
+  """
+  Clear notification history
+  """
+  clearNotifications(before: DateTime): ClearNotificationsPayload!
+
+  # ---------------------------------------------------------------------------
+  # SECURITY
+  # ---------------------------------------------------------------------------
+
+  """
+  Change password
+  """
+  changePassword(input: ChangePasswordInput!): ChangePasswordPayload!
+
+  """
+  Enable two-factor authentication
+  """
+  enableTwoFactor(input: EnableTwoFactorInput!): EnableTwoFactorPayload!
+
+  """
+  Disable two-factor authentication
+  """
+  disableTwoFactor(verificationCode: String!): DisableTwoFactorPayload!
+
+  """
+  Generate backup codes
+  """
+  generateBackupCodes(verificationCode: String!): GenerateBackupCodesPayload!
+
+  # ---------------------------------------------------------------------------
+  # API KEYS
+  # ---------------------------------------------------------------------------
+
+  """
+  Create API key
+  """
+  createApiKey(input: CreateApiKeyInput!): CreateApiKeyPayload!
+
+  """
+  Revoke API key
+  """
+  revokeApiKey(input: RevokeApiKeyInput!): RevokeApiKeyPayload!
+
+  """
+  Regenerate API key
+  """
+  regenerateApiKey(keyId: ID!): RegenerateApiKeyPayload!
+
+  # ---------------------------------------------------------------------------
+  # SESSIONS
+  # ---------------------------------------------------------------------------
+
+  """
+  Revoke session
+  """
+  revokeSession(input: RevokeSessionInput!): RevokeSessionPayload!
+
+  """
+  Revoke all other sessions
+  """
+  revokeAllOtherSessions: RevokeAllOtherSessionsPayload!
+
+  # ---------------------------------------------------------------------------
+  # ACCOUNT MANAGEMENT
+  # ---------------------------------------------------------------------------
+
+  """
+  Request account deletion
+  """
+  requestAccountDeletion(password: String!): RequestAccountDeletionPayload!
+
+  """
+  Cancel account deletion request
+  """
+  cancelAccountDeletion: CancelAccountDeletionPayload!
+
+  """
+  Export all user data (GDPR)
+  """
+  requestDataExport: RequestDataExportPayload!
+
+  # ---------------------------------------------------------------------------
+  # TEAM MANAGEMENT
+  # ---------------------------------------------------------------------------
+
+  """
+  Create a team
+  """
+  createTeam(input: CreateTeamInput!): CreateTeamPayload!
+
+  """
+  Update a team
+  """
+  updateTeam(teamId: ID!, input: UpdateTeamInput!): UpdateTeamPayload!
+
+  """
+  Delete a team
+  """
+  deleteTeam(teamId: ID!): DeleteTeamPayload!
+
+  """
+  Invite to team
+  """
+  inviteToTeam(input: InviteToTeamInput!): InviteToTeamPayload!
+
+  """
+  Accept team invitation
+  """
+  acceptTeamInvitation(invitationId: ID!): AcceptTeamInvitationPayload!
+
+  """
+  Decline team invitation
+  """
+  declineTeamInvitation(invitationId: ID!): DeclineTeamInvitationPayload!
+
+  """
+  Update team member
+  """
+  updateTeamMember(input: UpdateTeamMemberInput!): UpdateTeamMemberPayload!
+
+  """
+  Remove team member
+  """
+  removeTeamMember(input: RemoveTeamMemberInput!): RemoveTeamMemberPayload!
+
+  """
+  Leave team
+  """
+  leaveTeam(teamId: ID!): LeaveTeamPayload!
+
+  # ---------------------------------------------------------------------------
+  # ADMIN OPERATIONS
+  # ---------------------------------------------------------------------------
+
+  """
+  Admin: Create user
+  """
+  adminCreateUser(input: AdminCreateUserInput!): AdminCreateUserPayload!
+
+  """
+  Admin: Update user
+  """
+  adminUpdateUser(input: AdminUpdateUserInput!): AdminUpdateUserPayload!
+
+  """
+  Admin: Delete user
+  """
+  adminDeleteUser(userId: ID!, transferTo: ID): AdminDeleteUserPayload!
+
+  """
+  Admin: Suspend user
+  """
+  adminSuspendUser(userId: ID!, reason: String!): AdminSuspendUserPayload!
+
+  """
+  Admin: Unsuspend user
+  """
+  adminUnsuspendUser(userId: ID!): AdminUnsuspendUserPayload!
+
+  """
+  Admin: Reset user password
+  """
+  adminResetUserPassword(
+    userId: ID!
+    sendEmail: Boolean = true
+  ): AdminResetUserPasswordPayload!
+
+  """
+  Admin: Impersonate user
+  """
+  adminImpersonateUser(
+    userId: ID!
+    reason: String!
+  ): AdminImpersonateUserPayload!
+
+  """
+  Admin: Stop impersonation
+  """
+  adminStopImpersonation: AdminStopImpersonationPayload!
+}
+
+# =============================================================================
+# MUTATION PAYLOADS
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# PROFILE PAYLOADS
+# -----------------------------------------------------------------------------
+
+"""
+Payload for updateProfile mutation
+"""
+type UpdateProfilePayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Updated user
+  """
+  user: User
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for updateDisplayName mutation
+"""
+type UpdateDisplayNamePayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Updated user
+  """
+  user: User
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Input for uploading avatar
+"""
+input UploadAvatarInput {
+  """
+  Base64 encoded image
+  """
+  base64Image: String
+
+  """
+  Image URL
+  """
+  imageUrl: String
+
+  """
+  Crop settings
+  """
+  crop: ImageCropInput
+}
+
+"""
+Image crop input
+"""
+input ImageCropInput {
+  """
+  X offset
+  """
+  x: Int!
+
+  """
+  Y offset
+  """
+  y: Int!
+
+  """
+  Width
+  """
+  width: Int!
+
+  """
+  Height
+  """
+  height: Int!
+}
+
+"""
+Payload for uploadAvatar mutation
+"""
+type UploadAvatarPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  New avatar URL
+  """
+  avatarUrl: String
+
+  """
+  Updated user
+  """
+  user: User
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for removeAvatar mutation
+"""
+type RemoveAvatarPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Updated user
+  """
+  user: User
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+# -----------------------------------------------------------------------------
+# PREFERENCES PAYLOADS
+# -----------------------------------------------------------------------------
+
+"""
+Payload for updatePreferences mutation
+"""
+type UpdatePreferencesPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Updated preferences
+  """
+  preferences: UserPreferences
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+User preferences type
+"""
+type UserPreferences {
+  """
+  Theme
+  """
+  theme: ThemePreference!
+
+  """
+  Default model
+  """
+  defaultModel: String
+
+  """
+  Conversation defaults
+  """
+  conversationDefaults: ConversationDefaults
+
+  """
+  Editor preferences
+  """
+  editor: EditorPreferences
+
+  """
+  Accessibility
+  """
+  accessibility: AccessibilityPreferences
+
+  """
+  AI behavior
+  """
+  aiBehavior: AIBehaviorPreferences
+}
+
+"""
+Conversation default settings
+"""
+type ConversationDefaults {
+  """
+  Streaming mode
+  """
+  streamingMode: StreamingMode!
+
+  """
+  Context length
+  """
+  contextLength: Int
+
+  """
+  Auto title
+  """
+  autoTitle: Boolean!
+
+  """
+  Temperature
+  """
+  temperature: Float
+
+  """
+  Max tokens
+  """
+  maxTokens: Int
+}
+
+"""
+Editor preferences
+"""
+type EditorPreferences {
+  """
+  Font family
+  """
+  fontFamily: String!
+
+  """
+  Font size
+  """
+  fontSize: Int!
+
+  """
+  Line height
+  """
+  lineHeight: Float!
+
+  """
+  Tab size
+  """
+  tabSize: Int!
+
+  """
+  Word wrap
+  """
+  wordWrap: Boolean!
+
+  """
+  Line numbers
+  """
+  lineNumbers: Boolean!
+
+  """
+  Vim mode
+  """
+  vimMode: Boolean!
+
+  """
+  Auto complete
+  """
+  autoComplete: Boolean!
+
+  """
+  Syntax theme
+  """
+  syntaxTheme: String!
+}
+
+"""
+Accessibility preferences
+"""
+type AccessibilityPreferences {
+  """
+  Reduce motion
+  """
+  reduceMotion: Boolean!
+
+  """
+  High contrast
+  """
+  highContrast: Boolean!
+
+  """
+  Screen reader optimized
+  """
+  screenReaderOptimized: Boolean!
+
+  """
+  Larger text
+  """
+  largerText: Boolean!
+
+  """
+  Keyboard only
+  """
+  keyboardOnly: Boolean!
+}
+
+"""
+AI behavior preferences
+"""
+type AIBehaviorPreferences {
+  """
+  Verbosity
+  """
+  verbosity: ResponseVerbosity!
+
+  """
+  Response style
+  """
+  responseStyle: ResponseStyle!
+
+  """
+  Code style
+  """
+  codeStyle: CodeStylePreferences
+
+  """
+  Auto suggestions
+  """
+  autoSuggestions: Boolean!
+
+  """
+  Follow up questions
+  """
+  followUpQuestions: Boolean!
+}
+
+"""
+Code style preferences
+"""
+type CodeStylePreferences {
+  """
+  Preferred language
+  """
+  preferredLanguage: String
+
+  """
+  Include comments
+  """
+  includeComments: Boolean!
+
+  """
+  Type annotations
+  """
+  typeAnnotations: Boolean!
+
+  """
+  Documentation style
+  """
+  documentationStyle: String
+}
+
+"""
+Payload for resetPreferences mutation
+"""
+type ResetPreferencesPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Reset preferences
+  """
+  preferences: UserPreferences
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+# -----------------------------------------------------------------------------
+# NOTIFICATION PAYLOADS
+# -----------------------------------------------------------------------------
+
+"""
+Payload for updateNotificationSettings mutation
+"""
+type UpdateNotificationSettingsPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Updated settings
+  """
+  notificationSettings: NotificationSettings
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Notification settings type
+"""
+type NotificationSettings {
+  """
+  Email settings
+  """
+  email: NotificationChannelSettings!
+
+  """
+  In-app settings
+  """
+  inApp: NotificationChannelSettings!
+
+  """
+  Push settings
+  """
+  push: NotificationChannelSettings!
+
+  """
+  Digest frequency
+  """
+  digestFrequency: DigestFrequency!
+}
+
+"""
+Notification channel settings
+"""
+type NotificationChannelSettings {
+  """
+  Enabled
+  """
+  enabled: Boolean!
+
+  """
+  Notification types
+  """
+  types: [NotificationType!]!
+
+  """
+  Quiet hours
+  """
+  quietHours: QuietHours
+}
+
+"""
+Quiet hours settings
+"""
+type QuietHours {
+  """
+  Enabled
+  """
+  enabled: Boolean!
+
+  """
+  Start time
+  """
+  startTime: String
+
+  """
+  End time
+  """
+  endTime: String
+
+  """
+  Days
+  """
+  days: [DayOfWeek!]
+}
+
+"""
+Payload for markAllNotificationsRead mutation
+"""
+type MarkAllNotificationsReadPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Count of marked notifications
+  """
+  markedCount: Int
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for clearNotifications mutation
+"""
+type ClearNotificationsPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Count of cleared notifications
+  """
+  clearedCount: Int
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+# -----------------------------------------------------------------------------
+# SECURITY PAYLOADS
+# -----------------------------------------------------------------------------
+
+"""
+Payload for changePassword mutation
+"""
+type ChangePasswordPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for enableTwoFactor mutation
+"""
+type EnableTwoFactorPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  QR code URL (for TOTP setup)
+  """
+  qrCodeUrl: String
+
+  """
+  Secret (for TOTP setup)
+  """
+  secret: String
+
+  """
+  Backup codes
+  """
+  backupCodes: [String!]
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for disableTwoFactor mutation
+"""
+type DisableTwoFactorPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for generateBackupCodes mutation
+"""
+type GenerateBackupCodesPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  New backup codes
+  """
+  backupCodes: [String!]
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+# -----------------------------------------------------------------------------
+# API KEY PAYLOADS
+# -----------------------------------------------------------------------------
+
+"""
+Payload for createApiKey mutation
+"""
+type CreateApiKeyPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Created API key (only shown once)
+  """
+  apiKey: String
+
+  """
+  API key info
+  """
+  apiKeyInfo: ApiKeyInfo
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+API key info type
+"""
+type ApiKeyInfo {
+  """
+  Key ID
+  """
+  id: ID!
+
+  """
+  Key name
+  """
+  name: String!
+
+  """
+  Key prefix (last 4 chars)
+  """
+  prefix: String!
+
+  """
+  Scopes
+  """
+  scopes: [ApiScope!]!
+
+  """
+  Created at
+  """
+  createdAt: DateTime!
+
+  """
+  Expires at
+  """
+  expiresAt: DateTime
+
+  """
+  Last used at
+  """
+  lastUsedAt: DateTime
+}
+
+"""
+Payload for revokeApiKey mutation
+"""
+type RevokeApiKeyPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Revoked key ID
+  """
+  revokedKeyId: ID
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for regenerateApiKey mutation
+"""
+type RegenerateApiKeyPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  New API key (only shown once)
+  """
+  apiKey: String
+
+  """
+  Updated API key info
+  """
+  apiKeyInfo: ApiKeyInfo
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+# -----------------------------------------------------------------------------
+# SESSION PAYLOADS
+# -----------------------------------------------------------------------------
+
+"""
+Payload for revokeSession mutation
+"""
+type RevokeSessionPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Revoked session ID
+  """
+  revokedSessionId: ID
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for revokeAllOtherSessions mutation
+"""
+type RevokeAllOtherSessionsPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Count of revoked sessions
+  """
+  revokedCount: Int
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+# -----------------------------------------------------------------------------
+# ACCOUNT MANAGEMENT PAYLOADS
+# -----------------------------------------------------------------------------
+
+"""
+Payload for requestAccountDeletion mutation
+"""
+type RequestAccountDeletionPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Deletion scheduled for
+  """
+  deletionScheduledFor: DateTime
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for cancelAccountDeletion mutation
+"""
+type CancelAccountDeletionPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for requestDataExport mutation
+"""
+type RequestDataExportPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Export job ID
+  """
+  exportJobId: ID
+
+  """
+  Estimated completion time
+  """
+  estimatedCompletionAt: DateTime
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+# -----------------------------------------------------------------------------
+# TEAM MANAGEMENT PAYLOADS
+# -----------------------------------------------------------------------------
+
+"""
+Payload for createTeam mutation
+"""
+type CreateTeamPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Created team
+  """
+  team: Team
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Team type
+"""
+type Team {
+  """
+  Team ID
+  """
+  id: ID!
+
+  """
+  Team name
+  """
+  name: String!
+
+  """
+  Team description
+  """
+  description: String
+
+  """
+  Team settings
+  """
+  settings: TeamSettings!
+
+  """
+  Team members
+  """
+  members(first: Int, after: String): TeamMemberConnection!
+
+  """
+  Member count
+  """
+  memberCount: Int!
+
+  """
+  Created by
+  """
+  createdBy: User!
+
+  """
+  Created at
+  """
+  createdAt: DateTime!
+
+  """
+  Updated at
+  """
+  updatedAt: DateTime!
+}
+
+"""
+Team settings type
+"""
+type TeamSettings {
+  """
+  Members can invite
+  """
+  membersCanInvite: Boolean!
+
+  """
+  Require approval
+  """
+  requireApproval: Boolean!
+
+  """
+  Default visibility
+  """
+  defaultResourceVisibility: ResourceVisibility!
+}
+
+"""
+Team member connection
+"""
+type TeamMemberConnection {
+  """
+  Page info
+  """
+  pageInfo: PageInfo!
+
+  """
+  Edges
+  """
+  edges: [TeamMemberEdge!]!
+
+  """
+  Total count
+  """
+  totalCount: Int!
+}
+
+"""
+Team member edge
+"""
+type TeamMemberEdge {
+  """
+  Node
+  """
+  node: TeamMember!
+
+  """
+  Cursor
+  """
+  cursor: String!
+}
+
+"""
+Team member type
+"""
+type TeamMember {
+  """
+  User
+  """
+  user: User!
+
+  """
+  Role
+  """
+  role: TeamMemberRole!
+
+  """
+  Joined at
+  """
+  joinedAt: DateTime!
+}
+
+"""
+Payload for updateTeam mutation
+"""
+type UpdateTeamPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Updated team
+  """
+  team: Team
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for deleteTeam mutation
+"""
+type DeleteTeamPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Deleted team ID
+  """
+  deletedTeamId: ID
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for inviteToTeam mutation
+"""
+type InviteToTeamPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Sent invitations
+  """
+  invitations: [TeamInvitation!]
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Team invitation type
+"""
+type TeamInvitation {
+  """
+  Invitation ID
+  """
+  id: ID!
+
+  """
+  Team
+  """
+  team: Team!
+
+  """
+  Email
+  """
+  email: String!
+
+  """
+  Role
+  """
+  role: TeamMemberRole!
+
+  """
+  Status
+  """
+  status: InvitationStatus!
+
+  """
+  Invited by
+  """
+  invitedBy: User!
+
+  """
+  Created at
+  """
+  createdAt: DateTime!
+
+  """
+  Expires at
+  """
+  expiresAt: DateTime!
+}
+
+"""
+Invitation status
+"""
+enum InvitationStatus {
+  """
+  Pending
+  """
+  PENDING
+
+  """
+  Accepted
+  """
+  ACCEPTED
+
+  """
+  Declined
+  """
+  DECLINED
+
+  """
+  Expired
+  """
+  EXPIRED
+}
+
+"""
+Payload for acceptTeamInvitation mutation
+"""
+type AcceptTeamInvitationPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Joined team
+  """
+  team: Team
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for declineTeamInvitation mutation
+"""
+type DeclineTeamInvitationPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for updateTeamMember mutation
+"""
+type UpdateTeamMemberPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Updated team member
+  """
+  teamMember: TeamMember
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for removeTeamMember mutation
+"""
+type RemoveTeamMemberPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Removed user ID
+  """
+  removedUserId: ID
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for leaveTeam mutation
+"""
+type LeaveTeamPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Left team ID
+  """
+  leftTeamId: ID
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+# -----------------------------------------------------------------------------
+# ADMIN PAYLOADS
+# -----------------------------------------------------------------------------
+
+"""
+Payload for adminCreateUser mutation
+"""
+type AdminCreateUserPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Created user
+  """
+  user: User
+
+  """
+  Setup token (if send email disabled)
+  """
+  setupToken: String
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for adminUpdateUser mutation
+"""
+type AdminUpdateUserPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Updated user
+  """
+  user: User
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for adminDeleteUser mutation
+"""
+type AdminDeleteUserPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Deleted user ID
+  """
+  deletedUserId: ID
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for adminSuspendUser mutation
+"""
+type AdminSuspendUserPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Suspended user
+  """
+  user: User
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for adminUnsuspendUser mutation
+"""
+type AdminUnsuspendUserPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Unsuspended user
+  """
+  user: User
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for adminResetUserPassword mutation
+"""
+type AdminResetUserPasswordPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Temporary password (if email not sent)
+  """
+  temporaryPassword: String
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for adminImpersonateUser mutation
+"""
+type AdminImpersonateUserPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Impersonation session token
+  """
+  impersonationToken: String
+
+  """
+  Impersonated user
+  """
+  user: User
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for adminStopImpersonation mutation
+"""
+type AdminStopImpersonationPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Original admin user
+  """
+  adminUser: User
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}

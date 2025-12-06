@@ -1,0 +1,986 @@
+# =============================================================================
+# CONVERSATION INPUT TYPES
+# =============================================================================
+# Input types for conversation management, messaging, and attachments.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# CREATE CONVERSATION INPUTS
+# -----------------------------------------------------------------------------
+
+"""
+Input for creating a new conversation
+"""
+input CreateConversationInput {
+  """
+  Associated agent ID
+  """
+  agentId: ID!
+
+  """
+  Conversation title (optional, auto-generated if not provided)
+  """
+  title: String
+
+  """
+  Initial system context/instructions override
+  """
+  systemContext: String
+
+  """
+  Initial messages to seed the conversation
+  """
+  initialMessages: [InitialMessageInput!]
+
+  """
+  Conversation settings
+  """
+  settings: ConversationSettingsInput
+
+  """
+  Custom metadata
+  """
+  metadata: JSON
+
+  """
+  Tags for organization
+  """
+  tags: [String!]
+}
+
+"""
+Initial message input for seeding conversations
+"""
+input InitialMessageInput {
+  """
+  Message role
+  """
+  role: MessageRole!
+
+  """
+  Message content
+  """
+  content: String!
+
+  """
+  Optional name (for multi-participant scenarios)
+  """
+  name: String
+}
+
+"""
+Message roles
+"""
+enum MessageRole {
+  """
+  System instructions
+  """
+  SYSTEM
+
+  """
+  User/human message
+  """
+  USER
+
+  """
+  AI/assistant response
+  """
+  ASSISTANT
+
+  """
+  Tool/function call
+  """
+  TOOL
+
+  """
+  Tool/function result
+  """
+  TOOL_RESULT
+}
+
+"""
+Conversation settings input
+"""
+input ConversationSettingsInput {
+  """
+  Enable auto-title generation
+  """
+  autoTitle: Boolean = true
+
+  """
+  Enable message persistence
+  """
+  persistMessages: Boolean = true
+
+  """
+  Maximum messages to retain
+  """
+  maxMessages: Int
+
+  """
+  Enable typing indicators
+  """
+  typingIndicators: Boolean = true
+
+  """
+  Enable read receipts
+  """
+  readReceipts: Boolean = false
+
+  """
+  Response streaming mode
+  """
+  streamingMode: StreamingMode = AUTO
+}
+
+"""
+Streaming modes
+"""
+enum StreamingMode {
+  """
+  No streaming - wait for complete response
+  """
+  DISABLED
+
+  """
+  Always stream responses
+  """
+  ENABLED
+
+  """
+  Auto-detect based on response length
+  """
+  AUTO
+}
+
+# -----------------------------------------------------------------------------
+# SEND MESSAGE INPUTS
+# -----------------------------------------------------------------------------
+
+"""
+Input for sending a message
+"""
+input SendMessageInput {
+  """
+  Conversation ID
+  """
+  conversationId: ID!
+
+  """
+  Message content
+  """
+  content: MessageContentInput!
+
+  """
+  Parent message ID (for threading)
+  """
+  parentMessageId: ID
+
+  """
+  Request streaming response
+  """
+  stream: Boolean = false
+
+  """
+  Message metadata
+  """
+  metadata: JSON
+
+  """
+  Idempotency key
+  """
+  idempotencyKey: String
+}
+
+"""
+Message content input
+"""
+input MessageContentInput {
+  """
+  Text content
+  """
+  text: String
+
+  """
+  Rich content blocks
+  """
+  blocks: [ContentBlockInput!]
+
+  """
+  Attachments
+  """
+  attachments: [AttachmentInput!]
+}
+
+"""
+Content block input for rich messages
+"""
+input ContentBlockInput {
+  """
+  Block type
+  """
+  type: ContentBlockType!
+
+  """
+  Text content (for TEXT type)
+  """
+  text: String
+
+  """
+  Image URL (for IMAGE type)
+  """
+  imageUrl: String
+
+  """
+  Image base64 data (for IMAGE type)
+  """
+  imageBase64: String
+
+  """
+  Code content (for CODE type)
+  """
+  code: String
+
+  """
+  Code language (for CODE type)
+  """
+  codeLanguage: String
+
+  """
+  File reference (for FILE type)
+  """
+  fileId: ID
+
+  """
+  Markdown content (for MARKDOWN type)
+  """
+  markdown: String
+
+  """
+  Table data (for TABLE type)
+  """
+  tableData: TableDataInput
+
+  """
+  Chart configuration (for CHART type)
+  """
+  chartConfig: JSON
+}
+
+"""
+Content block types
+"""
+enum ContentBlockType {
+  """
+  Plain text
+  """
+  TEXT
+
+  """
+  Markdown formatted text
+  """
+  MARKDOWN
+
+  """
+  Image
+  """
+  IMAGE
+
+  """
+  Code snippet
+  """
+  CODE
+
+  """
+  File attachment
+  """
+  FILE
+
+  """
+  Data table
+  """
+  TABLE
+
+  """
+  Chart/visualization
+  """
+  CHART
+
+  """
+  Embedded content
+  """
+  EMBED
+
+  """
+  Horizontal divider
+  """
+  DIVIDER
+}
+
+"""
+Table data input
+"""
+input TableDataInput {
+  """
+  Table headers
+  """
+  headers: [String!]!
+
+  """
+  Table rows (array of arrays)
+  """
+  rows: [[String!]!]!
+
+  """
+  Table caption
+  """
+  caption: String
+}
+
+"""
+Attachment input
+"""
+input AttachmentInput {
+  """
+  Attachment type
+  """
+  type: AttachmentType!
+
+  """
+  File name
+  """
+  fileName: String!
+
+  """
+  File size in bytes
+  """
+  fileSize: Int
+
+  """
+  MIME type
+  """
+  mimeType: String!
+
+  """
+  File URL (for URL-based attachments)
+  """
+  url: String
+
+  """
+  Base64 content (for inline attachments)
+  """
+  base64Content: String
+
+  """
+  External file ID
+  """
+  externalFileId: ID
+
+  """
+  Attachment metadata
+  """
+  metadata: JSON
+}
+
+"""
+Attachment types
+"""
+enum AttachmentType {
+  """
+  Image file
+  """
+  IMAGE
+
+  """
+  Audio file
+  """
+  AUDIO
+
+  """
+  Video file
+  """
+  VIDEO
+
+  """
+  PDF document
+  """
+  PDF
+
+  """
+  Text/code file
+  """
+  TEXT
+
+  """
+  Spreadsheet
+  """
+  SPREADSHEET
+
+  """
+  Presentation
+  """
+  PRESENTATION
+
+  """
+  Archive/compressed file
+  """
+  ARCHIVE
+
+  """
+  Other/unknown
+  """
+  OTHER
+}
+
+# -----------------------------------------------------------------------------
+# UPDATE CONVERSATION INPUTS
+# -----------------------------------------------------------------------------
+
+"""
+Input for updating a conversation
+"""
+input UpdateConversationInput {
+  """
+  Update title
+  """
+  title: String
+
+  """
+  Update system context
+  """
+  systemContext: String
+
+  """
+  Update settings
+  """
+  settings: ConversationSettingsInput
+
+  """
+  Update metadata
+  """
+  metadata: JSON
+
+  """
+  Update tags
+  """
+  tags: [String!]
+
+  """
+  Pin/unpin conversation
+  """
+  pinned: Boolean
+
+  """
+  Archive conversation
+  """
+  archived: Boolean
+}
+
+"""
+Input for updating a message
+"""
+input UpdateMessageInput {
+  """
+  Update content (only for user messages)
+  """
+  content: String
+
+  """
+  Update metadata
+  """
+  metadata: JSON
+}
+
+# -----------------------------------------------------------------------------
+# MESSAGE ACTIONS
+# -----------------------------------------------------------------------------
+
+"""
+Input for regenerating a response
+"""
+input RegenerateResponseInput {
+  """
+  Message ID to regenerate from
+  """
+  messageId: ID!
+
+  """
+  Optional instructions for regeneration
+  """
+  instructions: String
+
+  """
+  Use different model
+  """
+  modelOverride: String
+
+  """
+  Temperature override
+  """
+  temperatureOverride: Float
+}
+
+"""
+Input for editing and resending a message
+"""
+input EditAndResendInput {
+  """
+  Original message ID
+  """
+  messageId: ID!
+
+  """
+  New content
+  """
+  newContent: String!
+
+  """
+  Keep messages after original
+  """
+  keepSubsequent: Boolean = false
+}
+
+"""
+Input for providing feedback on a message
+"""
+input MessageFeedbackInput {
+  """
+  Message ID
+  """
+  messageId: ID!
+
+  """
+  Feedback type
+  """
+  type: FeedbackType!
+
+  """
+  Feedback category
+  """
+  category: FeedbackCategory
+
+  """
+  Additional comments
+  """
+  comment: String
+}
+
+"""
+Feedback types
+"""
+enum FeedbackType {
+  """
+  Positive feedback
+  """
+  POSITIVE
+
+  """
+  Negative feedback
+  """
+  NEGATIVE
+}
+
+"""
+Feedback categories
+"""
+enum FeedbackCategory {
+  """
+  Response was accurate
+  """
+  ACCURATE
+
+  """
+  Response was helpful
+  """
+  HELPFUL
+
+  """
+  Response was creative
+  """
+  CREATIVE
+
+  """
+  Response was inaccurate
+  """
+  INACCURATE
+
+  """
+  Response was unhelpful
+  """
+  UNHELPFUL
+
+  """
+  Response was harmful
+  """
+  HARMFUL
+
+  """
+  Response was off-topic
+  """
+  OFF_TOPIC
+
+  """
+  Other
+  """
+  OTHER
+}
+
+# -----------------------------------------------------------------------------
+# CONVERSATION BRANCHING
+# -----------------------------------------------------------------------------
+
+"""
+Input for creating a conversation branch
+"""
+input CreateBranchInput {
+  """
+  Source conversation ID
+  """
+  conversationId: ID!
+
+  """
+  Branch from message ID
+  """
+  fromMessageId: ID!
+
+  """
+  Branch name
+  """
+  name: String
+
+  """
+  Include messages before branch point
+  """
+  includeHistory: Boolean = true
+}
+
+"""
+Input for merging branches
+"""
+input MergeBranchInput {
+  """
+  Source branch ID
+  """
+  sourceBranchId: ID!
+
+  """
+  Target conversation ID
+  """
+  targetConversationId: ID!
+
+  """
+  Merge strategy
+  """
+  strategy: MergeStrategy = APPEND
+}
+
+"""
+Branch merge strategies
+"""
+enum MergeStrategy {
+  """
+  Append all messages
+  """
+  APPEND
+
+  """
+  Interleave by timestamp
+  """
+  INTERLEAVE
+
+  """
+  Only include unique messages
+  """
+  UNIQUE
+}
+
+# -----------------------------------------------------------------------------
+# CONVERSATION EXPORT/IMPORT
+# -----------------------------------------------------------------------------
+
+"""
+Input for exporting a conversation
+"""
+input ExportConversationInput {
+  """
+  Conversation ID
+  """
+  conversationId: ID!
+
+  """
+  Export format
+  """
+  format: ExportFormat!
+
+  """
+  Include attachments
+  """
+  includeAttachments: Boolean = false
+
+  """
+  Include metadata
+  """
+  includeMetadata: Boolean = false
+
+  """
+  Message range (null = all)
+  """
+  messageRange: MessageRangeInput
+}
+
+"""
+Export formats
+"""
+enum ExportFormat {
+  """
+  JSON format
+  """
+  JSON
+
+  """
+  Markdown format
+  """
+  MARKDOWN
+
+  """
+  Plain text
+  """
+  TEXT
+
+  """
+  HTML format
+  """
+  HTML
+
+  """
+  PDF document
+  """
+  PDF
+}
+
+"""
+Message range input
+"""
+input MessageRangeInput {
+  """
+  Start from message ID
+  """
+  fromMessageId: ID
+
+  """
+  End at message ID
+  """
+  toMessageId: ID
+
+  """
+  Or specify count from end
+  """
+  lastN: Int
+}
+
+"""
+Input for importing a conversation
+"""
+input ImportConversationInput {
+  """
+  Agent ID for imported conversation
+  """
+  agentId: ID!
+
+  """
+  Import data (JSON)
+  """
+  data: JSON!
+
+  """
+  Import format
+  """
+  format: ExportFormat!
+
+  """
+  Title for imported conversation
+  """
+  title: String
+}
+
+# -----------------------------------------------------------------------------
+# CONVERSATION FILTER AND SORT
+# -----------------------------------------------------------------------------
+
+"""
+Input for filtering conversations
+"""
+input ConversationFilterInput {
+  """
+  Filter by IDs
+  """
+  ids: [ID!]
+
+  """
+  Filter by agent ID
+  """
+  agentId: ID
+
+  """
+  Filter by title (contains)
+  """
+  titleContains: String
+
+  """
+  Filter by status
+  """
+  status: ConversationStatus
+
+  """
+  Filter by pinned
+  """
+  pinned: Boolean
+
+  """
+  Filter by archived
+  """
+  archived: Boolean
+
+  """
+  Filter by creation date
+  """
+  createdAt: DateTimeFilter
+
+  """
+  Filter by last message date
+  """
+  lastMessageAt: DateTimeFilter
+
+  """
+  Filter by message count
+  """
+  messageCount: IntFilter
+
+  """
+  Filter by tags
+  """
+  tags: [String!]
+
+  """
+  Full-text search in messages
+  """
+  messageSearch: String
+
+  """
+  Include deleted
+  """
+  includeDeleted: Boolean
+
+  """
+  Composite AND
+  """
+  AND: [ConversationFilterInput!]
+
+  """
+  Composite OR
+  """
+  OR: [ConversationFilterInput!]
+}
+
+"""
+Conversation status enum
+"""
+enum ConversationStatus {
+  """
+  Active conversation
+  """
+  ACTIVE
+
+  """
+  Archived conversation
+  """
+  ARCHIVED
+
+  """
+  Deleted conversation
+  """
+  DELETED
+}
+
+# -----------------------------------------------------------------------------
+# MESSAGE FILTER
+# -----------------------------------------------------------------------------
+
+"""
+Input for filtering messages within a conversation
+"""
+input MessageFilterInput {
+  """
+  Filter by role
+  """
+  role: MessageRole
+
+  """
+  Filter by multiple roles
+  """
+  roleIn: [MessageRole!]
+
+  """
+  Filter by creation date
+  """
+  createdAt: DateTimeFilter
+
+  """
+  Filter by has attachments
+  """
+  hasAttachments: Boolean
+
+  """
+  Filter by has feedback
+  """
+  hasFeedback: Boolean
+
+  """
+  Filter by feedback type
+  """
+  feedbackType: FeedbackType
+
+  """
+  Full-text search
+  """
+  search: String
+}
+
+# -----------------------------------------------------------------------------
+# TYPING AND PRESENCE
+# -----------------------------------------------------------------------------
+
+"""
+Input for sending typing indicator
+"""
+input TypingIndicatorInput {
+  """
+  Conversation ID
+  """
+  conversationId: ID!
+
+  """
+  Whether typing is in progress
+  """
+  isTyping: Boolean!
+}
+
+"""
+Input for updating read status
+"""
+input MarkReadInput {
+  """
+  Conversation ID
+  """
+  conversationId: ID!
+
+  """
+  Mark all messages as read
+  """
+  all: Boolean = true
+
+  """
+  Or mark up to specific message
+  """
+  upToMessageId: ID
+}

@@ -1,0 +1,346 @@
+# NEURECTOMY GraphQL Connection Types
+# Relay-compliant pagination types and patterns
+
+"""
+Standard Relay PageInfo for cursor-based pagination.
+"""
+type PageInfo {
+  "When paginating forwards, are there more items?"
+  hasNextPage: Boolean!
+  "When paginating backwards, are there more items?"
+  hasPreviousPage: Boolean!
+  "Cursor of the first edge"
+  startCursor: String
+  "Cursor of the last edge"
+  endCursor: String
+}
+
+"""
+Generic connection interface for pagination.
+All connection types should implement this interface.
+"""
+interface Connection {
+  "Pagination information"
+  pageInfo: PageInfo!
+  "Total count of items (may be expensive for large datasets)"
+  totalCount: Int!
+}
+
+"""
+Generic edge interface.
+All edge types should implement this interface.
+"""
+interface Edge {
+  "Cursor for this edge"
+  cursor: String!
+}
+
+# ====================
+# User Connections
+# ====================
+
+"""
+Paginated list of users.
+"""
+type UserConnection implements Connection {
+  edges: [UserEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type UserEdge implements Edge {
+  cursor: String!
+  node: User!
+}
+
+# ====================
+# Agent Connections
+# ====================
+
+"""
+Paginated list of agents.
+"""
+type AgentConnection implements Connection {
+  edges: [AgentEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type AgentEdge implements Edge {
+  cursor: String!
+  node: Agent!
+}
+
+"""
+Paginated list of agent logs.
+"""
+type AgentLogConnection implements Connection {
+  edges: [AgentLogEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type AgentLogEdge implements Edge {
+  cursor: String!
+  node: AgentLog!
+}
+
+# ====================
+# Workflow Connections
+# ====================
+
+"""
+Paginated list of workflows.
+"""
+type WorkflowConnection implements Connection {
+  edges: [WorkflowEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type WorkflowEdge implements Edge {
+  cursor: String!
+  node: Workflow!
+}
+
+"""
+Paginated list of workflow executions.
+"""
+type WorkflowExecutionConnection implements Connection {
+  edges: [WorkflowExecutionEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type WorkflowExecutionEdge implements Edge {
+  cursor: String!
+  node: WorkflowExecution!
+}
+
+# ====================
+# Conversation Connections
+# ====================
+
+"""
+Paginated list of conversations.
+"""
+type ConversationConnection implements Connection {
+  edges: [ConversationEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type ConversationEdge implements Edge {
+  cursor: String!
+  node: Conversation!
+}
+
+"""
+Paginated list of messages.
+"""
+type MessageConnection implements Connection {
+  edges: [MessageEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type MessageEdge implements Edge {
+  cursor: String!
+  node: Message!
+}
+
+# ====================
+# Knowledge Base Connections
+# ====================
+
+"""
+Paginated list of knowledge bases.
+"""
+type KnowledgeBaseConnection implements Connection {
+  edges: [KnowledgeBaseEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type KnowledgeBaseEdge implements Edge {
+  cursor: String!
+  node: KnowledgeBase!
+}
+
+"""
+Paginated list of documents.
+"""
+type DocumentConnection implements Connection {
+  edges: [DocumentEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type DocumentEdge implements Edge {
+  cursor: String!
+  node: Document!
+}
+
+"""
+Paginated search results with relevance scoring.
+"""
+type SearchResultConnection implements Connection {
+  edges: [SearchResultEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+  "Maximum relevance score in results"
+  maxScore: Float
+  "Query execution time in milliseconds"
+  took: Int
+}
+
+type SearchResultEdge implements Edge {
+  cursor: String!
+  node: SearchResult!
+  "Relevance score for this result"
+  score: Float!
+}
+
+# ====================
+# Notification Connections
+# ====================
+
+"""
+Paginated list of notifications.
+"""
+type NotificationConnection implements Connection {
+  edges: [NotificationEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+  "Count of unread notifications"
+  unreadCount: Int!
+}
+
+type NotificationEdge implements Edge {
+  cursor: String!
+  node: Notification!
+}
+
+# ====================
+# API Key Connections
+# ====================
+
+"""
+Paginated list of API keys.
+"""
+type ApiKeyConnection implements Connection {
+  edges: [ApiKeyEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type ApiKeyEdge implements Edge {
+  cursor: String!
+  node: ApiKey!
+}
+
+# ====================
+# Audit Log Connections
+# ====================
+
+"""
+Paginated list of audit entries.
+"""
+type AuditEntryConnection implements Connection {
+  edges: [AuditEntryEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type AuditEntryEdge implements Edge {
+  cursor: String!
+  node: AuditEntry!
+}
+
+# ====================
+# Tag Connections
+# ====================
+
+"""
+Paginated list of tags with usage counts.
+"""
+type TagConnection implements Connection {
+  edges: [TagEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type TagEdge implements Edge {
+  cursor: String!
+  node: Tag!
+}
+
+"""
+Tag with usage statistics.
+"""
+type Tag {
+  "Tag name"
+  name: String!
+  "Number of items using this tag"
+  count: Int!
+}
+
+# ====================
+# Pagination Input Types
+# ====================
+
+"""
+Standard pagination arguments for forward pagination.
+"""
+input ForwardPaginationInput {
+  "Number of items to fetch"
+  first: Int
+  "Cursor to start after"
+  after: String
+}
+
+"""
+Standard pagination arguments for backward pagination.
+"""
+input BackwardPaginationInput {
+  "Number of items to fetch"
+  last: Int
+  "Cursor to start before"
+  before: String
+}
+
+"""
+Combined pagination input supporting both directions.
+"""
+input PaginationInput {
+  "Number of items to fetch (forward pagination)"
+  first: Int
+  "Cursor to start after (forward pagination)"
+  after: String
+  "Number of items to fetch (backward pagination)"
+  last: Int
+  "Cursor to start before (backward pagination)"
+  before: String
+}
+
+"""
+Sorting configuration for connections.
+"""
+input SortInput {
+  "Field to sort by"
+  field: SortField!
+  "Sort direction"
+  direction: SortDirection = ASC
+}
+
+"""
+Date range filter.
+"""
+input DateRangeInput {
+  "Start of date range"
+  from: DateTime
+  "End of date range"
+  to: DateTime
+  "Preset date range (overrides from/to if set)"
+  preset: DateRangePreset
+}

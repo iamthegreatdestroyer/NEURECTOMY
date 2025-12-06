@@ -25,9 +25,7 @@
  * });
  *
  * // Use spawner for population management
- * const spawner = new AgentSpawner(arena);
- * spawner.spawnFromTemplate(PredefinedTemplates.scout, 50);
- * spawner.spawnFromTemplate(PredefinedTemplates.harvester, 30);
+ * const spawner = new AgentSpawner({ arena, templates: [], defaultMutationRate: 0.1, attributeNoise: 0.1, uniqueNames: true });
  *
  * // Run evolution tournament
  * const tournament = new Tournament({
@@ -51,25 +49,43 @@
 
 export {
   SwarmArena,
-  type SwarmArenaConfig,
-  SwarmArenaConfigSchema,
-  type AgentState,
-  AgentStateSchema,
-  type ArenaCell,
-  ArenaCellSchema,
+  // Schemas
+  ArenaConfigSchema,
+  AgentConfigSchema,
+  AgentTypeSchema,
+  ArenaTopologySchema,
+  ResourceTypeSchema,
+  InteractionModeSchema,
+  // Types
+  type ArenaConfig,
+  type AgentConfig,
+  type AgentType,
+  type ArenaTopology,
+  type ResourceType,
+  type InteractionMode,
   type Position,
-  PositionSchema,
-  type Velocity,
-  VelocitySchema,
-  type ArenaStats,
+  type SwarmAgent,
+  type AgentState,
+  type AgentAction,
+  type ArenaCell,
+  type ArenaState,
+  type Message,
+  type ArenaEvent,
+  type ArenaResults,
+  type AgentRanking,
+  type TeamRanking,
+  type TimelineEntry,
+  type EmergentBehavior,
+  type SwarmArenaEvents,
+  // Behavior engines
   type BehaviorEngine,
   RandomBehaviorEngine,
   RuleBasedBehaviorEngine,
   ScriptedBehaviorEngine,
-  type EmergentPattern,
-  EmergentPatternSchema,
-  type PatternType,
 } from "./arena";
+
+// Backwards compatibility alias
+export { type ArenaConfig as SwarmArenaConfig } from "./arena";
 
 // =============================================================================
 // AGENTS - Spawning and Population Management
@@ -77,15 +93,19 @@ export {
 
 export {
   AgentSpawner,
-  type AgentTemplate,
+  // Schemas
   AgentTemplateSchema,
-  type SpawnConfig,
-  SpawnConfigSchema,
+  SpawnPatternSchema,
+  PopulationConfigSchema,
+  SpawnerConfigSchema,
+  // Types
+  type AgentTemplate,
   type SpawnPattern,
+  type PopulationConfig,
+  type SpawnerConfig,
   type SpawnResult,
-  SpawnResultSchema,
-  type PopulationSnapshot,
-  PopulationSnapshotSchema,
+  type GenerationStats,
+  // Predefined templates
   PredefinedTemplates,
 } from "./agents";
 
@@ -95,236 +115,25 @@ export {
 
 export {
   Tournament,
-  type TournamentConfig,
+  // Schemas
   TournamentConfigSchema,
-  type Genome,
-  GenomeSchema,
-  type Individual,
-  IndividualSchema,
-  type Generation,
-  GenerationSchema,
-  type TournamentResult,
-  TournamentResultSchema,
-  type FitnessFunction,
+  TournamentFormatSchema,
+  SelectionMethodSchema,
+  CrossoverMethodSchema,
+  MutationMethodSchema,
+  // Types
+  type TournamentConfig,
+  type TournamentFormat,
   type SelectionMethod,
   type CrossoverMethod,
   type MutationMethod,
-  type EvolutionStats,
-  EvolutionStatsSchema,
-  // Selection strategies
-  topNSelection,
-  tournamentSelection,
-  rouletteSelection,
-  rankSelection,
-  elitistSelection,
-  // Crossover operators
-  uniformCrossover,
-  singlePointCrossover,
-  arithmeticCrossover,
-  blendCrossover,
-  // Mutation operators
-  gaussianMutation,
-  uniformMutation,
-  polynomialMutation,
+  type Genome,
+  type Match,
+  type TournamentResults,
+  type GenerationResult,
+  type EvolutionMetrics,
+  type TournamentEvents,
 } from "./tournament";
-
-// =============================================================================
-// TYPE UTILITIES
-// =============================================================================
-
-/**
- * Re-export common types for convenience
- */
-export type {
-  // Arena types
-  SwarmArenaConfig as ArenaConfig,
-  AgentState as Agent,
-  ArenaCell as Cell,
-  EmergentPattern as Pattern,
-
-  // Spawner types
-  AgentTemplate as Template,
-  SpawnConfig as Spawn,
-  SpawnResult as SpawnInfo,
-  PopulationSnapshot as Population,
-
-  // Tournament types
-  TournamentConfig as EvolutionConfig,
-  Genome as DNA,
-  Individual as Organism,
-  Generation as Gen,
-  TournamentResult as EvolutionResult,
-} from "./arena";
-
-// =============================================================================
-// FACTORY FUNCTIONS
-// =============================================================================
-
-import { SwarmArena, type SwarmArenaConfig } from "./arena";
-import { AgentSpawner } from "./agents";
-import { Tournament, type TournamentConfig } from "./tournament";
-
-/**
- * Create a pre-configured arena for quick experimentation
- */
-export function createQuickArena(
-  preset: "small" | "medium" | "large" | "massive" = "medium"
-): SwarmArena {
-  const presets: Record<string, Partial<SwarmArenaConfig>> = {
-    small: {
-      gridSize: { width: 50, height: 50 },
-      maxAgents: 100,
-      tickRate: 30,
-    },
-    medium: {
-      gridSize: { width: 100, height: 100 },
-      maxAgents: 500,
-      tickRate: 60,
-    },
-    large: {
-      gridSize: { width: 200, height: 200 },
-      maxAgents: 2000,
-      tickRate: 60,
-    },
-    massive: {
-      gridSize: { width: 500, height: 500 },
-      maxAgents: 10000,
-      tickRate: 30,
-    },
-  };
-
-  return new SwarmArena({
-    ...presets[preset],
-    enableCollisions: true,
-    enableEmergentDetection: true,
-    wrapAround: true,
-  } as SwarmArenaConfig);
-}
-
-/**
- * Create an arena with spawner attached
- */
-export function createArenaWithSpawner(
-  config: Partial<SwarmArenaConfig> = {}
-): { arena: SwarmArena; spawner: AgentSpawner } {
-  const arena = new SwarmArena({
-    gridSize: { width: 100, height: 100 },
-    maxAgents: 500,
-    tickRate: 60,
-    enableCollisions: true,
-    enableEmergentDetection: true,
-    wrapAround: true,
-    ...config,
-  } as SwarmArenaConfig);
-
-  const spawner = new AgentSpawner(arena);
-
-  return { arena, spawner };
-}
-
-/**
- * Create a tournament with default evolution settings
- */
-export function createQuickTournament(
-  preset: "fast" | "balanced" | "thorough" = "balanced"
-): Tournament {
-  const presets: Record<string, Partial<TournamentConfig>> = {
-    fast: {
-      populationSize: 50,
-      generations: 20,
-      selectionMethod: "top_n",
-      crossoverMethod: "uniform",
-      mutationMethod: "gaussian",
-      mutationRate: 0.1,
-      crossoverRate: 0.8,
-      elitismRate: 0.1,
-    },
-    balanced: {
-      populationSize: 100,
-      generations: 50,
-      selectionMethod: "tournament",
-      crossoverMethod: "uniform",
-      mutationMethod: "gaussian",
-      mutationRate: 0.05,
-      crossoverRate: 0.9,
-      elitismRate: 0.05,
-    },
-    thorough: {
-      populationSize: 200,
-      generations: 100,
-      selectionMethod: "tournament",
-      crossoverMethod: "blend",
-      mutationMethod: "polynomial",
-      mutationRate: 0.02,
-      crossoverRate: 0.95,
-      elitismRate: 0.02,
-    },
-  };
-
-  return new Tournament(presets[preset] as TournamentConfig);
-}
-
-/**
- * Run a complete swarm evolution experiment
- */
-export async function runSwarmExperiment(options: {
-  arenaPreset?: "small" | "medium" | "large" | "massive";
-  tournamentPreset?: "fast" | "balanced" | "thorough";
-  initialPopulation?: number;
-  simulationTicks?: number;
-  onTick?: (tick: number, stats: Record<string, unknown>) => void;
-  onGeneration?: (gen: number, best: number) => void;
-}): Promise<{
-  arenaStats: Record<string, unknown>;
-  evolutionResult: unknown;
-  patterns: unknown[];
-}> {
-  const {
-    arenaPreset = "medium",
-    tournamentPreset = "balanced",
-    initialPopulation = 100,
-    simulationTicks = 1000,
-    onTick,
-    onGeneration,
-  } = options;
-
-  // Setup
-  const { arena, spawner } = createArenaWithSpawner();
-  const tournament = createQuickTournament(tournamentPreset);
-
-  // Spawn initial population
-  spawner.spawnRandom(initialPopulation);
-
-  // Run simulation
-  arena.start();
-
-  for (let tick = 0; tick < simulationTicks; tick++) {
-    await new Promise((resolve) => setTimeout(resolve, 16)); // ~60fps
-
-    if (onTick) {
-      onTick(tick, arena.getStats());
-    }
-  }
-
-  arena.stop();
-
-  // Get detected patterns
-  const patterns = arena.getDetectedPatterns?.() ?? [];
-
-  // Run evolution based on simulation results
-  if (onGeneration) {
-    tournament.on("generation", (gen, best) => onGeneration(gen, best));
-  }
-
-  await tournament.evolve();
-  const evolutionResult = tournament.getResult();
-
-  return {
-    arenaStats: arena.getStats(),
-    evolutionResult,
-    patterns,
-  };
-}
 
 // =============================================================================
 // MODULE METADATA
@@ -336,7 +145,7 @@ export const SWARM_CAPABILITIES = {
   arena: {
     maxGridSize: 1000,
     maxAgents: 100000,
-    behaviorEngines: ["random", "rule-based", "scripted", "neural"],
+    behaviorEngines: ["random", "rule-based", "scripted", "neural"] as const,
     patternDetection: [
       "flocking",
       "clustering",
@@ -344,10 +153,10 @@ export const SWARM_CAPABILITIES = {
       "spiral",
       "lane",
       "oscillation",
-    ],
+    ] as const,
   },
   spawner: {
-    patterns: ["random", "cluster", "grid", "ring", "line", "corner"],
+    patterns: ["random", "cluster", "grid", "ring", "line", "corner"] as const,
     templates: [
       "scout",
       "harvester",
@@ -355,18 +164,17 @@ export const SWARM_CAPABILITIES = {
       "hunter",
       "messenger",
       "generalist",
-    ],
+    ] as const,
   },
   tournament: {
-    selectionMethods: [
-      "top_n",
-      "tournament",
-      "roulette",
-      "rank",
-      "elitist",
-      "random",
-    ],
-    crossoverMethods: ["uniform", "single_point", "arithmetic", "blend"],
-    mutationMethods: ["gaussian", "uniform", "polynomial"],
+    formats: [
+      "round_robin",
+      "single_elimination",
+      "double_elimination",
+      "swiss",
+      "league",
+      "battle_royale",
+      "team_battle",
+    ] as const,
   },
 } as const;

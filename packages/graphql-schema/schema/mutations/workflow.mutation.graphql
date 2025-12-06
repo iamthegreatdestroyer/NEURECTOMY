@@ -1,0 +1,1691 @@
+# =============================================================================
+# WORKFLOW MUTATIONS
+# =============================================================================
+# Unified mutation patterns for workflow CRUD, execution, and management.
+# All mutations follow the MutationResponse pattern with success, message, errors.
+# =============================================================================
+
+extend type Mutation {
+  # ---------------------------------------------------------------------------
+  # WORKFLOW CRUD
+  # ---------------------------------------------------------------------------
+
+  """
+  Create a new workflow
+  """
+  createWorkflow(input: CreateWorkflowInput!): CreateWorkflowPayload!
+
+  """
+  Update an existing workflow
+  """
+  updateWorkflow(id: ID!, input: UpdateWorkflowInput!): UpdateWorkflowPayload!
+
+  """
+  Delete a workflow
+  """
+  deleteWorkflow(id: ID!): DeleteWorkflowPayload!
+
+  """
+  Duplicate a workflow
+  """
+  duplicateWorkflow(
+    id: ID!
+    input: DuplicateWorkflowInput
+  ): DuplicateWorkflowPayload!
+
+  # ---------------------------------------------------------------------------
+  # WORKFLOW EXECUTION
+  # ---------------------------------------------------------------------------
+
+  """
+  Execute a workflow
+  """
+  executeWorkflow(input: ExecuteWorkflowInput!): ExecuteWorkflowPayload!
+
+  """
+  Cancel a running workflow execution
+  """
+  cancelWorkflowExecution(
+    input: CancelWorkflowExecutionInput!
+  ): CancelWorkflowExecutionPayload!
+
+  """
+  Pause a running workflow execution
+  """
+  pauseWorkflowExecution(executionId: ID!): PauseWorkflowExecutionPayload!
+
+  """
+  Resume a paused workflow execution
+  """
+  resumeWorkflowExecution(
+    executionId: ID!
+    input: ResumeWorkflowInput
+  ): ResumeWorkflowExecutionPayload!
+
+  """
+  Retry a failed workflow execution
+  """
+  retryWorkflowExecution(
+    input: RetryWorkflowExecutionInput!
+  ): RetryWorkflowExecutionPayload!
+
+  """
+  Skip current step and continue
+  """
+  skipWorkflowStep(executionId: ID!, stepId: ID!): SkipWorkflowStepPayload!
+
+  # ---------------------------------------------------------------------------
+  # WORKFLOW STEPS
+  # ---------------------------------------------------------------------------
+
+  """
+  Add a step to a workflow
+  """
+  addWorkflowStep(
+    workflowId: ID!
+    input: WorkflowStepInput!
+  ): AddWorkflowStepPayload!
+
+  """
+  Update a workflow step
+  """
+  updateWorkflowStep(
+    workflowId: ID!
+    stepId: ID!
+    input: WorkflowStepInput!
+  ): UpdateWorkflowStepPayload!
+
+  """
+  Remove a step from a workflow
+  """
+  removeWorkflowStep(workflowId: ID!, stepId: ID!): RemoveWorkflowStepPayload!
+
+  """
+  Reorder workflow steps
+  """
+  reorderWorkflowSteps(
+    workflowId: ID!
+    stepOrder: [ID!]!
+  ): ReorderWorkflowStepsPayload!
+
+  # ---------------------------------------------------------------------------
+  # WORKFLOW TRIGGERS
+  # ---------------------------------------------------------------------------
+
+  """
+  Add a trigger to a workflow
+  """
+  addWorkflowTrigger(
+    workflowId: ID!
+    input: WorkflowTriggerInput!
+  ): AddWorkflowTriggerPayload!
+
+  """
+  Update a workflow trigger
+  """
+  updateWorkflowTrigger(
+    workflowId: ID!
+    triggerId: ID!
+    input: WorkflowTriggerInput!
+  ): UpdateWorkflowTriggerPayload!
+
+  """
+  Remove a trigger from a workflow
+  """
+  removeWorkflowTrigger(
+    workflowId: ID!
+    triggerId: ID!
+  ): RemoveWorkflowTriggerPayload!
+
+  """
+  Enable/disable a workflow trigger
+  """
+  toggleWorkflowTrigger(
+    workflowId: ID!
+    triggerId: ID!
+    enabled: Boolean!
+  ): ToggleWorkflowTriggerPayload!
+
+  # ---------------------------------------------------------------------------
+  # WORKFLOW VERSIONS
+  # ---------------------------------------------------------------------------
+
+  """
+  Create a new version of a workflow
+  """
+  createWorkflowVersion(
+    workflowId: ID!
+    input: CreateWorkflowVersionInput
+  ): CreateWorkflowVersionPayload!
+
+  """
+  Restore a previous workflow version
+  """
+  restoreWorkflowVersion(
+    workflowId: ID!
+    versionId: ID!
+  ): RestoreWorkflowVersionPayload!
+
+  """
+  Compare two workflow versions
+  """
+  compareWorkflowVersions(
+    workflowId: ID!
+    versionIdA: ID!
+    versionIdB: ID!
+  ): CompareWorkflowVersionsPayload!
+
+  # ---------------------------------------------------------------------------
+  # WORKFLOW SHARING & COLLABORATION
+  # ---------------------------------------------------------------------------
+
+  """
+  Share a workflow with users or teams
+  """
+  shareWorkflow(
+    workflowId: ID!
+    input: ShareWorkflowInput!
+  ): ShareWorkflowPayload!
+
+  """
+  Remove workflow sharing
+  """
+  unshareWorkflow(
+    workflowId: ID!
+    userId: ID
+    teamId: ID
+  ): UnshareWorkflowPayload!
+
+  """
+  Transfer workflow ownership
+  """
+  transferWorkflowOwnership(
+    workflowId: ID!
+    newOwnerId: ID!
+  ): TransferWorkflowOwnershipPayload!
+
+  """
+  Publish workflow to marketplace/templates
+  """
+  publishWorkflow(
+    workflowId: ID!
+    input: PublishWorkflowInput
+  ): PublishWorkflowPayload!
+
+  """
+  Unpublish workflow from marketplace
+  """
+  unpublishWorkflow(workflowId: ID!): UnpublishWorkflowPayload!
+
+  # ---------------------------------------------------------------------------
+  # WORKFLOW SCHEDULING
+  # ---------------------------------------------------------------------------
+
+  """
+  Schedule a workflow execution
+  """
+  scheduleWorkflowExecution(
+    workflowId: ID!
+    input: ScheduleWorkflowInput!
+  ): ScheduleWorkflowPayload!
+
+  """
+  Cancel a scheduled workflow execution
+  """
+  cancelScheduledExecution(scheduleId: ID!): CancelScheduledExecutionPayload!
+
+  """
+  Update scheduled execution
+  """
+  updateScheduledExecution(
+    scheduleId: ID!
+    input: UpdateScheduleInput!
+  ): UpdateScheduledExecutionPayload!
+
+  # ---------------------------------------------------------------------------
+  # APPROVAL WORKFLOWS
+  # ---------------------------------------------------------------------------
+
+  """
+  Approve a pending workflow step
+  """
+  approveWorkflowStep(
+    executionId: ID!
+    stepId: ID!
+    input: ApprovalInput
+  ): ApproveWorkflowStepPayload!
+
+  """
+  Reject a pending workflow step
+  """
+  rejectWorkflowStep(
+    executionId: ID!
+    stepId: ID!
+    input: RejectionInput!
+  ): RejectWorkflowStepPayload!
+
+  """
+  Delegate approval to another user
+  """
+  delegateApproval(
+    executionId: ID!
+    stepId: ID!
+    userId: ID!
+  ): DelegateApprovalPayload!
+}
+
+# =============================================================================
+# MUTATION PAYLOADS
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# WORKFLOW CRUD PAYLOADS
+# -----------------------------------------------------------------------------
+
+"""
+Payload for createWorkflow mutation
+"""
+type CreateWorkflowPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Created workflow
+  """
+  workflow: Workflow
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for updateWorkflow mutation
+"""
+type UpdateWorkflowPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Updated workflow
+  """
+  workflow: Workflow
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for deleteWorkflow mutation
+"""
+type DeleteWorkflowPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Deleted workflow ID
+  """
+  deletedWorkflowId: ID
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Input for duplicating a workflow
+"""
+input DuplicateWorkflowInput {
+  """
+  Name for the duplicate
+  """
+  name: String
+
+  """
+  Include all versions
+  """
+  includeVersions: Boolean = false
+
+  """
+  Include triggers
+  """
+  includeTriggers: Boolean = true
+}
+
+"""
+Payload for duplicateWorkflow mutation
+"""
+type DuplicateWorkflowPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Duplicated workflow
+  """
+  workflow: Workflow
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+# -----------------------------------------------------------------------------
+# WORKFLOW EXECUTION PAYLOADS
+# -----------------------------------------------------------------------------
+
+"""
+Payload for executeWorkflow mutation
+"""
+type ExecuteWorkflowPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Workflow execution
+  """
+  execution: WorkflowExecution
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for cancelWorkflowExecution mutation
+"""
+type CancelWorkflowExecutionPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Cancelled execution
+  """
+  execution: WorkflowExecution
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for pauseWorkflowExecution mutation
+"""
+type PauseWorkflowExecutionPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Paused execution
+  """
+  execution: WorkflowExecution
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Input for resuming a workflow
+"""
+input ResumeWorkflowInput {
+  """
+  Override variables for resume
+  """
+  variableOverrides: JSON
+
+  """
+  Skip current step
+  """
+  skipCurrentStep: Boolean = false
+}
+
+"""
+Payload for resumeWorkflowExecution mutation
+"""
+type ResumeWorkflowExecutionPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Resumed execution
+  """
+  execution: WorkflowExecution
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for retryWorkflowExecution mutation
+"""
+type RetryWorkflowExecutionPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  New execution from retry
+  """
+  execution: WorkflowExecution
+
+  """
+  Original execution ID
+  """
+  originalExecutionId: ID
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for skipWorkflowStep mutation
+"""
+type SkipWorkflowStepPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Updated execution
+  """
+  execution: WorkflowExecution
+
+  """
+  Skipped step
+  """
+  skippedStep: WorkflowStepExecution
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+# -----------------------------------------------------------------------------
+# WORKFLOW STEP PAYLOADS
+# -----------------------------------------------------------------------------
+
+"""
+Payload for addWorkflowStep mutation
+"""
+type AddWorkflowStepPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Updated workflow
+  """
+  workflow: Workflow
+
+  """
+  Added step
+  """
+  step: WorkflowStep
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for updateWorkflowStep mutation
+"""
+type UpdateWorkflowStepPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Updated workflow
+  """
+  workflow: Workflow
+
+  """
+  Updated step
+  """
+  step: WorkflowStep
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for removeWorkflowStep mutation
+"""
+type RemoveWorkflowStepPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Updated workflow
+  """
+  workflow: Workflow
+
+  """
+  Removed step ID
+  """
+  removedStepId: ID
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for reorderWorkflowSteps mutation
+"""
+type ReorderWorkflowStepsPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Updated workflow
+  """
+  workflow: Workflow
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+# -----------------------------------------------------------------------------
+# WORKFLOW TRIGGER PAYLOADS
+# -----------------------------------------------------------------------------
+
+"""
+Payload for addWorkflowTrigger mutation
+"""
+type AddWorkflowTriggerPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Updated workflow
+  """
+  workflow: Workflow
+
+  """
+  Added trigger
+  """
+  trigger: WorkflowTrigger
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for updateWorkflowTrigger mutation
+"""
+type UpdateWorkflowTriggerPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Updated workflow
+  """
+  workflow: Workflow
+
+  """
+  Updated trigger
+  """
+  trigger: WorkflowTrigger
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for removeWorkflowTrigger mutation
+"""
+type RemoveWorkflowTriggerPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Updated workflow
+  """
+  workflow: Workflow
+
+  """
+  Removed trigger ID
+  """
+  removedTriggerId: ID
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for toggleWorkflowTrigger mutation
+"""
+type ToggleWorkflowTriggerPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Updated trigger
+  """
+  trigger: WorkflowTrigger
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+# -----------------------------------------------------------------------------
+# WORKFLOW VERSION PAYLOADS
+# -----------------------------------------------------------------------------
+
+"""
+Input for creating a workflow version
+"""
+input CreateWorkflowVersionInput {
+  """
+  Version name/tag
+  """
+  name: String
+
+  """
+  Version description/changelog
+  """
+  description: String
+}
+
+"""
+Payload for createWorkflowVersion mutation
+"""
+type CreateWorkflowVersionPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Created version
+  """
+  version: WorkflowVersion
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for restoreWorkflowVersion mutation
+"""
+type RestoreWorkflowVersionPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Restored workflow
+  """
+  workflow: Workflow
+
+  """
+  New version created from restore
+  """
+  newVersion: WorkflowVersion
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for compareWorkflowVersions mutation
+"""
+type CompareWorkflowVersionsPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Version comparison result
+  """
+  comparison: WorkflowVersionComparison
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Workflow version comparison
+"""
+type WorkflowVersionComparison {
+  """
+  Version A
+  """
+  versionA: WorkflowVersion!
+
+  """
+  Version B
+  """
+  versionB: WorkflowVersion!
+
+  """
+  Steps added in B
+  """
+  addedSteps: [WorkflowStep!]!
+
+  """
+  Steps removed in B
+  """
+  removedSteps: [WorkflowStep!]!
+
+  """
+  Steps modified
+  """
+  modifiedSteps: [WorkflowStepDiff!]!
+
+  """
+  Configuration changes
+  """
+  configChanges: JSON
+}
+
+"""
+Workflow step diff
+"""
+type WorkflowStepDiff {
+  """
+  Step ID
+  """
+  stepId: ID!
+
+  """
+  Step name
+  """
+  name: String!
+
+  """
+  Changed fields
+  """
+  changedFields: [String!]!
+
+  """
+  Old values
+  """
+  oldValues: JSON
+
+  """
+  New values
+  """
+  newValues: JSON
+}
+
+# -----------------------------------------------------------------------------
+# WORKFLOW SHARING PAYLOADS
+# -----------------------------------------------------------------------------
+
+"""
+Input for sharing a workflow
+"""
+input ShareWorkflowInput {
+  """
+  User IDs to share with
+  """
+  userIds: [ID!]
+
+  """
+  Team IDs to share with
+  """
+  teamIds: [ID!]
+
+  """
+  Permission level
+  """
+  permission: WorkflowPermission!
+}
+
+"""
+Workflow permission levels
+"""
+enum WorkflowPermission {
+  """
+  View only
+  """
+  VIEW
+
+  """
+  Can execute
+  """
+  EXECUTE
+
+  """
+  Can edit
+  """
+  EDIT
+
+  """
+  Full admin access
+  """
+  ADMIN
+}
+
+"""
+Payload for shareWorkflow mutation
+"""
+type ShareWorkflowPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Updated workflow
+  """
+  workflow: Workflow
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for unshareWorkflow mutation
+"""
+type UnshareWorkflowPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Updated workflow
+  """
+  workflow: Workflow
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for transferWorkflowOwnership mutation
+"""
+type TransferWorkflowOwnershipPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Updated workflow
+  """
+  workflow: Workflow
+
+  """
+  New owner
+  """
+  newOwner: User
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Input for publishing a workflow
+"""
+input PublishWorkflowInput {
+  """
+  Title for published workflow
+  """
+  title: String
+
+  """
+  Description for marketplace
+  """
+  description: String
+
+  """
+  Tags for discovery
+  """
+  tags: [String!]
+
+  """
+  Category
+  """
+  category: WorkflowCategory
+
+  """
+  Price (0 for free)
+  """
+  price: Float
+}
+
+"""
+Payload for publishWorkflow mutation
+"""
+type PublishWorkflowPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Published workflow
+  """
+  workflow: Workflow
+
+  """
+  Marketplace listing URL
+  """
+  listingUrl: String
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for unpublishWorkflow mutation
+"""
+type UnpublishWorkflowPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Updated workflow
+  """
+  workflow: Workflow
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+# -----------------------------------------------------------------------------
+# WORKFLOW SCHEDULING PAYLOADS
+# -----------------------------------------------------------------------------
+
+"""
+Input for scheduling a workflow
+"""
+input ScheduleWorkflowInput {
+  """
+  Schedule time (ISO 8601)
+  """
+  scheduledTime: DateTime!
+
+  """
+  Recurrence pattern (cron)
+  """
+  recurrence: String
+
+  """
+  End recurrence date
+  """
+  endDate: DateTime
+
+  """
+  Variables for execution
+  """
+  variables: JSON
+
+  """
+  Timezone
+  """
+  timezone: String
+}
+
+"""
+Payload for scheduleWorkflowExecution mutation
+"""
+type ScheduleWorkflowPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Schedule record
+  """
+  schedule: WorkflowSchedule
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Workflow schedule type
+"""
+type WorkflowSchedule {
+  """
+  Schedule ID
+  """
+  id: ID!
+
+  """
+  Workflow ID
+  """
+  workflowId: ID!
+
+  """
+  Next scheduled time
+  """
+  nextRunAt: DateTime!
+
+  """
+  Recurrence pattern
+  """
+  recurrence: String
+
+  """
+  End date
+  """
+  endDate: DateTime
+
+  """
+  Variables
+  """
+  variables: JSON
+
+  """
+  Timezone
+  """
+  timezone: String!
+
+  """
+  Created at
+  """
+  createdAt: DateTime!
+
+  """
+  Status
+  """
+  status: ScheduleStatus!
+}
+
+"""
+Schedule status
+"""
+enum ScheduleStatus {
+  """
+  Active and will run
+  """
+  ACTIVE
+
+  """
+  Paused
+  """
+  PAUSED
+
+  """
+  Completed (no more runs)
+  """
+  COMPLETED
+
+  """
+  Cancelled
+  """
+  CANCELLED
+}
+
+"""
+Payload for cancelScheduledExecution mutation
+"""
+type CancelScheduledExecutionPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Cancelled schedule ID
+  """
+  cancelledScheduleId: ID
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Input for updating a schedule
+"""
+input UpdateScheduleInput {
+  """
+  New scheduled time
+  """
+  scheduledTime: DateTime
+
+  """
+  New recurrence pattern
+  """
+  recurrence: String
+
+  """
+  New end date
+  """
+  endDate: DateTime
+
+  """
+  New variables
+  """
+  variables: JSON
+
+  """
+  Pause/resume
+  """
+  status: ScheduleStatus
+}
+
+"""
+Payload for updateScheduledExecution mutation
+"""
+type UpdateScheduledExecutionPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Updated schedule
+  """
+  schedule: WorkflowSchedule
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+# -----------------------------------------------------------------------------
+# APPROVAL PAYLOADS
+# -----------------------------------------------------------------------------
+
+"""
+Input for approval action
+"""
+input ApprovalInput {
+  """
+  Approval comment
+  """
+  comment: String
+
+  """
+  Additional data
+  """
+  data: JSON
+}
+
+"""
+Input for rejection action
+"""
+input RejectionInput {
+  """
+  Rejection reason (required)
+  """
+  reason: String!
+
+  """
+  Additional data
+  """
+  data: JSON
+}
+
+"""
+Payload for approveWorkflowStep mutation
+"""
+type ApproveWorkflowStepPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Updated execution
+  """
+  execution: WorkflowExecution
+
+  """
+  Approved step
+  """
+  step: WorkflowStepExecution
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for rejectWorkflowStep mutation
+"""
+type RejectWorkflowStepPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Updated execution
+  """
+  execution: WorkflowExecution
+
+  """
+  Rejected step
+  """
+  step: WorkflowStepExecution
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for delegateApproval mutation
+"""
+type DelegateApprovalPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Delegated to user
+  """
+  delegatedTo: User
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}

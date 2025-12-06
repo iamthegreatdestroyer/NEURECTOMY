@@ -1,0 +1,1476 @@
+# =============================================================================
+# KNOWLEDGE BASE SUBSCRIPTION TYPES - Neurectomy GraphQL Schema
+# =============================================================================
+# Real-time subscriptions for knowledge base operations including document
+# processing, embedding generation, search indexing, and RAG operations.
+# =============================================================================
+
+# =============================================================================
+# DOCUMENT PROCESSING SUBSCRIPTIONS
+# =============================================================================
+
+"""
+Filter for document processing event streams
+"""
+input DocumentProcessingFilter {
+  """
+  Filter by document ID
+  """
+  documentId: ID
+  """
+  Filter by multiple document IDs
+  """
+  documentIds: [ID!]
+  """
+  Filter by collection ID
+  """
+  collectionId: ID
+  """
+  Filter by document type
+  """
+  documentTypes: [DocumentType!]
+  """
+  Filter by processing status
+  """
+  statuses: [DocumentProcessingStatus!]
+  """
+  Filter by user who uploaded
+  """
+  uploadedBy: ID
+  """
+  Only events after this timestamp
+  """
+  since: DateTime
+  """
+  Last event ID for resumption
+  """
+  lastEventId: ID
+  """
+  Include chunk-level events
+  """
+  includeChunkEvents: Boolean = false
+}
+
+"""
+Document types supported by the knowledge base
+"""
+enum DocumentType {
+  TEXT
+  MARKDOWN
+  PDF
+  HTML
+  DOCX
+  XLSX
+  CSV
+  JSON
+  YAML
+  CODE
+  IMAGE
+  AUDIO
+  VIDEO
+  PRESENTATION
+  ARCHIVE
+  UNKNOWN
+}
+
+"""
+Document processing status
+"""
+enum DocumentProcessingStatus {
+  """
+  Document uploaded, pending processing
+  """
+  PENDING
+  """
+  Document is being validated
+  """
+  VALIDATING
+  """
+  Document is being parsed/extracted
+  """
+  EXTRACTING
+  """
+  Document is being chunked
+  """
+  CHUNKING
+  """
+  Embeddings are being generated
+  """
+  EMBEDDING
+  """
+  Document is being indexed
+  """
+  INDEXING
+  """
+  Processing completed successfully
+  """
+  COMPLETED
+  """
+  Processing failed
+  """
+  FAILED
+  """
+  Document is being reprocessed
+  """
+  REPROCESSING
+  """
+  Document was deleted
+  """
+  DELETED
+}
+
+"""
+Document processing event payload
+"""
+type DocumentProcessingEvent {
+  """
+  Event metadata
+  """
+  metadata: EventMetadata!
+  """
+  Document information
+  """
+  document: DocumentInfo!
+  """
+  Processing stage
+  """
+  stage: DocumentProcessingStage!
+  """
+  Event type
+  """
+  eventType: DocumentEventType!
+  """
+  Progress information
+  """
+  progress: ProcessingProgress
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+}
+
+"""
+Document event types
+"""
+enum DocumentEventType {
+  """
+  Document uploaded
+  """
+  DOCUMENT_UPLOADED
+  """
+  Processing started
+  """
+  PROCESSING_STARTED
+  """
+  Stage completed
+  """
+  STAGE_COMPLETED
+  """
+  Stage failed
+  """
+  STAGE_FAILED
+  """
+  Chunk created
+  """
+  CHUNK_CREATED
+  """
+  Embedding generated
+  """
+  EMBEDDING_GENERATED
+  """
+  Document indexed
+  """
+  DOCUMENT_INDEXED
+  """
+  Processing completed
+  """
+  PROCESSING_COMPLETED
+  """
+  Processing failed
+  """
+  PROCESSING_FAILED
+  """
+  Document updated
+  """
+  DOCUMENT_UPDATED
+  """
+  Document deleted
+  """
+  DOCUMENT_DELETED
+  """
+  Reprocessing triggered
+  """
+  REPROCESSING_TRIGGERED
+}
+
+"""
+Document processing stages
+"""
+enum DocumentProcessingStage {
+  UPLOAD
+  VALIDATION
+  EXTRACTION
+  CHUNKING
+  EMBEDDING
+  INDEXING
+  COMPLETE
+}
+
+"""
+Document information
+"""
+type DocumentInfo {
+  """
+  Document ID
+  """
+  id: ID!
+  """
+  Document title
+  """
+  title: String!
+  """
+  Document type
+  """
+  type: DocumentType!
+  """
+  File size in bytes
+  """
+  sizeBytes: Int!
+  """
+  MIME type
+  """
+  mimeType: String!
+  """
+  Collection ID
+  """
+  collectionId: ID
+  """
+  Collection name
+  """
+  collectionName: String
+  """
+  User who uploaded
+  """
+  uploadedBy: User
+  """
+  Upload timestamp
+  """
+  uploadedAt: DateTime!
+  """
+  Document metadata
+  """
+  metadata: JSON
+  """
+  Document tags
+  """
+  tags: [String!]!
+}
+
+"""
+Processing progress information
+"""
+type ProcessingProgress {
+  """
+  Current stage
+  """
+  currentStage: DocumentProcessingStage!
+  """
+  Overall progress percentage (0-100)
+  """
+  overallProgress: Float!
+  """
+  Stage progress percentage (0-100)
+  """
+  stageProgress: Float!
+  """
+  Chunks processed
+  """
+  chunksProcessed: Int
+  """
+  Total chunks
+  """
+  totalChunks: Int
+  """
+  Embeddings generated
+  """
+  embeddingsGenerated: Int
+  """
+  Processing duration so far in milliseconds
+  """
+  durationMs: Int!
+  """
+  Estimated time remaining in milliseconds
+  """
+  estimatedRemainingMs: Int
+  """
+  Current operation description
+  """
+  currentOperation: String
+  """
+  Error details if failed
+  """
+  error: ProcessingError
+}
+
+"""
+Processing error details
+"""
+type ProcessingError {
+  """
+  Error code
+  """
+  code: String!
+  """
+  Error message
+  """
+  message: String!
+  """
+  Stage where error occurred
+  """
+  stage: DocumentProcessingStage!
+  """
+  Recoverable flag
+  """
+  recoverable: Boolean!
+  """
+  Retry count
+  """
+  retryCount: Int!
+  """
+  Stack trace
+  """
+  stackTrace: String
+}
+
+# =============================================================================
+# CHUNK AND EMBEDDING SUBSCRIPTIONS
+# =============================================================================
+
+"""
+Filter for chunk event streams
+"""
+input ChunkEventFilter {
+  """
+  Filter by document ID
+  """
+  documentId: ID!
+  """
+  Filter by chunk IDs
+  """
+  chunkIds: [ID!]
+  """
+  Filter by chunk status
+  """
+  statuses: [ChunkStatus!]
+  """
+  Only events after this timestamp
+  """
+  since: DateTime
+  """
+  Last event ID for resumption
+  """
+  lastEventId: ID
+}
+
+"""
+Chunk processing status
+"""
+enum ChunkStatus {
+  CREATED
+  EMBEDDING_PENDING
+  EMBEDDING_IN_PROGRESS
+  EMBEDDING_COMPLETED
+  EMBEDDING_FAILED
+  INDEXED
+  DELETED
+}
+
+"""
+Chunk event payload
+"""
+type ChunkEvent {
+  """
+  Event metadata
+  """
+  metadata: EventMetadata!
+  """
+  Document ID
+  """
+  documentId: ID!
+  """
+  Chunk information
+  """
+  chunk: ChunkInfo!
+  """
+  Event type
+  """
+  eventType: ChunkEventType!
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+}
+
+"""
+Chunk event types
+"""
+enum ChunkEventType {
+  CHUNK_CREATED
+  EMBEDDING_STARTED
+  EMBEDDING_COMPLETED
+  EMBEDDING_FAILED
+  CHUNK_INDEXED
+  CHUNK_DELETED
+}
+
+"""
+Chunk information
+"""
+type ChunkInfo {
+  """
+  Chunk ID
+  """
+  id: ID!
+  """
+  Chunk index within document
+  """
+  index: Int!
+  """
+  Content preview (truncated)
+  """
+  contentPreview: String!
+  """
+  Character count
+  """
+  characterCount: Int!
+  """
+  Token count (if available)
+  """
+  tokenCount: Int
+  """
+  Chunk status
+  """
+  status: ChunkStatus!
+  """
+  Embedding status
+  """
+  embeddingStatus: EmbeddingStatus
+  """
+  Chunk metadata
+  """
+  metadata: ChunkMetadata
+}
+
+"""
+Embedding generation status
+"""
+type EmbeddingStatus {
+  """
+  Whether embedding exists
+  """
+  hasEmbedding: Boolean!
+  """
+  Embedding model used
+  """
+  model: String
+  """
+  Embedding dimension
+  """
+  dimension: Int
+  """
+  Generation duration in milliseconds
+  """
+  generationTimeMs: Int
+}
+
+"""
+Chunk metadata
+"""
+type ChunkMetadata {
+  """
+  Start position in original document
+  """
+  startPosition: Int
+  """
+  End position in original document
+  """
+  endPosition: Int
+  """
+  Page number (for PDFs)
+  """
+  pageNumber: Int
+  """
+  Section/heading
+  """
+  section: String
+  """
+  Language detected
+  """
+  language: String
+  """
+  Content type within document
+  """
+  contentType: ChunkContentType
+}
+
+"""
+Content types within documents
+"""
+enum ChunkContentType {
+  TEXT
+  HEADING
+  LIST
+  TABLE
+  CODE
+  QUOTE
+  IMAGE_CAPTION
+  FOOTNOTE
+  REFERENCE
+}
+
+# =============================================================================
+# SEARCH AND RETRIEVAL SUBSCRIPTIONS
+# =============================================================================
+
+"""
+Filter for search event streams
+"""
+input SearchEventFilter {
+  """
+  Filter by search session ID
+  """
+  sessionId: ID
+  """
+  Filter by user ID
+  """
+  userId: ID
+  """
+  Filter by collection IDs
+  """
+  collectionIds: [ID!]
+  """
+  Filter by search type
+  """
+  searchTypes: [SearchType!]
+  """
+  Only events after this timestamp
+  """
+  since: DateTime
+  """
+  Last event ID for resumption
+  """
+  lastEventId: ID
+}
+
+"""
+Search types
+"""
+enum SearchType {
+  """
+  Semantic/vector search
+  """
+  SEMANTIC
+  """
+  Keyword/full-text search
+  """
+  KEYWORD
+  """
+  Hybrid search (semantic + keyword)
+  """
+  HYBRID
+  """
+  Exact match search
+  """
+  EXACT
+  """
+  Regex search
+  """
+  REGEX
+}
+
+"""
+Search event payload
+"""
+type SearchEvent {
+  """
+  Event metadata
+  """
+  metadata: EventMetadata!
+  """
+  Search query information
+  """
+  query: SearchQueryInfo!
+  """
+  Event type
+  """
+  eventType: SearchEventType!
+  """
+  Results (if completed)
+  """
+  results: SearchResults
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+}
+
+"""
+Search event types
+"""
+enum SearchEventType {
+  """
+  Search initiated
+  """
+  SEARCH_STARTED
+  """
+  Query embedding generated
+  """
+  QUERY_EMBEDDED
+  """
+  Vector search completed
+  """
+  VECTOR_SEARCH_COMPLETED
+  """
+  Keyword search completed
+  """
+  KEYWORD_SEARCH_COMPLETED
+  """
+  Results reranked
+  """
+  RESULTS_RERANKED
+  """
+  Search completed
+  """
+  SEARCH_COMPLETED
+  """
+  Search failed
+  """
+  SEARCH_FAILED
+  """
+  Streaming result
+  """
+  STREAMING_RESULT
+}
+
+"""
+Search query information
+"""
+type SearchQueryInfo {
+  """
+  Search session ID
+  """
+  sessionId: ID!
+  """
+  Original query text
+  """
+  queryText: String!
+  """
+  Search type
+  """
+  searchType: SearchType!
+  """
+  Collections searched
+  """
+  collectionIds: [ID!]
+  """
+  Search options
+  """
+  options: SearchOptions
+  """
+  User who initiated search
+  """
+  userId: ID
+}
+
+"""
+Search options
+"""
+type SearchOptions {
+  """
+  Maximum results
+  """
+  limit: Int!
+  """
+  Minimum similarity score (0-1)
+  """
+  minScore: Float
+  """
+  Include metadata in results
+  """
+  includeMetadata: Boolean!
+  """
+  Include content in results
+  """
+  includeContent: Boolean!
+  """
+  Filter by document types
+  """
+  documentTypes: [DocumentType!]
+  """
+  Filter by tags
+  """
+  tags: [String!]
+  """
+  Date range filter
+  """
+  dateRange: DateRange
+  """
+  Reranking enabled
+  """
+  rerank: Boolean!
+  """
+  Highlight matches
+  """
+  highlight: Boolean!
+}
+
+"""
+Date range filter
+"""
+type DateRange {
+  """
+  Start date
+  """
+  start: DateTime
+  """
+  End date
+  """
+  end: DateTime
+}
+
+"""
+Search results
+"""
+type SearchResults {
+  """
+  Search hits
+  """
+  hits: [SearchHit!]!
+  """
+  Total matching documents
+  """
+  totalCount: Int!
+  """
+  Search duration in milliseconds
+  """
+  durationMs: Int!
+  """
+  Query embedding time in milliseconds
+  """
+  embeddingTimeMs: Int
+  """
+  Vector search time in milliseconds
+  """
+  vectorSearchTimeMs: Int
+  """
+  Reranking time in milliseconds
+  """
+  rerankTimeMs: Int
+  """
+  Search metadata
+  """
+  searchMetadata: SearchMetadata
+}
+
+"""
+Individual search hit
+"""
+type SearchHit {
+  """
+  Chunk ID
+  """
+  chunkId: ID!
+  """
+  Document ID
+  """
+  documentId: ID!
+  """
+  Document title
+  """
+  documentTitle: String!
+  """
+  Relevance score (0-1)
+  """
+  score: Float!
+  """
+  Content (if requested)
+  """
+  content: String
+  """
+  Highlighted content
+  """
+  highlights: [String!]
+  """
+  Chunk metadata
+  """
+  metadata: ChunkMetadata
+  """
+  Document metadata
+  """
+  documentMetadata: JSON
+}
+
+"""
+Search metadata
+"""
+type SearchMetadata {
+  """
+  Embedding model used
+  """
+  embeddingModel: String!
+  """
+  Index used
+  """
+  indexName: String!
+  """
+  Reranking model (if used)
+  """
+  rerankModel: String
+  """
+  Number of candidates before reranking
+  """
+  candidateCount: Int
+  """
+  Query expansion terms (if any)
+  """
+  expandedTerms: [String!]
+}
+
+# =============================================================================
+# COLLECTION SUBSCRIPTIONS
+# =============================================================================
+
+"""
+Filter for collection event streams
+"""
+input CollectionEventFilter {
+  """
+  Filter by collection ID
+  """
+  collectionId: ID
+  """
+  Filter by collection IDs
+  """
+  collectionIds: [ID!]
+  """
+  Filter by event types
+  """
+  eventTypes: [CollectionEventType!]
+  """
+  Only events after this timestamp
+  """
+  since: DateTime
+  """
+  Last event ID for resumption
+  """
+  lastEventId: ID
+}
+
+"""
+Collection event types
+"""
+enum CollectionEventType {
+  """
+  Collection created
+  """
+  COLLECTION_CREATED
+  """
+  Collection updated
+  """
+  COLLECTION_UPDATED
+  """
+  Collection deleted
+  """
+  COLLECTION_DELETED
+  """
+  Document added to collection
+  """
+  DOCUMENT_ADDED
+  """
+  Document removed from collection
+  """
+  DOCUMENT_REMOVED
+  """
+  Collection reindexed
+  """
+  COLLECTION_REINDEXED
+  """
+  Collection stats updated
+  """
+  STATS_UPDATED
+}
+
+"""
+Collection event payload
+"""
+type CollectionEvent {
+  """
+  Event metadata
+  """
+  metadata: EventMetadata!
+  """
+  Collection information
+  """
+  collection: CollectionInfo!
+  """
+  Event type
+  """
+  eventType: CollectionEventType!
+  """
+  Related document (if applicable)
+  """
+  document: DocumentInfo
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+}
+
+"""
+Collection information
+"""
+type CollectionInfo {
+  """
+  Collection ID
+  """
+  id: ID!
+  """
+  Collection name
+  """
+  name: String!
+  """
+  Collection description
+  """
+  description: String
+  """
+  Document count
+  """
+  documentCount: Int!
+  """
+  Chunk count
+  """
+  chunkCount: Int!
+  """
+  Total size in bytes
+  """
+  totalSizeBytes: Int!
+  """
+  Embedding model
+  """
+  embeddingModel: String!
+  """
+  Index status
+  """
+  indexStatus: IndexStatus!
+  """
+  Created timestamp
+  """
+  createdAt: DateTime!
+  """
+  Updated timestamp
+  """
+  updatedAt: DateTime!
+  """
+  Collection metadata
+  """
+  metadata: JSON
+}
+
+"""
+Index status
+"""
+enum IndexStatus {
+  NOT_INDEXED
+  INDEXING
+  INDEXED
+  REINDEXING
+  INDEX_FAILED
+}
+
+# =============================================================================
+# RAG PIPELINE SUBSCRIPTIONS
+# =============================================================================
+
+"""
+Filter for RAG pipeline event streams
+"""
+input RAGEventFilter {
+  """
+  Filter by RAG session ID
+  """
+  sessionId: ID
+  """
+  Filter by conversation ID
+  """
+  conversationId: ID
+  """
+  Filter by user ID
+  """
+  userId: ID
+  """
+  Only events after this timestamp
+  """
+  since: DateTime
+  """
+  Last event ID for resumption
+  """
+  lastEventId: ID
+  """
+  Include intermediate steps
+  """
+  includeIntermediateSteps: Boolean = true
+}
+
+"""
+RAG pipeline event
+"""
+type RAGEvent {
+  """
+  Event metadata
+  """
+  metadata: EventMetadata!
+  """
+  RAG session ID
+  """
+  sessionId: ID!
+  """
+  Event type
+  """
+  eventType: RAGEventType!
+  """
+  Event stage
+  """
+  stage: RAGStage!
+  """
+  Stage-specific data
+  """
+  data: RAGEventData!
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+}
+
+"""
+RAG event types
+"""
+enum RAGEventType {
+  """
+  RAG pipeline started
+  """
+  PIPELINE_STARTED
+  """
+  Query processing started
+  """
+  QUERY_PROCESSING
+  """
+  Query rewritten
+  """
+  QUERY_REWRITTEN
+  """
+  Retrieval started
+  """
+  RETRIEVAL_STARTED
+  """
+  Documents retrieved
+  """
+  DOCUMENTS_RETRIEVED
+  """
+  Context prepared
+  """
+  CONTEXT_PREPARED
+  """
+  Generation started
+  """
+  GENERATION_STARTED
+  """
+  Token generated (streaming)
+  """
+  TOKEN_GENERATED
+  """
+  Generation completed
+  """
+  GENERATION_COMPLETED
+  """
+  Answer synthesized
+  """
+  ANSWER_SYNTHESIZED
+  """
+  Pipeline completed
+  """
+  PIPELINE_COMPLETED
+  """
+  Pipeline failed
+  """
+  PIPELINE_FAILED
+  """
+  Citation generated
+  """
+  CITATION_GENERATED
+}
+
+"""
+RAG pipeline stages
+"""
+enum RAGStage {
+  QUERY_PROCESSING
+  RETRIEVAL
+  CONTEXT_PREPARATION
+  GENERATION
+  POST_PROCESSING
+  COMPLETE
+}
+
+"""
+RAG event data union
+"""
+union RAGEventData =
+  | RAGQueryData
+  | RAGRetrievalData
+  | RAGGenerationData
+  | RAGCompletionData
+
+"""
+RAG query processing data
+"""
+type RAGQueryData {
+  """
+  Original query
+  """
+  originalQuery: String!
+  """
+  Processed/rewritten query
+  """
+  processedQuery: String
+  """
+  Extracted entities
+  """
+  entities: [String!]
+  """
+  Query intent
+  """
+  intent: String
+  """
+  Query embedding generated
+  """
+  embeddingGenerated: Boolean!
+}
+
+"""
+RAG retrieval data
+"""
+type RAGRetrievalData {
+  """
+  Number of documents retrieved
+  """
+  documentCount: Int!
+  """
+  Retrieved documents
+  """
+  documents: [RAGDocument!]!
+  """
+  Retrieval latency in milliseconds
+  """
+  latencyMs: Int!
+  """
+  Retrieval strategy used
+  """
+  strategy: String
+}
+
+"""
+RAG document reference
+"""
+type RAGDocument {
+  """
+  Document ID
+  """
+  documentId: ID!
+  """
+  Document title
+  """
+  title: String!
+  """
+  Chunk ID
+  """
+  chunkId: ID!
+  """
+  Relevance score
+  """
+  score: Float!
+  """
+  Content snippet
+  """
+  snippet: String!
+}
+
+"""
+RAG generation data
+"""
+type RAGGenerationData {
+  """
+  Tokens generated so far
+  """
+  tokensGenerated: Int!
+  """
+  Streaming token (if streaming)
+  """
+  token: String
+  """
+  Partial response (accumulated)
+  """
+  partialResponse: String
+  """
+  Model used
+  """
+  model: String!
+  """
+  Temperature used
+  """
+  temperature: Float
+  """
+  Generation latency so far in milliseconds
+  """
+  latencyMs: Int!
+}
+
+"""
+RAG completion data
+"""
+type RAGCompletionData {
+  """
+  Final answer
+  """
+  answer: String!
+  """
+  Citations
+  """
+  citations: [RAGCitation!]!
+  """
+  Total tokens used
+  """
+  totalTokens: Int!
+  """
+  Prompt tokens
+  """
+  promptTokens: Int!
+  """
+  Completion tokens
+  """
+  completionTokens: Int!
+  """
+  Total latency in milliseconds
+  """
+  totalLatencyMs: Int!
+  """
+  Confidence score (0-1)
+  """
+  confidence: Float
+  """
+  Retrieval quality score (0-1)
+  """
+  retrievalQuality: Float
+}
+
+"""
+RAG citation
+"""
+type RAGCitation {
+  """
+  Citation index
+  """
+  index: Int!
+  """
+  Document ID
+  """
+  documentId: ID!
+  """
+  Document title
+  """
+  title: String!
+  """
+  Chunk ID
+  """
+  chunkId: ID!
+  """
+  Quoted text
+  """
+  quote: String!
+  """
+  Page/section reference
+  """
+  reference: String
+  """
+  Relevance score
+  """
+  relevance: Float!
+}
+
+# =============================================================================
+# SUBSCRIPTION ROOT TYPE EXTENSIONS
+# =============================================================================
+
+extend type Subscription {
+  """
+  Stream document processing events
+  """
+  documentProcessingEvents(
+    filter: DocumentProcessingFilter!
+    options: SubscriptionOptions
+  ): DocumentProcessingEvent!
+    @auth(requires: USER)
+    @rateLimit(limit: 20, window: "1s")
+
+  """
+  Stream chunk-level events for detailed processing monitoring
+  """
+  chunkEvents(
+    filter: ChunkEventFilter!
+    options: SubscriptionOptions
+  ): ChunkEvent! @auth(requires: USER) @rateLimit(limit: 50, window: "1s")
+
+  """
+  Stream search events for analytics and debugging
+  """
+  searchEvents(
+    filter: SearchEventFilter
+    options: SubscriptionOptions
+  ): SearchEvent! @auth(requires: USER) @rateLimit(limit: 10, window: "1s")
+
+  """
+  Stream collection-level events
+  """
+  collectionEvents(
+    filter: CollectionEventFilter
+    options: SubscriptionOptions
+  ): CollectionEvent! @auth(requires: USER) @rateLimit(limit: 10, window: "1s")
+
+  """
+  Stream RAG pipeline events for debugging and UX
+  """
+  ragEvents(filter: RAGEventFilter!, options: SubscriptionOptions): RAGEvent!
+    @auth(requires: USER)
+    @rateLimit(limit: 50, window: "1s")
+
+  """
+  Stream document upload progress
+  """
+  documentUploadProgress(
+    documentId: ID!
+    options: SubscriptionOptions
+  ): DocumentProcessingEvent!
+    @auth(requires: USER)
+    @rateLimit(limit: 10, window: "1s")
+
+  """
+  Stream real-time RAG answer generation (token by token)
+  """
+  ragStream(sessionId: ID!, options: SubscriptionOptions): RAGEvent!
+    @auth(requires: USER)
+    @rateLimit(limit: 100, window: "1s")
+
+  """
+  Stream knowledge base statistics updates
+  """
+  knowledgeBaseStats(
+    collectionIds: [ID!]
+    intervalSeconds: Int! = 60
+    options: SubscriptionOptions
+  ): KnowledgeBaseStatsEvent!
+    @auth(requires: USER)
+    @rateLimit(limit: 1, window: "1s")
+}
+
+"""
+Knowledge base statistics event
+"""
+type KnowledgeBaseStatsEvent {
+  """
+  Event metadata
+  """
+  metadata: EventMetadata!
+  """
+  Overall statistics
+  """
+  overall: KnowledgeBaseStats!
+  """
+  Per-collection statistics
+  """
+  collections: [CollectionStats!]!
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+}
+
+"""
+Overall knowledge base statistics
+"""
+type KnowledgeBaseStats {
+  """
+  Total collections
+  """
+  totalCollections: Int!
+  """
+  Total documents
+  """
+  totalDocuments: Int!
+  """
+  Total chunks
+  """
+  totalChunks: Int!
+  """
+  Total embeddings
+  """
+  totalEmbeddings: Int!
+  """
+  Total size in bytes
+  """
+  totalSizeBytes: Int!
+  """
+  Documents pending processing
+  """
+  pendingDocuments: Int!
+  """
+  Searches in last hour
+  """
+  searchesLastHour: Int!
+  """
+  Average search latency in milliseconds
+  """
+  avgSearchLatencyMs: Float!
+}
+
+"""
+Per-collection statistics
+"""
+type CollectionStats {
+  """
+  Collection ID
+  """
+  collectionId: ID!
+  """
+  Collection name
+  """
+  collectionName: String!
+  """
+  Document count
+  """
+  documentCount: Int!
+  """
+  Chunk count
+  """
+  chunkCount: Int!
+  """
+  Size in bytes
+  """
+  sizeBytes: Int!
+  """
+  Index health
+  """
+  indexHealth: Float!
+  """
+  Last updated
+  """
+  lastUpdated: DateTime!
+}

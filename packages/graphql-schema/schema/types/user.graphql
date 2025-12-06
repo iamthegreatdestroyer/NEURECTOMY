@@ -1,0 +1,335 @@
+# NEURECTOMY GraphQL User Types
+# User entity, authentication, and related types
+
+"""
+A user in the system.
+"""
+type User implements Node & Timestamped {
+  "Unique identifier"
+  id: UUID!
+  "Email address"
+  email: String! @auth @sensitive(type: PII)
+  "Display name"
+  displayName: String!
+  "Profile picture URL"
+  avatarUrl: String
+  "User role"
+  role: UserRole!
+  "Account status"
+  status: AccountStatus!
+  "Authentication provider"
+  authProvider: AuthProvider!
+  "User preferences"
+  preferences: UserPreferences!
+  "User settings"
+  settings: UserSettings!
+  "When created"
+  createdAt: DateTime!
+  "When last updated"
+  updatedAt: DateTime!
+  "Last login timestamp"
+  lastLoginAt: DateTime
+
+  # Relationships
+  "Agents owned by this user"
+  agents(first: Int, after: String, filter: AgentFilterInput): AgentConnection!
+    @auth
+    @complexity(value: 5, multipliers: ["first"])
+
+  "Workflows owned by this user"
+  workflows(
+    first: Int
+    after: String
+    filter: WorkflowFilterInput
+  ): WorkflowConnection! @auth @complexity(value: 5, multipliers: ["first"])
+
+  "Conversations this user has participated in"
+  conversations(
+    first: Int
+    after: String
+    filter: ConversationFilterInput
+  ): ConversationConnection! @auth @complexity(value: 5, multipliers: ["first"])
+
+  "Knowledge bases owned by this user"
+  knowledgeBases(first: Int, after: String): KnowledgeBaseConnection! @auth
+
+  "API keys for this user"
+  apiKeys: [ApiKey!]! @auth(requires: ADMIN)
+
+  "Notifications for this user"
+  notifications(
+    first: Int
+    after: String
+    unreadOnly: Boolean
+  ): NotificationConnection! @auth
+
+  "User's usage statistics"
+  usage: UserUsage! @auth
+}
+
+"""
+User preferences (UI/UX settings).
+"""
+type UserPreferences {
+  "UI theme"
+  theme: Theme!
+  "UI language"
+  language: String!
+  "Timezone"
+  timezone: String!
+  "Date format"
+  dateFormat: String!
+  "Time format"
+  timeFormat: String!
+  "Enable sound notifications"
+  soundEnabled: Boolean!
+  "Enable desktop notifications"
+  desktopNotifications: Boolean!
+  "Enable email notifications"
+  emailNotifications: Boolean!
+  "Keyboard shortcuts enabled"
+  keyboardShortcuts: Boolean!
+  "Code editor settings"
+  editorSettings: EditorSettings!
+}
+
+"""
+Theme options.
+"""
+enum Theme {
+  LIGHT
+  DARK
+  SYSTEM
+}
+
+"""
+Code editor settings.
+"""
+type EditorSettings {
+  "Editor theme"
+  theme: String!
+  "Font family"
+  fontFamily: String!
+  "Font size in pixels"
+  fontSize: Int!
+  "Tab size"
+  tabSize: Int!
+  "Use spaces instead of tabs"
+  insertSpaces: Boolean!
+  "Enable word wrap"
+  wordWrap: Boolean!
+  "Enable line numbers"
+  lineNumbers: Boolean!
+  "Enable minimap"
+  minimap: Boolean!
+}
+
+"""
+User settings (account/security settings).
+"""
+type UserSettings {
+  "Two-factor authentication enabled"
+  twoFactorEnabled: Boolean!
+  "Allowed IP addresses (empty = all allowed)"
+  allowedIps: [String!]!
+  "Session timeout in minutes"
+  sessionTimeout: Int!
+  "API rate limit per minute"
+  apiRateLimit: Int!
+  "Default agent ID"
+  defaultAgentId: UUID
+  "Webhook URL for notifications"
+  webhookUrl: String
+  "Custom metadata"
+  metadata: JSON
+}
+
+"""
+User usage statistics.
+"""
+type UserUsage {
+  "Total API requests this billing period"
+  apiRequests: Int!
+  "Total tokens used this billing period"
+  tokensUsed: Int!
+  "Total storage used in bytes"
+  storageUsed: FileSize!
+  "Number of agents"
+  agentCount: Int!
+  "Number of workflows"
+  workflowCount: Int!
+  "Number of knowledge bases"
+  knowledgeBaseCount: Int!
+  "Current billing period start"
+  periodStart: DateTime!
+  "Current billing period end"
+  periodEnd: DateTime!
+  "Usage limits"
+  limits: UsageLimits!
+}
+
+"""
+Usage limits for the user's plan.
+"""
+type UsageLimits {
+  "Maximum API requests per period"
+  maxApiRequests: Int!
+  "Maximum tokens per period"
+  maxTokens: Int!
+  "Maximum storage in bytes"
+  maxStorage: FileSize!
+  "Maximum number of agents"
+  maxAgents: Int!
+  "Maximum number of workflows"
+  maxWorkflows: Int!
+  "Maximum number of knowledge bases"
+  maxKnowledgeBases: Int!
+}
+
+"""
+An API key for programmatic access.
+"""
+type ApiKey implements Node & Timestamped {
+  "Unique identifier"
+  id: UUID!
+  "Key name for identification"
+  name: String!
+  "Key prefix (first 8 chars)"
+  prefix: String!
+  "Permission scopes"
+  scopes: [ApiScope!]!
+  "Key status"
+  status: ApiKeyStatus!
+  "Last time key was used"
+  lastUsedAt: DateTime
+  "IP address of last use"
+  lastUsedIp: String
+  "When key expires (null = never)"
+  expiresAt: DateTime
+  "When created"
+  createdAt: DateTime!
+  "When updated"
+  updatedAt: DateTime!
+}
+
+"""
+A notification for a user.
+"""
+type Notification implements Node & Timestamped {
+  "Unique identifier"
+  id: UUID!
+  "Notification type"
+  type: NotificationType!
+  "Priority level"
+  priority: NotificationPriority!
+  "Notification title"
+  title: String!
+  "Notification body/message"
+  body: String!
+  "Whether notification has been read"
+  read: Boolean!
+  "Additional data"
+  data: JSON
+  "Link to related resource"
+  actionUrl: String
+  "When created"
+  createdAt: DateTime!
+  "When updated"
+  updatedAt: DateTime!
+}
+
+# ====================
+# Input Types
+# ====================
+
+"""
+Input for updating user profile.
+"""
+input UpdateUserInput {
+  "Display name"
+  displayName: String
+  "Avatar URL"
+  avatarUrl: String
+}
+
+"""
+Input for updating user preferences.
+"""
+input UpdatePreferencesInput {
+  "UI theme"
+  theme: Theme
+  "Language code"
+  language: String
+  "Timezone"
+  timezone: String
+  "Date format"
+  dateFormat: String
+  "Time format"
+  timeFormat: String
+  "Sound notifications"
+  soundEnabled: Boolean
+  "Desktop notifications"
+  desktopNotifications: Boolean
+  "Email notifications"
+  emailNotifications: Boolean
+  "Keyboard shortcuts"
+  keyboardShortcuts: Boolean
+  "Editor settings"
+  editorSettings: EditorSettingsInput
+}
+
+"""
+Input for editor settings.
+"""
+input EditorSettingsInput {
+  theme: String
+  fontFamily: String
+  fontSize: Int
+  tabSize: Int
+  insertSpaces: Boolean
+  wordWrap: Boolean
+  lineNumbers: Boolean
+  minimap: Boolean
+}
+
+"""
+Input for updating user settings.
+"""
+input UpdateSettingsInput {
+  "Session timeout in minutes"
+  sessionTimeout: Int
+  "API rate limit per minute"
+  apiRateLimit: Int
+  "Default agent ID"
+  defaultAgentId: UUID
+  "Webhook URL"
+  webhookUrl: String
+  "Custom metadata"
+  metadata: JSON
+}
+
+"""
+Input for creating an API key.
+"""
+input CreateApiKeyInput {
+  "Key name"
+  name: String!
+  "Permission scopes"
+  scopes: [ApiScope!]!
+  "Expiration date (null = never)"
+  expiresAt: DateTime
+}
+
+"""
+Filter input for listing users.
+"""
+input UserFilterInput {
+  "Filter by role"
+  role: [UserRole!]
+  "Filter by status"
+  status: [AccountStatus!]
+  "Search by email or name"
+  search: String
+  "Filter by creation date"
+  createdAt: DateRangeInput
+}

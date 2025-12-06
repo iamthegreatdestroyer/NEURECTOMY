@@ -1,0 +1,1238 @@
+# =============================================================================
+# WORKFLOW SUBSCRIPTION TYPES - Neurectomy GraphQL Schema
+# =============================================================================
+# Comprehensive workflow-specific subscriptions for real-time workflow
+# execution monitoring, node-level observability, and workflow analytics.
+# =============================================================================
+
+# =============================================================================
+# WORKFLOW EXECUTION SUBSCRIPTIONS
+# =============================================================================
+
+"""
+Filter for workflow execution streams
+"""
+input WorkflowExecutionFilter {
+  """
+  Filter by specific workflow ID
+  """
+  workflowId: ID
+  """
+  Filter by multiple workflow IDs
+  """
+  workflowIds: [ID!]
+  """
+  Filter by execution ID
+  """
+  executionId: ID
+  """
+  Filter by execution status
+  """
+  statuses: [WorkflowExecutionStatus!]
+  """
+  Filter by user who triggered execution
+  """
+  triggeredBy: ID
+  """
+  Filter by workflow version
+  """
+  version: String
+  """
+  Filter by workflow tags
+  """
+  tags: [String!]
+  """
+  Only events after this timestamp
+  """
+  since: DateTime
+  """
+  Last event ID for resumption
+  """
+  lastEventId: ID
+  """
+  Filter by priority level
+  """
+  priority: [WorkflowPriority!]
+  """
+  Include child workflow executions
+  """
+  includeChildren: Boolean = false
+}
+
+"""
+Workflow execution status
+"""
+enum WorkflowExecutionStatus {
+  PENDING
+  QUEUED
+  RUNNING
+  PAUSED
+  WAITING_FOR_INPUT
+  COMPLETED
+  FAILED
+  CANCELLED
+  TIMED_OUT
+}
+
+"""
+Workflow priority levels
+"""
+enum WorkflowPriority {
+  LOW
+  NORMAL
+  HIGH
+  CRITICAL
+}
+
+"""
+Workflow execution event payload
+"""
+type WorkflowExecutionEvent {
+  """
+  Event metadata for tracking
+  """
+  metadata: EventMetadata!
+  """
+  Workflow definition
+  """
+  workflow: WorkflowDefinition!
+  """
+  Execution instance
+  """
+  execution: WorkflowExecutionInstance!
+  """
+  Event type
+  """
+  eventType: WorkflowExecutionEventType!
+  """
+  Timestamp of the event
+  """
+  timestamp: DateTime!
+}
+
+"""
+Workflow execution event types
+"""
+enum WorkflowExecutionEventType {
+  """
+  Execution has been created and queued
+  """
+  EXECUTION_QUEUED
+  """
+  Execution has started running
+  """
+  EXECUTION_STARTED
+  """
+  Execution is progressing
+  """
+  EXECUTION_PROGRESS
+  """
+  Execution has been paused
+  """
+  EXECUTION_PAUSED
+  """
+  Execution has been resumed
+  """
+  EXECUTION_RESUMED
+  """
+  Execution is waiting for external input
+  """
+  EXECUTION_WAITING
+  """
+  Execution completed successfully
+  """
+  EXECUTION_COMPLETED
+  """
+  Execution failed
+  """
+  EXECUTION_FAILED
+  """
+  Execution was cancelled
+  """
+  EXECUTION_CANCELLED
+  """
+  Execution timed out
+  """
+  EXECUTION_TIMED_OUT
+  """
+  Execution was retried
+  """
+  EXECUTION_RETRIED
+}
+
+"""
+Workflow definition summary
+"""
+type WorkflowDefinition {
+  """
+  Workflow ID
+  """
+  id: ID!
+  """
+  Workflow name
+  """
+  name: String!
+  """
+  Workflow version
+  """
+  version: String!
+  """
+  Workflow description
+  """
+  description: String
+  """
+  Workflow tags
+  """
+  tags: [String!]!
+  """
+  Number of nodes
+  """
+  nodeCount: Int!
+  """
+  Estimated duration
+  """
+  estimatedDurationMs: Int
+}
+
+"""
+Workflow execution instance
+"""
+type WorkflowExecutionInstance {
+  """
+  Execution ID
+  """
+  id: ID!
+  """
+  Current status
+  """
+  status: WorkflowExecutionStatus!
+  """
+  Priority level
+  """
+  priority: WorkflowPriority!
+  """
+  Progress percentage (0-100)
+  """
+  progress: Float!
+  """
+  Current node being executed
+  """
+  currentNode: WorkflowNodeSummary
+  """
+  Nodes completed
+  """
+  completedNodes: Int!
+  """
+  Total nodes
+  """
+  totalNodes: Int!
+  """
+  Execution start time
+  """
+  startedAt: DateTime
+  """
+  Execution end time
+  """
+  completedAt: DateTime
+  """
+  Elapsed time in milliseconds
+  """
+  elapsedMs: Int
+  """
+  Input provided to workflow
+  """
+  input: JSON
+  """
+  Output from workflow (if completed)
+  """
+  output: JSON
+  """
+  Error details (if failed)
+  """
+  error: WorkflowError
+  """
+  User who triggered the execution
+  """
+  triggeredBy: User
+  """
+  Parent execution ID (for child workflows)
+  """
+  parentExecutionId: ID
+  """
+  Child execution IDs
+  """
+  childExecutionIds: [ID!]!
+  """
+  Retry count
+  """
+  retryCount: Int!
+  """
+  Maximum retries allowed
+  """
+  maxRetries: Int!
+}
+
+"""
+Workflow node summary
+"""
+type WorkflowNodeSummary {
+  """
+  Node ID
+  """
+  id: ID!
+  """
+  Node name
+  """
+  name: String!
+  """
+  Node type
+  """
+  type: WorkflowNodeType!
+  """
+  Node status
+  """
+  status: WorkflowNodeStatus!
+}
+
+"""
+Workflow error details
+"""
+type WorkflowError {
+  """
+  Error code
+  """
+  code: String!
+  """
+  Error message
+  """
+  message: String!
+  """
+  Node that caused the error
+  """
+  nodeId: ID
+  """
+  Node name
+  """
+  nodeName: String
+  """
+  Stack trace
+  """
+  stackTrace: String
+  """
+  Error is recoverable
+  """
+  recoverable: Boolean!
+  """
+  Suggested retry delay
+  """
+  retryAfterMs: Int
+}
+
+# =============================================================================
+# WORKFLOW NODE SUBSCRIPTIONS
+# =============================================================================
+
+"""
+Filter for workflow node event streams
+"""
+input WorkflowNodeFilter {
+  """
+  Filter by workflow ID
+  """
+  workflowId: ID
+  """
+  Filter by execution ID
+  """
+  executionId: ID!
+  """
+  Filter by specific node IDs
+  """
+  nodeIds: [ID!]
+  """
+  Filter by node types
+  """
+  nodeTypes: [WorkflowNodeType!]
+  """
+  Filter by node status
+  """
+  statuses: [WorkflowNodeStatus!]
+  """
+  Only events after this timestamp
+  """
+  since: DateTime
+  """
+  Last event ID for resumption
+  """
+  lastEventId: ID
+  """
+  Include detailed I/O data
+  """
+  includeIOData: Boolean = true
+}
+
+"""
+Workflow node types
+"""
+enum WorkflowNodeType {
+  """
+  Start node
+  """
+  START
+  """
+  End node
+  """
+  END
+  """
+  Agent execution node
+  """
+  AGENT
+  """
+  LLM call node
+  """
+  LLM
+  """
+  Tool execution node
+  """
+  TOOL
+  """
+  Code execution node
+  """
+  CODE
+  """
+  HTTP request node
+  """
+  HTTP
+  """
+  Database query node
+  """
+  DATABASE
+  """
+  Conditional branch node
+  """
+  CONDITION
+  """
+  Switch/case node
+  """
+  SWITCH
+  """
+  Loop node
+  """
+  LOOP
+  """
+  Parallel execution node
+  """
+  PARALLEL
+  """
+  Join node for parallel branches
+  """
+  JOIN
+  """
+  Wait/delay node
+  """
+  WAIT
+  """
+  Human input node
+  """
+  HUMAN_INPUT
+  """
+  Sub-workflow node
+  """
+  SUB_WORKFLOW
+  """
+  Transform/map node
+  """
+  TRANSFORM
+  """
+  Aggregate node
+  """
+  AGGREGATE
+  """
+  Validation node
+  """
+  VALIDATE
+  """
+  Error handler node
+  """
+  ERROR_HANDLER
+  """
+  Custom node
+  """
+  CUSTOM
+}
+
+"""
+Workflow node status
+"""
+enum WorkflowNodeStatus {
+  PENDING
+  QUEUED
+  RUNNING
+  WAITING
+  COMPLETED
+  FAILED
+  SKIPPED
+  CANCELLED
+  TIMED_OUT
+}
+
+"""
+Workflow node event payload
+"""
+type WorkflowNodeEvent {
+  """
+  Event metadata
+  """
+  metadata: EventMetadata!
+  """
+  Execution ID
+  """
+  executionId: ID!
+  """
+  Node details
+  """
+  node: WorkflowNodeInstance!
+  """
+  Event type
+  """
+  eventType: WorkflowNodeEventType!
+  """
+  Previous status (for transitions)
+  """
+  previousStatus: WorkflowNodeStatus
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+}
+
+"""
+Workflow node event types
+"""
+enum WorkflowNodeEventType {
+  """
+  Node is queued for execution
+  """
+  NODE_QUEUED
+  """
+  Node has started executing
+  """
+  NODE_STARTED
+  """
+  Node is processing
+  """
+  NODE_PROCESSING
+  """
+  Node is waiting for input/dependency
+  """
+  NODE_WAITING
+  """
+  Node completed successfully
+  """
+  NODE_COMPLETED
+  """
+  Node failed
+  """
+  NODE_FAILED
+  """
+  Node was skipped
+  """
+  NODE_SKIPPED
+  """
+  Node was cancelled
+  """
+  NODE_CANCELLED
+  """
+  Node timed out
+  """
+  NODE_TIMED_OUT
+  """
+  Node is being retried
+  """
+  NODE_RETRYING
+}
+
+"""
+Workflow node instance with execution details
+"""
+type WorkflowNodeInstance {
+  """
+  Node ID
+  """
+  id: ID!
+  """
+  Node name
+  """
+  name: String!
+  """
+  Node type
+  """
+  type: WorkflowNodeType!
+  """
+  Node status
+  """
+  status: WorkflowNodeStatus!
+  """
+  Node configuration
+  """
+  config: JSON
+  """
+  Node input data
+  """
+  input: JSON
+  """
+  Node output data (if completed)
+  """
+  output: JSON
+  """
+  Start time
+  """
+  startedAt: DateTime
+  """
+  End time
+  """
+  completedAt: DateTime
+  """
+  Execution duration in milliseconds
+  """
+  durationMs: Int
+  """
+  Error details (if failed)
+  """
+  error: WorkflowError
+  """
+  Retry count for this node
+  """
+  retryCount: Int!
+  """
+  Dependencies (upstream nodes)
+  """
+  dependencies: [ID!]!
+  """
+  Dependents (downstream nodes)
+  """
+  dependents: [ID!]!
+  """
+  Iteration index (for loop nodes)
+  """
+  iterationIndex: Int
+  """
+  Branch path (for conditional nodes)
+  """
+  branchPath: String
+  """
+  Metrics for this node execution
+  """
+  metrics: WorkflowNodeMetrics
+}
+
+"""
+Workflow node execution metrics
+"""
+type WorkflowNodeMetrics {
+  """
+  CPU time used
+  """
+  cpuTimeMs: Int
+  """
+  Memory used in bytes
+  """
+  memoryBytes: Int
+  """
+  Network bytes sent
+  """
+  networkBytesSent: Int
+  """
+  Network bytes received
+  """
+  networkBytesReceived: Int
+  """
+  API calls made
+  """
+  apiCallCount: Int
+  """
+  Tokens used (for LLM nodes)
+  """
+  tokensUsed: Int
+  """
+  Cost estimate
+  """
+  costEstimate: Float
+}
+
+# =============================================================================
+# WORKFLOW VARIABLE SUBSCRIPTIONS
+# =============================================================================
+
+"""
+Filter for workflow variable change events
+"""
+input WorkflowVariableFilter {
+  """
+  Filter by execution ID
+  """
+  executionId: ID!
+  """
+  Filter by variable names
+  """
+  variableNames: [String!]
+  """
+  Filter by node that changed the variable
+  """
+  changedByNodeId: ID
+  """
+  Only changes after this timestamp
+  """
+  since: DateTime
+  """
+  Last event ID for resumption
+  """
+  lastEventId: ID
+}
+
+"""
+Workflow variable change event
+"""
+type WorkflowVariableEvent {
+  """
+  Event metadata
+  """
+  metadata: EventMetadata!
+  """
+  Execution ID
+  """
+  executionId: ID!
+  """
+  Variable name
+  """
+  variableName: String!
+  """
+  Variable scope
+  """
+  scope: VariableScope!
+  """
+  Previous value
+  """
+  previousValue: JSON
+  """
+  New value
+  """
+  newValue: JSON!
+  """
+  Value type
+  """
+  valueType: String!
+  """
+  Node that changed the variable
+  """
+  changedByNode: WorkflowNodeSummary
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+}
+
+"""
+Variable scope
+"""
+enum VariableScope {
+  """
+  Workflow-level variable
+  """
+  WORKFLOW
+  """
+  Node-level variable
+  """
+  NODE
+  """
+  Iteration-level variable (inside loops)
+  """
+  ITERATION
+  """
+  Branch-level variable
+  """
+  BRANCH
+  """
+  Global/environment variable
+  """
+  GLOBAL
+}
+
+# =============================================================================
+# WORKFLOW ANALYTICS SUBSCRIPTIONS
+# =============================================================================
+
+"""
+Filter for workflow analytics streams
+"""
+input WorkflowAnalyticsFilter {
+  """
+  Filter by workflow ID
+  """
+  workflowId: ID
+  """
+  Filter by workflow IDs
+  """
+  workflowIds: [ID!]
+  """
+  Time window for aggregation
+  """
+  timeWindow: TimeWindow!
+  """
+  Metrics to include
+  """
+  metrics: [WorkflowMetricType!]
+  """
+  Group by dimension
+  """
+  groupBy: WorkflowGroupBy
+}
+
+"""
+Time window for analytics
+"""
+input TimeWindow {
+  """
+  Window start
+  """
+  start: DateTime!
+  """
+  Window end
+  """
+  end: DateTime!
+  """
+  Aggregation interval in seconds
+  """
+  intervalSeconds: Int! = 60
+}
+
+"""
+Workflow metric types
+"""
+enum WorkflowMetricType {
+  EXECUTION_COUNT
+  SUCCESS_RATE
+  FAILURE_RATE
+  AVERAGE_DURATION
+  P95_DURATION
+  P99_DURATION
+  THROUGHPUT
+  QUEUE_DEPTH
+  ACTIVE_EXECUTIONS
+  NODE_EXECUTION_COUNT
+  NODE_FAILURE_RATE
+  COST_TOTAL
+  TOKENS_USED
+}
+
+"""
+Grouping dimensions for analytics
+"""
+enum WorkflowGroupBy {
+  WORKFLOW
+  VERSION
+  TRIGGER_TYPE
+  USER
+  STATUS
+  PRIORITY
+  NODE_TYPE
+}
+
+"""
+Workflow analytics event
+"""
+type WorkflowAnalyticsEvent {
+  """
+  Event metadata
+  """
+  metadata: EventMetadata!
+  """
+  Window start
+  """
+  windowStart: DateTime!
+  """
+  Window end
+  """
+  windowEnd: DateTime!
+  """
+  Workflow ID (if filtered)
+  """
+  workflowId: ID
+  """
+  Group value (if grouped)
+  """
+  groupValue: String
+  """
+  Metric values
+  """
+  metrics: WorkflowMetrics!
+}
+
+"""
+Workflow metrics snapshot
+"""
+type WorkflowMetrics {
+  """
+  Total executions in window
+  """
+  executionCount: Int!
+  """
+  Successful executions
+  """
+  successCount: Int!
+  """
+  Failed executions
+  """
+  failureCount: Int!
+  """
+  Success rate (0-1)
+  """
+  successRate: Float!
+  """
+  Average duration in milliseconds
+  """
+  avgDurationMs: Float!
+  """
+  P50 duration
+  """
+  p50DurationMs: Float!
+  """
+  P95 duration
+  """
+  p95DurationMs: Float!
+  """
+  P99 duration
+  """
+  p99DurationMs: Float!
+  """
+  Executions per minute
+  """
+  throughput: Float!
+  """
+  Currently queued executions
+  """
+  queueDepth: Int!
+  """
+  Currently running executions
+  """
+  activeExecutions: Int!
+  """
+  Total cost estimate
+  """
+  totalCost: Float
+  """
+  Total tokens used
+  """
+  totalTokens: Int
+  """
+  Node-level breakdown
+  """
+  nodeMetrics: [WorkflowNodeMetricsSummary!]
+}
+
+"""
+Node metrics summary for analytics
+"""
+type WorkflowNodeMetricsSummary {
+  """
+  Node ID
+  """
+  nodeId: ID!
+  """
+  Node name
+  """
+  nodeName: String!
+  """
+  Node type
+  """
+  nodeType: WorkflowNodeType!
+  """
+  Execution count
+  """
+  executionCount: Int!
+  """
+  Success rate
+  """
+  successRate: Float!
+  """
+  Average duration
+  """
+  avgDurationMs: Float!
+  """
+  Total cost
+  """
+  totalCost: Float
+}
+
+# =============================================================================
+# WORKFLOW DEBUGGING SUBSCRIPTIONS
+# =============================================================================
+
+"""
+Filter for workflow debug streams
+"""
+input WorkflowDebugFilter {
+  """
+  Execution ID to debug
+  """
+  executionId: ID!
+  """
+  Breakpoint node IDs
+  """
+  breakpoints: [ID!]
+  """
+  Watch variables
+  """
+  watchVariables: [String!]
+  """
+  Log level filter
+  """
+  minLogLevel: LogLevel
+  """
+  Include step-by-step execution
+  """
+  stepMode: Boolean = false
+}
+
+"""
+Workflow debug event
+"""
+type WorkflowDebugEvent {
+  """
+  Event metadata
+  """
+  metadata: EventMetadata!
+  """
+  Execution ID
+  """
+  executionId: ID!
+  """
+  Debug event type
+  """
+  eventType: WorkflowDebugEventType!
+  """
+  Current execution state
+  """
+  state: WorkflowDebugState!
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+}
+
+"""
+Debug event types
+"""
+enum WorkflowDebugEventType {
+  """
+  Breakpoint hit
+  """
+  BREAKPOINT_HIT
+  """
+  Step completed
+  """
+  STEP_COMPLETED
+  """
+  Variable changed
+  """
+  VARIABLE_CHANGED
+  """
+  Log entry
+  """
+  LOG_ENTRY
+  """
+  Error occurred
+  """
+  ERROR
+  """
+  Execution paused
+  """
+  PAUSED
+  """
+  Execution resumed
+  """
+  RESUMED
+}
+
+"""
+Workflow debug state snapshot
+"""
+type WorkflowDebugState {
+  """
+  Current node
+  """
+  currentNode: WorkflowNodeInstance
+  """
+  Execution status
+  """
+  status: WorkflowExecutionStatus!
+  """
+  All variables at current point
+  """
+  variables: JSON!
+  """
+  Call stack (for nested workflows)
+  """
+  callStack: [WorkflowCallFrame!]!
+  """
+  Recent log entries
+  """
+  recentLogs: [WorkflowLogEntry!]!
+}
+
+"""
+Call stack frame for debugging
+"""
+type WorkflowCallFrame {
+  """
+  Workflow ID
+  """
+  workflowId: ID!
+  """
+  Workflow name
+  """
+  workflowName: String!
+  """
+  Execution ID
+  """
+  executionId: ID!
+  """
+  Current node ID
+  """
+  nodeId: ID!
+  """
+  Current node name
+  """
+  nodeName: String!
+  """
+  Frame depth
+  """
+  depth: Int!
+}
+
+"""
+Workflow log entry
+"""
+type WorkflowLogEntry {
+  """
+  Log level
+  """
+  level: LogLevel!
+  """
+  Log message
+  """
+  message: String!
+  """
+  Node that generated the log
+  """
+  nodeId: ID
+  """
+  Node name
+  """
+  nodeName: String
+  """
+  Structured data
+  """
+  data: JSON
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+}
+
+# =============================================================================
+# SUBSCRIPTION ROOT TYPE EXTENSIONS
+# =============================================================================
+
+extend type Subscription {
+  """
+  Stream workflow execution events with filtering
+  """
+  workflowExecutionEvents(
+    filter: WorkflowExecutionFilter!
+    options: SubscriptionOptions
+  ): WorkflowExecutionEvent!
+    @auth(requires: USER)
+    @rateLimit(limit: 10, window: "1s")
+
+  """
+  Stream workflow node events for detailed monitoring
+  """
+  workflowNodeEvents(
+    filter: WorkflowNodeFilter!
+    options: SubscriptionOptions
+  ): WorkflowNodeEvent!
+    @auth(requires: USER)
+    @rateLimit(limit: 20, window: "1s")
+
+  """
+  Stream workflow variable changes
+  """
+  workflowVariableEvents(
+    filter: WorkflowVariableFilter!
+    options: SubscriptionOptions
+  ): WorkflowVariableEvent!
+    @auth(requires: USER)
+    @rateLimit(limit: 10, window: "1s")
+
+  """
+  Stream workflow analytics for dashboards
+  """
+  workflowAnalytics(
+    filter: WorkflowAnalyticsFilter!
+    options: SubscriptionOptions
+  ): WorkflowAnalyticsEvent!
+    @auth(requires: USER)
+    @rateLimit(limit: 1, window: "1s")
+
+  """
+  Debug stream for workflow development
+  """
+  workflowDebugStream(
+    filter: WorkflowDebugFilter!
+    options: SubscriptionOptions
+  ): WorkflowDebugEvent!
+    @auth(requires: USER)
+    @rateLimit(limit: 50, window: "1s")
+
+  """
+  Stream all events for a specific workflow execution
+  """
+  workflowExecutionStream(
+    executionId: ID!
+    includeNodes: Boolean = true
+    includeVariables: Boolean = false
+    options: SubscriptionOptions
+  ): WorkflowStreamEvent!
+    @auth(requires: USER)
+    @rateLimit(limit: 20, window: "1s")
+}
+
+"""
+Combined workflow stream event (union of all workflow events)
+"""
+type WorkflowStreamEvent {
+  """
+  Event metadata
+  """
+  metadata: EventMetadata!
+  """
+  Event type discriminator
+  """
+  eventType: String!
+  """
+  Execution event (if type is execution)
+  """
+  executionEvent: WorkflowExecutionEvent
+  """
+  Node event (if type is node)
+  """
+  nodeEvent: WorkflowNodeEvent
+  """
+  Variable event (if type is variable)
+  """
+  variableEvent: WorkflowVariableEvent
+  """
+  Log entry (if type is log)
+  """
+  logEntry: WorkflowLogEntry
+}

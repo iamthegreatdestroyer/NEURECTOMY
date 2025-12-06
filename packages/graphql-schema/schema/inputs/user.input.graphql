@@ -1,0 +1,1185 @@
+# =============================================================================
+# USER INPUT TYPES
+# =============================================================================
+# Input types for user management, profile updates, preferences, and admin ops.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# USER PROFILE UPDATE INPUTS
+# -----------------------------------------------------------------------------
+
+"""
+Input for updating user profile
+"""
+input UpdateUserInput {
+  """
+  Update display name
+  """
+  displayName: String
+
+  """
+  Update profile information
+  """
+  profile: UpdateProfileInput
+
+  """
+  Update preferences
+  """
+  preferences: UpdatePreferencesInput
+
+  """
+  Update notification settings
+  """
+  notifications: UpdateNotificationSettingsInput
+}
+
+"""
+Profile update input
+"""
+input UpdateProfileInput {
+  """
+  First name
+  """
+  firstName: String
+
+  """
+  Last name
+  """
+  lastName: String
+
+  """
+  Bio/description
+  """
+  bio: String
+
+  """
+  Avatar URL
+  """
+  avatarUrl: String
+
+  """
+  Location
+  """
+  location: String
+
+  """
+  Website URL
+  """
+  website: String
+
+  """
+  Timezone
+  """
+  timezone: String
+
+  """
+  Locale/language preference
+  """
+  locale: String
+
+  """
+  Social links
+  """
+  socialLinks: SocialLinksInput
+}
+
+"""
+Social links input
+"""
+input SocialLinksInput {
+  """
+  Twitter/X handle
+  """
+  twitter: String
+
+  """
+  LinkedIn URL
+  """
+  linkedin: String
+
+  """
+  GitHub username
+  """
+  github: String
+
+  """
+  Personal website
+  """
+  website: String
+}
+
+# -----------------------------------------------------------------------------
+# PREFERENCES INPUT
+# -----------------------------------------------------------------------------
+
+"""
+User preferences update input
+"""
+input UpdatePreferencesInput {
+  """
+  Theme preference
+  """
+  theme: ThemePreference
+
+  """
+  Default agent model
+  """
+  defaultModel: String
+
+  """
+  Default conversation settings
+  """
+  conversationDefaults: ConversationDefaultsInput
+
+  """
+  Editor preferences
+  """
+  editor: EditorPreferencesInput
+
+  """
+  Accessibility settings
+  """
+  accessibility: AccessibilityPreferencesInput
+
+  """
+  AI behavior preferences
+  """
+  aiBehavior: AIBehaviorPreferencesInput
+}
+
+"""
+Theme preferences
+"""
+enum ThemePreference {
+  """
+  Light theme
+  """
+  LIGHT
+
+  """
+  Dark theme
+  """
+  DARK
+
+  """
+  Follow system setting
+  """
+  SYSTEM
+}
+
+"""
+Default conversation settings
+"""
+input ConversationDefaultsInput {
+  """
+  Default streaming mode
+  """
+  streamingMode: StreamingMode
+
+  """
+  Default context length
+  """
+  contextLength: Int
+
+  """
+  Auto-generate titles
+  """
+  autoTitle: Boolean
+
+  """
+  Default temperature
+  """
+  temperature: Float
+
+  """
+  Default max tokens
+  """
+  maxTokens: Int
+}
+
+"""
+Editor preferences input
+"""
+input EditorPreferencesInput {
+  """
+  Font family
+  """
+  fontFamily: String
+
+  """
+  Font size (px)
+  """
+  fontSize: Int
+
+  """
+  Line height
+  """
+  lineHeight: Float
+
+  """
+  Tab size
+  """
+  tabSize: Int
+
+  """
+  Word wrap
+  """
+  wordWrap: Boolean
+
+  """
+  Show line numbers
+  """
+  lineNumbers: Boolean
+
+  """
+  Vim mode
+  """
+  vimMode: Boolean
+
+  """
+  Auto-complete
+  """
+  autoComplete: Boolean
+
+  """
+  Syntax highlighting theme
+  """
+  syntaxTheme: String
+}
+
+"""
+Accessibility preferences
+"""
+input AccessibilityPreferencesInput {
+  """
+  Reduce motion
+  """
+  reduceMotion: Boolean
+
+  """
+  High contrast mode
+  """
+  highContrast: Boolean
+
+  """
+  Screen reader optimizations
+  """
+  screenReaderOptimized: Boolean
+
+  """
+  Larger text
+  """
+  largerText: Boolean
+
+  """
+  Keyboard shortcuts only
+  """
+  keyboardOnly: Boolean
+}
+
+"""
+AI behavior preferences
+"""
+input AIBehaviorPreferencesInput {
+  """
+  Response verbosity
+  """
+  verbosity: ResponseVerbosity
+
+  """
+  Preferred response style
+  """
+  responseStyle: ResponseStyle
+
+  """
+  Code style preferences
+  """
+  codeStyle: CodeStylePreferencesInput
+
+  """
+  Auto-suggestions
+  """
+  autoSuggestions: Boolean
+
+  """
+  Follow-up questions
+  """
+  followUpQuestions: Boolean
+}
+
+"""
+Response verbosity levels
+"""
+enum ResponseVerbosity {
+  """
+  Brief, concise responses
+  """
+  CONCISE
+
+  """
+  Standard responses
+  """
+  STANDARD
+
+  """
+  Detailed, comprehensive responses
+  """
+  DETAILED
+
+  """
+  Verbose with explanations
+  """
+  VERBOSE
+}
+
+"""
+Response style preferences
+"""
+enum ResponseStyle {
+  """
+  Formal and professional
+  """
+  FORMAL
+
+  """
+  Casual and friendly
+  """
+  CASUAL
+
+  """
+  Technical and precise
+  """
+  TECHNICAL
+
+  """
+  Educational with explanations
+  """
+  EDUCATIONAL
+}
+
+"""
+Code style preferences
+"""
+input CodeStylePreferencesInput {
+  """
+  Preferred programming language
+  """
+  preferredLanguage: String
+
+  """
+  Include comments in code
+  """
+  includeComments: Boolean
+
+  """
+  Type annotations
+  """
+  typeAnnotations: Boolean
+
+  """
+  Documentation style
+  """
+  documentationStyle: String
+}
+
+# -----------------------------------------------------------------------------
+# NOTIFICATION SETTINGS
+# -----------------------------------------------------------------------------
+
+"""
+Notification settings update input
+"""
+input UpdateNotificationSettingsInput {
+  """
+  Email notifications
+  """
+  email: NotificationChannelSettingsInput
+
+  """
+  In-app notifications
+  """
+  inApp: NotificationChannelSettingsInput
+
+  """
+  Push notifications
+  """
+  push: NotificationChannelSettingsInput
+
+  """
+  Notification digest frequency
+  """
+  digestFrequency: DigestFrequency
+}
+
+"""
+Notification channel settings
+"""
+input NotificationChannelSettingsInput {
+  """
+  Enable this channel
+  """
+  enabled: Boolean!
+
+  """
+  Notification types to receive
+  """
+  types: [NotificationType!]
+
+  """
+  Quiet hours
+  """
+  quietHours: QuietHoursInput
+}
+
+"""
+Notification types
+"""
+enum NotificationType {
+  """
+  Agent completion notifications
+  """
+  AGENT_COMPLETE
+
+  """
+  Workflow completion
+  """
+  WORKFLOW_COMPLETE
+
+  """
+  System announcements
+  """
+  SYSTEM_ANNOUNCEMENT
+
+  """
+  Security alerts
+  """
+  SECURITY_ALERT
+
+  """
+  Usage alerts
+  """
+  USAGE_ALERT
+
+  """
+  Marketing communications
+  """
+  MARKETING
+
+  """
+  Team activity
+  """
+  TEAM_ACTIVITY
+
+  """
+  Mentions
+  """
+  MENTIONS
+
+  """
+  Shared content
+  """
+  SHARED_CONTENT
+}
+
+"""
+Quiet hours configuration
+"""
+input QuietHoursInput {
+  """
+  Enable quiet hours
+  """
+  enabled: Boolean!
+
+  """
+  Start time (HH:MM in user timezone)
+  """
+  startTime: String
+
+  """
+  End time (HH:MM in user timezone)
+  """
+  endTime: String
+
+  """
+  Days to apply
+  """
+  days: [DayOfWeek!]
+}
+
+"""
+Days of week
+"""
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+"""
+Digest frequency options
+"""
+enum DigestFrequency {
+  """
+  No digest
+  """
+  NONE
+
+  """
+  Daily digest
+  """
+  DAILY
+
+  """
+  Weekly digest
+  """
+  WEEKLY
+}
+
+# -----------------------------------------------------------------------------
+# SECURITY INPUTS
+# -----------------------------------------------------------------------------
+
+"""
+Input for changing password
+"""
+input ChangePasswordInput {
+  """
+  Current password
+  """
+  currentPassword: String!
+
+  """
+  New password
+  """
+  newPassword: String!
+
+  """
+  Confirm new password
+  """
+  confirmPassword: String!
+}
+
+"""
+Input for enabling two-factor authentication
+"""
+input EnableTwoFactorInput {
+  """
+  2FA method
+  """
+  method: TwoFactorMethod!
+
+  """
+  Phone number (for SMS)
+  """
+  phoneNumber: String
+
+  """
+  Verification code (after setup)
+  """
+  verificationCode: String
+}
+
+"""
+Two-factor authentication methods
+"""
+enum TwoFactorMethod {
+  """
+  TOTP authenticator app
+  """
+  TOTP
+
+  """
+  SMS verification
+  """
+  SMS
+
+  """
+  Email verification
+  """
+  EMAIL
+
+  """
+  Hardware security key (WebAuthn)
+  """
+  SECURITY_KEY
+}
+
+"""
+Input for managing API keys
+"""
+input CreateApiKeyInput {
+  """
+  Key name/description
+  """
+  name: String!
+
+  """
+  Expiration days (null = never)
+  """
+  expiresInDays: Int
+
+  """
+  Permissions/scopes
+  """
+  scopes: [ApiScope!]!
+}
+
+"""
+API permission scopes
+"""
+enum ApiScope {
+  """
+  Read agents
+  """
+  AGENTS_READ
+
+  """
+  Write agents
+  """
+  AGENTS_WRITE
+
+  """
+  Read conversations
+  """
+  CONVERSATIONS_READ
+
+  """
+  Write conversations
+  """
+  CONVERSATIONS_WRITE
+
+  """
+  Read workflows
+  """
+  WORKFLOWS_READ
+
+  """
+  Write workflows
+  """
+  WORKFLOWS_WRITE
+
+  """
+  Execute workflows
+  """
+  WORKFLOWS_EXECUTE
+
+  """
+  Read user profile
+  """
+  USER_READ
+
+  """
+  Write user profile
+  """
+  USER_WRITE
+
+  """
+  Admin operations
+  """
+  ADMIN
+}
+
+"""
+Input for revoking API key
+"""
+input RevokeApiKeyInput {
+  """
+  API key ID
+  """
+  keyId: ID!
+
+  """
+  Reason for revocation
+  """
+  reason: String
+}
+
+# -----------------------------------------------------------------------------
+# SESSION MANAGEMENT
+# -----------------------------------------------------------------------------
+
+"""
+Input for managing active sessions
+"""
+input RevokeSessionInput {
+  """
+  Session ID to revoke
+  """
+  sessionId: ID!
+
+  """
+  Revoke all sessions except current
+  """
+  allExceptCurrent: Boolean
+}
+
+# -----------------------------------------------------------------------------
+# ADMIN USER INPUTS
+# -----------------------------------------------------------------------------
+
+"""
+Input for admin creating a user
+"""
+input AdminCreateUserInput {
+  """
+  Email address
+  """
+  email: String!
+
+  """
+  Display name
+  """
+  displayName: String
+
+  """
+  User role
+  """
+  role: UserRole!
+
+  """
+  Initial password (or send setup email)
+  """
+  password: String
+
+  """
+  Send setup email
+  """
+  sendSetupEmail: Boolean = true
+
+  """
+  Metadata
+  """
+  metadata: JSON
+}
+
+"""
+User roles
+"""
+enum UserRole {
+  """
+  Regular user
+  """
+  USER
+
+  """
+  Power user with extra capabilities
+  """
+  POWER_USER
+
+  """
+  Team admin
+  """
+  TEAM_ADMIN
+
+  """
+  Organization admin
+  """
+  ORG_ADMIN
+
+  """
+  System admin
+  """
+  SYSTEM_ADMIN
+}
+
+"""
+Input for admin updating a user
+"""
+input AdminUpdateUserInput {
+  """
+  User ID
+  """
+  userId: ID!
+
+  """
+  Update email
+  """
+  email: String
+
+  """
+  Update display name
+  """
+  displayName: String
+
+  """
+  Update role
+  """
+  role: UserRole
+
+  """
+  Update status
+  """
+  status: UserStatus
+
+  """
+  Update metadata
+  """
+  metadata: JSON
+
+  """
+  Update quota/limits
+  """
+  quotas: UserQuotasInput
+}
+
+"""
+User status options
+"""
+enum UserStatus {
+  """
+  Active user
+  """
+  ACTIVE
+
+  """
+  User is suspended
+  """
+  SUSPENDED
+
+  """
+  User is pending verification
+  """
+  PENDING_VERIFICATION
+
+  """
+  User is deactivated
+  """
+  DEACTIVATED
+}
+
+"""
+User quotas/limits input
+"""
+input UserQuotasInput {
+  """
+  Max agents
+  """
+  maxAgents: Int
+
+  """
+  Max conversations per day
+  """
+  maxConversationsPerDay: Int
+
+  """
+  Max messages per day
+  """
+  maxMessagesPerDay: Int
+
+  """
+  Max workflow executions per day
+  """
+  maxWorkflowExecutionsPerDay: Int
+
+  """
+  Max storage (bytes)
+  """
+  maxStorageBytes: BigInt
+
+  """
+  API rate limit (requests/minute)
+  """
+  apiRateLimit: Int
+}
+
+# -----------------------------------------------------------------------------
+# USER FILTER AND SORT
+# -----------------------------------------------------------------------------
+
+"""
+Input for filtering users
+"""
+input UserFilterInput {
+  """
+  Filter by IDs
+  """
+  ids: [ID!]
+
+  """
+  Filter by email
+  """
+  email: StringFilter
+
+  """
+  Filter by display name
+  """
+  displayName: StringFilter
+
+  """
+  Filter by role
+  """
+  role: UserRole
+
+  """
+  Filter by multiple roles
+  """
+  roleIn: [UserRole!]
+
+  """
+  Filter by status
+  """
+  status: UserStatus
+
+  """
+  Filter by creation date
+  """
+  createdAt: DateTimeFilter
+
+  """
+  Filter by last activity
+  """
+  lastActiveAt: DateTimeFilter
+
+  """
+  Filter by has verified email
+  """
+  emailVerified: Boolean
+
+  """
+  Filter by has 2FA enabled
+  """
+  twoFactorEnabled: Boolean
+
+  """
+  Full-text search
+  """
+  search: String
+
+  """
+  Composite AND
+  """
+  AND: [UserFilterInput!]
+
+  """
+  Composite OR
+  """
+  OR: [UserFilterInput!]
+}
+
+"""
+User sort fields
+"""
+enum UserSortField {
+  """
+  Sort by display name
+  """
+  DISPLAY_NAME
+
+  """
+  Sort by email
+  """
+  EMAIL
+
+  """
+  Sort by creation date
+  """
+  CREATED_AT
+
+  """
+  Sort by last activity
+  """
+  LAST_ACTIVE_AT
+
+  """
+  Sort by role
+  """
+  ROLE
+}
+
+# -----------------------------------------------------------------------------
+# TEAM AND ORGANIZATION INPUTS
+# -----------------------------------------------------------------------------
+
+"""
+Input for creating a team
+"""
+input CreateTeamInput {
+  """
+  Team name
+  """
+  name: String!
+
+  """
+  Team description
+  """
+  description: String
+
+  """
+  Initial members
+  """
+  members: [TeamMemberInput!]
+
+  """
+  Team settings
+  """
+  settings: TeamSettingsInput
+}
+
+"""
+Team member input
+"""
+input TeamMemberInput {
+  """
+  User ID
+  """
+  userId: ID!
+
+  """
+  Member role
+  """
+  role: TeamMemberRole!
+}
+
+"""
+Team member roles
+"""
+enum TeamMemberRole {
+  """
+  Team member
+  """
+  MEMBER
+
+  """
+  Team admin
+  """
+  ADMIN
+
+  """
+  Team owner
+  """
+  OWNER
+}
+
+"""
+Team settings input
+"""
+input TeamSettingsInput {
+  """
+  Allow members to invite
+  """
+  membersCanInvite: Boolean = false
+
+  """
+  Require approval for new members
+  """
+  requireApproval: Boolean = true
+
+  """
+  Shared resource visibility
+  """
+  defaultResourceVisibility: ResourceVisibility = TEAM
+}
+
+"""
+Resource visibility options
+"""
+enum ResourceVisibility {
+  """
+  Only creator can see
+  """
+  PRIVATE
+
+  """
+  Team members can see
+  """
+  TEAM
+
+  """
+  Organization can see
+  """
+  ORGANIZATION
+
+  """
+  Public
+  """
+  PUBLIC
+}
+
+"""
+Input for updating a team
+"""
+input UpdateTeamInput {
+  """
+  Update name
+  """
+  name: String
+
+  """
+  Update description
+  """
+  description: String
+
+  """
+  Update settings
+  """
+  settings: TeamSettingsInput
+}
+
+"""
+Input for inviting to team
+"""
+input InviteToTeamInput {
+  """
+  Team ID
+  """
+  teamId: ID!
+
+  """
+  Email addresses to invite
+  """
+  emails: [String!]!
+
+  """
+  Role for invitees
+  """
+  role: TeamMemberRole = MEMBER
+
+  """
+  Custom invitation message
+  """
+  message: String
+}
+
+"""
+Input for updating team member
+"""
+input UpdateTeamMemberInput {
+  """
+  Team ID
+  """
+  teamId: ID!
+
+  """
+  User ID
+  """
+  userId: ID!
+
+  """
+  New role
+  """
+  role: TeamMemberRole!
+}
+
+"""
+Input for removing team member
+"""
+input RemoveTeamMemberInput {
+  """
+  Team ID
+  """
+  teamId: ID!
+
+  """
+  User ID
+  """
+  userId: ID!
+
+  """
+  Transfer ownership of their resources
+  """
+  transferResourcesTo: ID
+}

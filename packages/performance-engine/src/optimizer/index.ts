@@ -15,49 +15,39 @@
  */
 
 // Query Optimization (@VELOCITY @VERTEX)
-export {
-  QueryOptimizer,
-  PlanAnalyzer,
-  IndexAdvisor,
-  QueryRewriter,
-  CostEstimator,
-  type QueryType,
-  type QueryPlan,
-  type QueryPlanNode,
-  type IndexRecommendation,
-  type QueryOptimizationResult,
-  type QueryOptimizerConfig,
-  DEFAULT_QUERY_OPTIMIZER_CONFIG,
+export { default as QueryOptimizer } from "./query-optimizer";
+export type {
+  QueryType,
+  QueryAnalysis,
+  QueryIssue,
+  TableAccess,
+  JoinInfo,
+  IndexRecommendation,
 } from "./query-optimizer";
 
 // Auto-Optimization (@VELOCITY @NEURAL)
-export {
-  AutoOptimizer,
-  PatternLearner,
-  OptimizationEngine,
-  ResourcePredictor,
-  type OptimizationPattern,
-  type PatternMatch,
-  type AutoOptimizationResult,
-  type ResourcePrediction,
-  type AutoOptimizerConfig,
-  DEFAULT_AUTO_OPTIMIZER_CONFIG,
+export { default as AutoOptimizer } from "./auto-optimizer";
+export type {
+  AutoOptimizerConfig,
+  OptimizationAction,
+  OptimizationHistory,
+  LearningModel,
+  ContextPattern,
+  FailurePattern,
 } from "./auto-optimizer";
 
 // ============================================================================
 // Unified Optimizer Factory
 // ============================================================================
 
-import { QueryOptimizer, QueryOptimizerConfig } from "./query-optimizer";
-import { AutoOptimizer, AutoOptimizerConfig } from "./auto-optimizer";
+import QueryOptimizer from "./query-optimizer";
+import AutoOptimizer, { type AutoOptimizerConfig } from "./auto-optimizer";
 
 /**
  * Create a query optimizer instance
  */
-export function createQueryOptimizer(
-  config?: Partial<QueryOptimizerConfig>
-): QueryOptimizer {
-  return new QueryOptimizer(config);
+export function createQueryOptimizer(): QueryOptimizer {
+  return new QueryOptimizer();
 }
 
 /**
@@ -73,14 +63,13 @@ export function createAutoOptimizer(
  * Create both optimizers as a bundle
  */
 export function createOptimizerBundle(config?: {
-  query?: Partial<QueryOptimizerConfig>;
   auto?: Partial<AutoOptimizerConfig>;
 }): {
   queryOptimizer: QueryOptimizer;
   autoOptimizer: AutoOptimizer;
 } {
   return {
-    queryOptimizer: new QueryOptimizer(config?.query),
+    queryOptimizer: new QueryOptimizer(),
     autoOptimizer: new AutoOptimizer(config?.auto),
   };
 }

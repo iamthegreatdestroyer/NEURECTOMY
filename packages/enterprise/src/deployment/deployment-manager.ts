@@ -456,7 +456,7 @@ export class DeploymentManager extends EventEmitter {
     }
   }
 
-  private async prepareDeployment(deployment: Deployment): Promise<void> {
+  private async prepareDeployment(_deployment: Deployment): Promise<void> {
     // Validate artifacts exist
     // Pull container images
     // Apply database migrations
@@ -481,7 +481,7 @@ export class DeploymentManager extends EventEmitter {
   }
 
   private async evaluateGate(
-    deployment: Deployment,
+    _deployment: Deployment,
     gate: DeploymentGate
   ): Promise<boolean> {
     switch (gate.type) {
@@ -518,22 +518,22 @@ export class DeploymentManager extends EventEmitter {
     );
   }
 
-  private async evaluateMetricsGate(config: GateConfig): Promise<boolean> {
+  private async evaluateMetricsGate(_config: GateConfig): Promise<boolean> {
     // Evaluate metrics thresholds
     return true;
   }
 
-  private async evaluateTestsGate(config: GateConfig): Promise<boolean> {
+  private async evaluateTestsGate(_config: GateConfig): Promise<boolean> {
     // Run test suites
     return true;
   }
 
-  private async evaluateSecurityGate(config: GateConfig): Promise<boolean> {
+  private async evaluateSecurityGate(_config: GateConfig): Promise<boolean> {
     // Run security scans
     return true;
   }
 
-  private async evaluateComplianceGate(config: GateConfig): Promise<boolean> {
+  private async evaluateComplianceGate(_config: GateConfig): Promise<boolean> {
     // Validate compliance
     return true;
   }
@@ -814,8 +814,8 @@ export class DeploymentManager extends EventEmitter {
   }
 
   private async switchTraffic(
-    deployment: Deployment,
-    target: string
+    _deployment: Deployment,
+    _target: string
   ): Promise<void> {
     // Implement traffic switching logic
     await this.simulateDelay(1000);
@@ -835,15 +835,15 @@ export class DeploymentManager extends EventEmitter {
   }
 
   private async monitorCanary(
-    deployment: Deployment,
-    stage: DeploymentStage
+    _deployment: Deployment,
+    _stage: DeploymentStage
   ): Promise<void> {
     // Monitor canary instances for issues
     await this.simulateDelay(5000);
   }
 
   private async adjustCanaryTraffic(
-    deployment: Deployment,
+    _deployment: Deployment,
     stage: DeploymentStage,
     percentage: number
   ): Promise<void> {

@@ -1,0 +1,375 @@
+# NEURECTOMY GraphQL Workflow Types
+# Workflow entity and related types
+
+"""
+A workflow definition for automated processes.
+"""
+type Workflow implements Node & Timestamped & Owned & Stateful {
+  "Unique identifier"
+  id: UUID!
+  "Display name"
+  name: String!
+  "Optional description"
+  description: String
+  "Current status"
+  status: WorkflowStatus!
+  "Workflow definition (steps, conditions, etc.)"
+  definition: WorkflowDefinition!
+  "Triggers that can start this workflow"
+  triggers: [WorkflowTrigger!]!
+  "Variables/configuration"
+  variables: JSON
+  "Tags for organization"
+  tags: [String!]!
+  "Owner of this workflow"
+  owner: User!
+  "Owner's ID"
+  ownerId: UUID!
+  "Whether workflow is publicly viewable"
+  isPublic: Boolean!
+  "Version number"
+  version: Int!
+  "When created"
+  createdAt: DateTime!
+  "When last updated"
+  updatedAt: DateTime!
+
+  # Relationships
+  "Execution history"
+  executions(
+    first: Int
+    after: String
+    filter: WorkflowExecutionFilterInput
+  ): WorkflowExecutionConnection! @complexity(value: 5, multipliers: ["first"])
+
+  "Agents used in this workflow"
+  agents: [Agent!]!
+
+  "Workflow statistics"
+  stats: WorkflowStats!
+}
+
+"""
+Workflow definition containing steps and flow logic.
+"""
+type WorkflowDefinition {
+  "Entry point step ID"
+  entryPoint: String!
+  "All steps in the workflow"
+  steps: [WorkflowStep!]!
+  "Global error handler step ID"
+  errorHandler: String
+  "Timeout for entire workflow in seconds"
+  timeout: Int
+  "Retry configuration"
+  retry: RetryConfig
+}
+
+"""
+A single step in a workflow.
+"""
+type WorkflowStep {
+  "Step identifier (unique within workflow)"
+  id: String!
+  "Display name"
+  name: String!
+  "Step type"
+  type: StepType!
+  "Step configuration"
+  config: JSON!
+  "Condition to execute this step (expression)"
+  condition: String
+  "Next step IDs on success"
+  onSuccess: [String!]
+  "Next step ID on failure"
+  onFailure: String
+  "Timeout for this step in seconds"
+  timeout: Int
+  "Retry configuration for this step"
+  retry: RetryConfig
+}
+
+"""
+Retry configuration for steps or workflows.
+"""
+type RetryConfig {
+  "Maximum retry attempts"
+  maxAttempts: Int!
+  "Initial delay in milliseconds"
+  initialDelay: Int!
+  "Backoff multiplier"
+  backoffMultiplier: Float!
+  "Maximum delay in milliseconds"
+  maxDelay: Int!
+}
+
+"""
+A trigger that can start a workflow.
+"""
+type WorkflowTrigger {
+  "Trigger identifier"
+  id: String!
+  "Trigger type"
+  type: TriggerType!
+  "Trigger name"
+  name: String!
+  "Whether trigger is enabled"
+  enabled: Boolean!
+  "Trigger configuration"
+  config: JSON!
+  "Last time this trigger fired"
+  lastTriggered: DateTime
+}
+
+"""
+A workflow execution instance.
+"""
+type WorkflowExecution implements Node & Timestamped {
+  "Unique identifier"
+  id: UUID!
+  "Workflow that was executed"
+  workflowId: UUID!
+  "Workflow reference"
+  workflow: Workflow!
+  "Execution status"
+  status: ExecutionStatus!
+  "Trigger that started this execution"
+  triggeredBy: String!
+  "Input data"
+  input: JSON
+  "Output data (when completed)"
+  output: JSON
+  "Error information (when failed)"
+  error: WorkflowError
+  "When execution started"
+  startedAt: DateTime!
+  "When execution completed"
+  completedAt: DateTime
+  "Duration in milliseconds"
+  durationMs: Int
+  "When created"
+  createdAt: DateTime!
+  "When updated"
+  updatedAt: DateTime!
+
+  # Relationships
+  "Step execution details"
+  steps: [StepExecution!]!
+
+  "Execution logs"
+  logs(first: Int, after: String): AgentLogConnection!
+}
+
+"""
+Execution details for a single step.
+"""
+type StepExecution {
+  "Step ID"
+  stepId: String!
+  "Step name"
+  stepName: String!
+  "Execution status"
+  status: ExecutionStatus!
+  "Step input"
+  input: JSON
+  "Step output"
+  output: JSON
+  "Error if failed"
+  error: WorkflowError
+  "When step started"
+  startedAt: DateTime!
+  "When step completed"
+  completedAt: DateTime
+  "Duration in milliseconds"
+  durationMs: Int
+  "Retry attempt number (0 = first attempt)"
+  attempt: Int!
+}
+
+"""
+Error information for workflow/step failures.
+"""
+type WorkflowError {
+  "Error code"
+  code: String!
+  "Error message"
+  message: String!
+  "Stack trace (if available)"
+  stackTrace: String
+  "Additional error details"
+  details: JSON
+}
+
+"""
+Workflow statistics.
+"""
+type WorkflowStats {
+  "Total executions"
+  totalExecutions: Int!
+  "Successful executions"
+  successfulExecutions: Int!
+  "Failed executions"
+  failedExecutions: Int!
+  "Success rate (0-100)"
+  successRate: Float!
+  "Average duration in milliseconds"
+  avgDurationMs: Float!
+  "Executions in last 24 hours"
+  executions24h: Int!
+  "Last execution timestamp"
+  lastExecution: DateTime
+}
+
+# ====================
+# Input Types
+# ====================
+
+"""
+Input for creating a workflow.
+"""
+input CreateWorkflowInput {
+  "Display name"
+  name: String!
+  "Description"
+  description: String
+  "Workflow definition"
+  definition: WorkflowDefinitionInput!
+  "Triggers"
+  triggers: [WorkflowTriggerInput!]
+  "Variables"
+  variables: JSON
+  "Tags"
+  tags: [String!]
+  "Public visibility"
+  isPublic: Boolean = false
+}
+
+"""
+Input for updating a workflow.
+"""
+input UpdateWorkflowInput {
+  "Display name"
+  name: String
+  "Description"
+  description: String
+  "Status"
+  status: WorkflowStatus
+  "Workflow definition"
+  definition: WorkflowDefinitionInput
+  "Triggers"
+  triggers: [WorkflowTriggerInput!]
+  "Variables"
+  variables: JSON
+  "Tags"
+  tags: [String!]
+  "Public visibility"
+  isPublic: Boolean
+}
+
+"""
+Input for workflow definition.
+"""
+input WorkflowDefinitionInput {
+  "Entry point step ID"
+  entryPoint: String!
+  "Steps"
+  steps: [WorkflowStepInput!]!
+  "Error handler step ID"
+  errorHandler: String
+  "Timeout in seconds"
+  timeout: Int
+  "Retry config"
+  retry: RetryConfigInput
+}
+
+"""
+Input for workflow step.
+"""
+input WorkflowStepInput {
+  "Step ID"
+  id: String!
+  "Step name"
+  name: String!
+  "Step type"
+  type: StepType!
+  "Configuration"
+  config: JSON!
+  "Execution condition"
+  condition: String
+  "Success targets"
+  onSuccess: [String!]
+  "Failure target"
+  onFailure: String
+  "Timeout in seconds"
+  timeout: Int
+  "Retry config"
+  retry: RetryConfigInput
+}
+
+"""
+Input for retry configuration.
+"""
+input RetryConfigInput {
+  "Maximum attempts"
+  maxAttempts: Int!
+  "Initial delay (ms)"
+  initialDelay: Int = 1000
+  "Backoff multiplier"
+  backoffMultiplier: Float = 2.0
+  "Maximum delay (ms)"
+  maxDelay: Int = 60000
+}
+
+"""
+Input for workflow trigger.
+"""
+input WorkflowTriggerInput {
+  "Trigger ID"
+  id: String!
+  "Trigger type"
+  type: TriggerType!
+  "Trigger name"
+  name: String!
+  "Enabled"
+  enabled: Boolean = true
+  "Configuration"
+  config: JSON!
+}
+
+"""
+Input for manually triggering a workflow.
+"""
+input TriggerWorkflowInput {
+  "Workflow ID"
+  workflowId: UUID!
+  "Input data"
+  input: JSON
+}
+
+"""
+Filter for workflow executions.
+"""
+input WorkflowExecutionFilterInput {
+  "Filter by status"
+  status: [ExecutionStatus!]
+  "Filter by trigger"
+  triggeredBy: String
+  "Filter by date range"
+  startedAt: DateRangeInput
+}
+
+"""
+Filter for workflows.
+"""
+input WorkflowFilterInput {
+  "Filter by status"
+  status: [WorkflowStatus!]
+  "Filter by tags"
+  tags: [String!]
+  "Search by name/description"
+  search: String
+  "Filter by owner"
+  ownerId: UUID
+  "Filter by creation date"
+  createdAt: DateRangeInput
+}

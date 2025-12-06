@@ -12,15 +12,20 @@
  * @AEGIS Enterprise-grade tenant isolation
  */
 
-// Tenant Manager
+// Tenant Manager - export only what exists
 export {
   TenantManager,
-  createTenantManager,
-  type TenantLifecycleHooks,
-  type TenantMetrics,
+  DEFAULT_TENANCY_CONFIG,
+  TIER_LIMITS,
+  DEFAULT_SECURITY_SETTINGS,
+  type TenantEventType,
+  type TenantEvent,
+  type CreateTenantInput,
+  type UpdateTenantInput,
+  type TenantFilter,
 } from "./tenant-manager.js";
 
-// Tenant Isolation
+// Tenant Isolation - export only what exists
 export {
   TenantIsolationEngine,
   createTenantIsolationEngine,
@@ -30,7 +35,7 @@ export {
   type IsolationMetrics,
 } from "./tenant-isolation.js";
 
-// Resource Limits
+// Resource Limits - export only what exists
 export {
   ResourceLimiter,
   createResourceLimiter,
@@ -45,26 +50,35 @@ export {
   type ExhaustionPrediction,
 } from "./resource-limits.js";
 
-// Re-export types
+// Re-export types that actually exist in types.ts
 export type {
   Tenant,
-  TenantConfig,
   TenantStatus,
-  TenantTier,
+  TenantIsolationLevel,
+  SubscriptionTier,
   ResourceLimits,
-  ResourceUsage,
-  TenantIsolationConfig,
-  IsolationStrategy,
-  IsolationViolation,
-  DataAccessContext,
+  ResourceLimit,
+  LimitEnforcement,
+  TenantSettings,
+  TenantFeatures,
+  TenantSubscription,
+  TenantMetadata,
+  BrandingSettings,
+  SecuritySettings,
+  NotificationSettings,
+  IntegrationSettings,
+  LocaleSettings,
+  RateLimitConfig,
+  PasswordPolicy,
+  TenancyModuleConfig,
 } from "../types.js";
 
 /**
  * Create full tenancy system
  */
 export interface TenancySystemConfig {
-  defaultLimits: import("../types.js").ResourceLimits;
-  isolationConfig: import("../types.js").TenantIsolationConfig;
+  defaultResourceLimits: import("../types.js").ResourceLimits;
+  isolationLevel?: import("../types.js").TenantIsolationLevel;
   enableMetrics?: boolean;
 }
 
@@ -82,26 +96,18 @@ export async function createTenancySystem(
   const { ResourceLimiter } = await import("./resource-limits.js");
 
   const manager = new TenantManager({
-    defaultLimits: config.defaultLimits,
-    enableMetrics: config.enableMetrics,
+    defaultResourceLimits: config.defaultResourceLimits,
   });
 
-  const isolation = new TenantIsolationEngine(config.isolationConfig);
-  const limiter = new ResourceLimiter(config.defaultLimits);
-
-  // Wire up events
-  manager.on("tenant:created", async ({ tenant }) => {
-    await isolation.createBoundary(tenant, "row", {});
-    await limiter.setQuotas(tenant, config.defaultLimits);
+  const isolation = new TenantIsolationEngine({
+    defaultLevel: config.isolationLevel ?? "shared",
+    encryptionEnabled: true,
+    auditEnabled: config.enableMetrics ?? false,
   });
 
-  manager.on("tenant:deleted", async ({ tenantId }) => {
-    await isolation.cleanupTenant(tenantId);
-    await limiter.removeTenant(tenantId);
-  });
+  const limiter = new ResourceLimiter(config.defaultResourceLimits);
 
-  // Initialize
-  await manager.initialize();
+  // Initialize isolation and limiter
   await isolation.initialize();
   await limiter.initialize();
 

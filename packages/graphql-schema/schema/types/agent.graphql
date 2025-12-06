@@ -1,0 +1,269 @@
+# NEURECTOMY GraphQL Agent Types
+# Agent entity and related types implementing standard interfaces
+
+"""
+An AI agent that can perform tasks and conversations.
+"""
+type Agent implements Node & Timestamped & Owned & Stateful {
+  "Unique identifier"
+  id: UUID!
+  "Display name"
+  name: String!
+  "Optional description"
+  description: String
+  "Current operational status"
+  status: AgentStatus!
+  "Type of agent"
+  type: AgentType!
+  "System prompt/instructions"
+  systemPrompt: String!
+  "Model configuration"
+  model: ModelConfig!
+  "Agent capabilities"
+  capabilities: [AgentCapability!]!
+  "Custom configuration as JSON"
+  config: JSON!
+  "Available tools"
+  tools: [Tool!]!
+  "Owner of this agent"
+  owner: User!
+  "Owner's ID"
+  ownerId: UUID!
+  "Whether agent is publicly available"
+  isPublic: Boolean!
+  "Tags for organization"
+  tags: [String!]!
+  "When created"
+  createdAt: DateTime!
+  "When last updated"
+  updatedAt: DateTime!
+
+  # Relationships
+  "Conversations this agent has participated in"
+  conversations(
+    first: Int
+    after: String
+    filter: ConversationFilterInput
+  ): ConversationConnection! @complexity(value: 5, multipliers: ["first"])
+
+  "Recent logs from this agent"
+  logs(first: Int, after: String, level: LogLevel): AgentLogConnection!
+    @complexity(value: 3, multipliers: ["first"])
+
+  "Workflows using this agent"
+  workflows(first: Int, after: String): WorkflowConnection!
+
+  "Agent metrics and statistics"
+  metrics: AgentMetrics!
+
+  "Knowledge bases this agent can access"
+  knowledgeBases: [KnowledgeBase!]!
+}
+
+"""
+Model configuration for an agent.
+"""
+type ModelConfig {
+  "Model provider (e.g., openai, anthropic)"
+  provider: String!
+  "Model identifier"
+  model: String!
+  "Maximum tokens in response"
+  maxTokens: Int
+  "Temperature for randomness (0.0-2.0)"
+  temperature: Float
+  "Top-p sampling parameter"
+  topP: Float
+  "Frequency penalty (-2.0-2.0)"
+  frequencyPenalty: Float
+  "Presence penalty (-2.0-2.0)"
+  presencePenalty: Float
+  "Stop sequences"
+  stopSequences: [String!]
+  "Whether to stream responses"
+  streaming: Boolean
+}
+
+"""
+A tool available to an agent.
+"""
+type Tool implements Node {
+  "Unique identifier"
+  id: UUID!
+  "Tool name"
+  name: String!
+  "Tool description"
+  description: String!
+  "Tool type/category"
+  type: String!
+  "JSON Schema for tool parameters"
+  parameters: JSON!
+  "Whether tool is enabled"
+  enabled: Boolean!
+  "Required permissions to use this tool"
+  requiredPermissions: [String!]
+}
+
+"""
+Agent execution metrics.
+"""
+type AgentMetrics {
+  "Total number of conversations"
+  totalConversations: Int!
+  "Total messages processed"
+  totalMessages: Int!
+  "Average response time in milliseconds"
+  avgResponseTime: Float!
+  "Total tokens used"
+  totalTokensUsed: Int!
+  "Success rate (0-100)"
+  successRate: Float!
+  "Error count in last 24 hours"
+  errorCount24h: Int!
+  "Active conversations count"
+  activeConversations: Int!
+  "Uptime percentage (0-100)"
+  uptimePercentage: Float!
+  "Last activity timestamp"
+  lastActivity: DateTime
+}
+
+"""
+A log entry from an agent.
+"""
+type AgentLog implements Node & Timestamped {
+  "Unique identifier"
+  id: UUID!
+  "Agent that generated this log"
+  agentId: UUID!
+  "Log level"
+  level: LogLevel!
+  "Log message"
+  message: String!
+  "Additional metadata"
+  metadata: JSON
+  "Stack trace if error"
+  stackTrace: String
+  "Request/conversation ID for correlation"
+  correlationId: String
+  "When logged"
+  createdAt: DateTime!
+  "Same as createdAt for Timestamped interface"
+  updatedAt: DateTime!
+}
+
+# ====================
+# Input Types
+# ====================
+
+"""
+Input for creating a new agent.
+"""
+input CreateAgentInput {
+  "Display name (required)"
+  name: String!
+  "Optional description"
+  description: String
+  "Type of agent"
+  type: AgentType = ASSISTANT
+  "System prompt/instructions"
+  systemPrompt: String!
+  "Model configuration"
+  model: ModelConfigInput!
+  "Agent capabilities"
+  capabilities: [AgentCapability!]
+  "Custom configuration"
+  config: JSON
+  "Tool IDs to attach"
+  toolIds: [UUID!]
+  "Whether agent is public"
+  isPublic: Boolean = false
+  "Tags for organization"
+  tags: [String!]
+  "Knowledge base IDs to attach"
+  knowledgeBaseIds: [UUID!]
+}
+
+"""
+Input for updating an agent.
+"""
+input UpdateAgentInput {
+  "Display name"
+  name: String
+  "Description"
+  description: String
+  "System prompt"
+  systemPrompt: String
+  "Model configuration"
+  model: ModelConfigInput
+  "Agent capabilities"
+  capabilities: [AgentCapability!]
+  "Custom configuration"
+  config: JSON
+  "Tool IDs to attach"
+  toolIds: [UUID!]
+  "Whether agent is public"
+  isPublic: Boolean
+  "Tags"
+  tags: [String!]
+  "Knowledge base IDs"
+  knowledgeBaseIds: [UUID!]
+}
+
+"""
+Input for model configuration.
+"""
+input ModelConfigInput {
+  "Model provider"
+  provider: String!
+  "Model identifier"
+  model: String!
+  "Maximum tokens"
+  maxTokens: Int
+  "Temperature"
+  temperature: Float
+  "Top-p"
+  topP: Float
+  "Frequency penalty"
+  frequencyPenalty: Float
+  "Presence penalty"
+  presencePenalty: Float
+  "Stop sequences"
+  stopSequences: [String!]
+  "Enable streaming"
+  streaming: Boolean
+}
+
+"""
+Input for batch agent status updates.
+"""
+input AgentStatusUpdateInput {
+  "Agent ID"
+  id: UUID!
+  "New status"
+  status: AgentStatus!
+}
+
+"""
+Filter input for listing agents.
+"""
+input AgentFilterInput {
+  "Filter by status"
+  status: [AgentStatus!]
+  "Filter by type"
+  type: [AgentType!]
+  "Filter by capability"
+  capabilities: [AgentCapability!]
+  "Filter by tags (any match)"
+  tags: [String!]
+  "Search by name/description"
+  search: String
+  "Filter by owner ID"
+  ownerId: UUID
+  "Filter public/private"
+  isPublic: Boolean
+  "Filter by creation date"
+  createdAt: DateRangeInput
+  "Filter by update date"
+  updatedAt: DateRangeInput
+}

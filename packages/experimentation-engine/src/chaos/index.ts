@@ -9,12 +9,25 @@ export {
   type FaultInjector,
   type ChaosExperiment,
   type ChaosExperimentConfig,
-  type ChaosResults,
   type AffectedTarget,
   type FaultConfig,
   type FaultType,
   type FaultSeverity,
   type ExperimentState,
+  type SafetyConfig,
+  type ChaosStorage,
+  type ChaosNotifier,
+  type MetricsProvider,
+  type ExperimentResults,
+  type ActiveFault,
+  type HealthStatus,
+  type HealthCheckResult,
+  type MetricSnapshot,
+  type TimelineEvent,
+  type Finding,
+  type Approval,
+  type ChaosSimulatorEvents,
+  type ChaosNotification,
   // Schemas
   FaultTypeSchema,
   FaultSeveritySchema,
@@ -25,10 +38,6 @@ export {
   SafetyConfigSchema,
   HealthCheckConfigSchema,
   ChaosExperimentConfigSchema,
-  // Default injectors
-  LatencyInjector,
-  ErrorInjector,
-  TimeoutInjector,
 } from "./simulator";
 
 // Extended fault types

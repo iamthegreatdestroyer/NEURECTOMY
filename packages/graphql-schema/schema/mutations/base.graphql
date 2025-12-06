@@ -1,0 +1,509 @@
+# =============================================================================
+# MUTATION BASE TYPES - Unified Mutation Patterns
+# =============================================================================
+# Standardized mutation response patterns following best practices for
+# consistent error handling, validation feedback, and operation results.
+# =============================================================================
+
+"""
+Base interface for all mutation payloads.
+Provides consistent error handling and success indication.
+"""
+interface MutationPayload {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  User-facing errors that prevented the mutation
+  """
+  errors: [UserError!]!
+
+  """
+  Unique identifier for this mutation execution (for tracing)
+  """
+  clientMutationId: String
+}
+
+"""
+Represents a user-facing error from a mutation.
+These are validation or business logic errors, not system errors.
+"""
+type UserError {
+  """
+  The error code for programmatic handling
+  """
+  code: ErrorCode!
+
+  """
+  Human-readable error message
+  """
+  message: String!
+
+  """
+  Path to the input field that caused the error (if applicable)
+  """
+  field: [String!]
+
+  """
+  Additional error details for debugging
+  """
+  details: JSON
+}
+
+"""
+Result of a batch mutation operation.
+Provides detailed information about individual item results.
+"""
+interface BatchMutationPayload {
+  """
+  Whether all operations in the batch were successful
+  """
+  success: Boolean!
+
+  """
+  User-facing errors that prevented the batch operation
+  """
+  errors: [UserError!]!
+
+  """
+  Number of items successfully processed
+  """
+  successCount: Int!
+
+  """
+  Number of items that failed
+  """
+  failureCount: Int!
+
+  """
+  Total number of items in the batch
+  """
+  totalCount: Int!
+
+  """
+  Unique identifier for this mutation execution
+  """
+  clientMutationId: String
+}
+
+"""
+Individual result within a batch operation.
+"""
+type BatchItemResult {
+  """
+  The index of this item in the original batch
+  """
+  index: Int!
+
+  """
+  The ID of the affected entity (if applicable)
+  """
+  id: ID
+
+  """
+  Whether this individual item operation succeeded
+  """
+  success: Boolean!
+
+  """
+  Errors specific to this item
+  """
+  errors: [UserError!]!
+}
+
+# =============================================================================
+# DELETE OPERATION PATTERNS
+# =============================================================================
+
+"""
+Base payload for single delete operations.
+"""
+interface DeletePayload {
+  """
+  Whether the deletion was successful
+  """
+  success: Boolean!
+
+  """
+  Errors that prevented deletion
+  """
+  errors: [UserError!]!
+
+  """
+  The ID of the deleted entity
+  """
+  deletedId: ID
+
+  """
+  Unique identifier for this mutation execution
+  """
+  clientMutationId: String
+}
+
+"""
+Base payload for soft delete operations.
+"""
+interface SoftDeletePayload {
+  """
+  Whether the soft deletion was successful
+  """
+  success: Boolean!
+
+  """
+  Errors that prevented soft deletion
+  """
+  errors: [UserError!]!
+
+  """
+  The ID of the soft-deleted entity
+  """
+  deletedId: ID
+
+  """
+  When the entity was soft deleted
+  """
+  deletedAt: DateTime
+
+  """
+  Unique identifier for this mutation execution
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for batch delete operations.
+"""
+interface BatchDeletePayload {
+  """
+  Whether all deletions were successful
+  """
+  success: Boolean!
+
+  """
+  Errors that prevented batch deletion
+  """
+  errors: [UserError!]!
+
+  """
+  IDs of successfully deleted entities
+  """
+  deletedIds: [ID!]!
+
+  """
+  Number of entities successfully deleted
+  """
+  successCount: Int!
+
+  """
+  Number of entities that failed to delete
+  """
+  failureCount: Int!
+
+  """
+  Unique identifier for this mutation execution
+  """
+  clientMutationId: String
+}
+
+# =============================================================================
+# RESTORE OPERATION PATTERNS
+# =============================================================================
+
+"""
+Payload for restore operations (un-delete soft-deleted entities).
+"""
+interface RestorePayload {
+  """
+  Whether the restoration was successful
+  """
+  success: Boolean!
+
+  """
+  Errors that prevented restoration
+  """
+  errors: [UserError!]!
+
+  """
+  The ID of the restored entity
+  """
+  restoredId: ID
+
+  """
+  Unique identifier for this mutation execution
+  """
+  clientMutationId: String
+}
+
+# =============================================================================
+# ARCHIVE OPERATION PATTERNS
+# =============================================================================
+
+"""
+Payload for archive operations.
+"""
+interface ArchivePayload {
+  """
+  Whether the archive operation was successful
+  """
+  success: Boolean!
+
+  """
+  Errors that prevented archiving
+  """
+  errors: [UserError!]!
+
+  """
+  The ID of the archived entity
+  """
+  archivedId: ID
+
+  """
+  When the entity was archived
+  """
+  archivedAt: DateTime
+
+  """
+  Unique identifier for this mutation execution
+  """
+  clientMutationId: String
+}
+
+# =============================================================================
+# OPERATION TRACKING
+# =============================================================================
+
+"""
+Information about an asynchronous operation.
+Used for long-running mutations that return immediately.
+"""
+type OperationInfo {
+  """
+  Unique identifier for the operation
+  """
+  operationId: ID!
+
+  """
+  Current status of the operation
+  """
+  status: OperationStatus!
+
+  """
+  Estimated completion time (if available)
+  """
+  estimatedCompletion: DateTime
+
+  """
+  Progress percentage (0-100)
+  """
+  progress: Int
+
+  """
+  URL to check operation status
+  """
+  statusUrl: String
+}
+
+"""
+Status of an asynchronous operation.
+"""
+enum OperationStatus {
+  """
+  Operation is queued and waiting to start
+  """
+  PENDING
+
+  """
+  Operation is currently running
+  """
+  IN_PROGRESS
+
+  """
+  Operation completed successfully
+  """
+  COMPLETED
+
+  """
+  Operation failed
+  """
+  FAILED
+
+  """
+  Operation was cancelled
+  """
+  CANCELLED
+}
+
+"""
+Payload for mutations that start async operations.
+"""
+interface AsyncMutationPayload {
+  """
+  Whether the operation was successfully started
+  """
+  success: Boolean!
+
+  """
+  Errors that prevented starting the operation
+  """
+  errors: [UserError!]!
+
+  """
+  Information about the async operation
+  """
+  operation: OperationInfo
+
+  """
+  Unique identifier for this mutation execution
+  """
+  clientMutationId: String
+}
+
+# =============================================================================
+# COMMON INPUT PATTERNS
+# =============================================================================
+
+"""
+Standard pagination input for list mutations.
+"""
+input BatchInput {
+  """
+  IDs of entities to operate on
+  """
+  ids: [ID!]!
+
+  """
+  Skip confirmation for bulk operations
+  """
+  skipConfirmation: Boolean = false
+}
+
+"""
+Input for specifying operation options.
+"""
+input MutationOptions {
+  """
+  Client mutation ID for request tracking
+  """
+  clientMutationId: String
+
+  """
+  Whether to run in dry-run mode (no actual changes)
+  """
+  dryRun: Boolean = false
+
+  """
+  Whether to return verbose response
+  """
+  verbose: Boolean = false
+}
+
+"""
+Input for idempotent mutations.
+"""
+input IdempotencyInput {
+  """
+  Unique key for idempotent operations
+  """
+  idempotencyKey: String!
+
+  """
+  Time-to-live for the idempotency key in seconds
+  """
+  ttl: Int = 86400
+}
+
+# =============================================================================
+# VALIDATION HELPERS
+# =============================================================================
+
+"""
+Represents validation state for an input.
+"""
+type ValidationResult {
+  """
+  Whether the input is valid
+  """
+  isValid: Boolean!
+
+  """
+  Validation errors if any
+  """
+  errors: [ValidationError!]!
+
+  """
+  Warnings that don't prevent operation
+  """
+  warnings: [ValidationWarning!]!
+}
+
+"""
+A validation error for a specific field.
+"""
+type ValidationError {
+  """
+  Path to the field with the error
+  """
+  field: [String!]!
+
+  """
+  Error message
+  """
+  message: String!
+
+  """
+  Validation rule that failed
+  """
+  rule: String!
+
+  """
+  Suggested fix (if available)
+  """
+  suggestion: String
+}
+
+"""
+A validation warning for a specific field.
+"""
+type ValidationWarning {
+  """
+  Path to the field with the warning
+  """
+  field: [String!]!
+
+  """
+  Warning message
+  """
+  message: String!
+
+  """
+  Severity level
+  """
+  severity: WarningSeverity!
+}
+
+"""
+Severity levels for validation warnings.
+"""
+enum WarningSeverity {
+  """
+  Informational warning
+  """
+  INFO
+
+  """
+  Low severity - operation will succeed but may have issues
+  """
+  LOW
+
+  """
+  Medium severity - operation may not work as expected
+  """
+  MEDIUM
+
+  """
+  High severity - operation is risky but allowed
+  """
+  HIGH
+}

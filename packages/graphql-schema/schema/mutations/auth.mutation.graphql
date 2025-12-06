@@ -1,0 +1,1142 @@
+# =============================================================================
+# AUTHENTICATION MUTATIONS
+# =============================================================================
+# Comprehensive authentication and authorization mutations including login,
+# registration, session management, password handling, MFA, and OAuth flows.
+# =============================================================================
+
+extend type Mutation {
+  # ===========================================================================
+  # AUTHENTICATION - LOGIN/LOGOUT
+  # ===========================================================================
+
+  """
+  Authenticate a user with email and password.
+  Returns access token and refresh token on success.
+  """
+  login(input: LoginInput!): LoginPayload!
+    @rateLimit(limit: 10, window: 60)
+    @complexity(value: 5)
+    @audit(action: "auth.login", level: INFO)
+
+  """
+  Logout the current user, invalidating their session.
+  """
+  logout: LogoutPayload!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 20, window: 60)
+    @complexity(value: 1)
+    @audit(action: "auth.logout", level: INFO)
+
+  """
+  Logout from all devices, invalidating all sessions.
+  """
+  logoutAllDevices: LogoutPayload!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 5, window: 60)
+    @complexity(value: 3)
+    @audit(action: "auth.logout_all", level: WARNING)
+
+  """
+  Refresh access token using refresh token.
+  """
+  refreshToken(input: RefreshTokenInput!): RefreshTokenPayload!
+    @rateLimit(limit: 30, window: 60)
+    @complexity(value: 2)
+    @audit(action: "auth.refresh_token", level: DEBUG)
+
+  # ===========================================================================
+  # REGISTRATION
+  # ===========================================================================
+
+  """
+  Register a new user account.
+  Requires email verification before account is activated.
+  """
+  register(input: RegisterInput!): RegisterPayload!
+    @rateLimit(limit: 5, window: 300)
+    @complexity(value: 8)
+    @audit(action: "auth.register", level: INFO)
+
+  """
+  Verify email address using verification token.
+  """
+  verifyEmail(token: String!): VerifyEmailPayload!
+    @rateLimit(limit: 10, window: 60)
+    @complexity(value: 2)
+    @audit(action: "auth.verify_email", level: INFO)
+
+  """
+  Resend email verification link.
+  """
+  resendVerificationEmail(email: Email!): ResendVerificationPayload!
+    @rateLimit(limit: 3, window: 300)
+    @complexity(value: 3)
+    @audit(action: "auth.resend_verification", level: INFO)
+
+  # ===========================================================================
+  # PASSWORD MANAGEMENT
+  # ===========================================================================
+
+  """
+  Request password reset email.
+  """
+  requestPasswordReset(email: Email!): RequestPasswordResetPayload!
+    @rateLimit(limit: 3, window: 300)
+    @complexity(value: 3)
+    @audit(action: "auth.request_password_reset", level: INFO)
+
+  """
+  Reset password using reset token.
+  """
+  resetPassword(input: ResetPasswordInput!): ResetPasswordPayload!
+    @rateLimit(limit: 5, window: 300)
+    @complexity(value: 5)
+    @audit(action: "auth.reset_password", level: WARNING)
+
+  """
+  Change password for authenticated user.
+  """
+  changePassword(input: ChangePasswordInput!): ChangePasswordPayload!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 5, window: 300)
+    @complexity(value: 5)
+    @audit(action: "auth.change_password", level: WARNING)
+
+  # ===========================================================================
+  # MULTI-FACTOR AUTHENTICATION
+  # ===========================================================================
+
+  """
+  Enable MFA for the current user.
+  Returns setup information including QR code for authenticator apps.
+  """
+  enableMfa(method: MfaMethod!): EnableMfaPayload!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 5, window: 60)
+    @complexity(value: 5)
+    @audit(action: "auth.enable_mfa", level: WARNING)
+
+  """
+  Verify and confirm MFA setup.
+  """
+  confirmMfa(code: String!): ConfirmMfaPayload!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 10, window: 60)
+    @complexity(value: 3)
+    @audit(action: "auth.confirm_mfa", level: WARNING)
+
+  """
+  Disable MFA for the current user.
+  Requires current password for verification.
+  """
+  disableMfa(password: String!): DisableMfaPayload!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 3, window: 60)
+    @complexity(value: 5)
+    @audit(action: "auth.disable_mfa", level: CRITICAL)
+
+  """
+  Verify MFA code during login.
+  """
+  verifyMfa(input: VerifyMfaInput!): VerifyMfaPayload!
+    @rateLimit(limit: 5, window: 60)
+    @complexity(value: 3)
+    @audit(action: "auth.verify_mfa", level: INFO)
+
+  """
+  Generate new backup codes for MFA recovery.
+  """
+  regenerateBackupCodes(password: String!): BackupCodesPayload!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 3, window: 300)
+    @complexity(value: 5)
+    @audit(action: "auth.regenerate_backup_codes", level: WARNING)
+
+  # ===========================================================================
+  # OAUTH / SOCIAL LOGIN
+  # ===========================================================================
+
+  """
+  Initiate OAuth flow for a provider.
+  Returns authorization URL to redirect user to.
+  """
+  initiateOAuth(
+    provider: OAuthProvider!
+    redirectUri: String!
+  ): InitiateOAuthPayload!
+    @rateLimit(limit: 10, window: 60)
+    @complexity(value: 2)
+    @audit(action: "auth.initiate_oauth", level: DEBUG)
+
+  """
+  Complete OAuth flow with authorization code.
+  """
+  completeOAuth(input: CompleteOAuthInput!): CompleteOAuthPayload!
+    @rateLimit(limit: 10, window: 60)
+    @complexity(value: 5)
+    @audit(action: "auth.complete_oauth", level: INFO)
+
+  """
+  Link an OAuth provider to existing account.
+  """
+  linkOAuthProvider(input: LinkOAuthInput!): LinkOAuthPayload!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 5, window: 60)
+    @complexity(value: 5)
+    @audit(action: "auth.link_oauth", level: INFO)
+
+  """
+  Unlink an OAuth provider from account.
+  """
+  unlinkOAuthProvider(provider: OAuthProvider!): UnlinkOAuthPayload!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 5, window: 60)
+    @complexity(value: 3)
+    @audit(action: "auth.unlink_oauth", level: WARNING)
+
+  # ===========================================================================
+  # SESSION MANAGEMENT
+  # ===========================================================================
+
+  """
+  List all active sessions for current user.
+  """
+  revokeSession(sessionId: ID!): RevokeSessionPayload!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 20, window: 60)
+    @complexity(value: 2)
+    @audit(action: "auth.revoke_session", level: INFO)
+
+  """
+  Revoke all sessions except current.
+  """
+  revokeOtherSessions: RevokeSessionPayload!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 5, window: 60)
+    @complexity(value: 3)
+    @audit(action: "auth.revoke_other_sessions", level: WARNING)
+
+  # ===========================================================================
+  # API KEY MANAGEMENT
+  # ===========================================================================
+
+  """
+  Create a new API key for programmatic access.
+  """
+  createApiKey(input: CreateApiKeyInput!): CreateApiKeyPayload!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 10, window: 60)
+    @complexity(value: 5)
+    @audit(action: "auth.create_api_key", level: WARNING)
+
+  """
+  Revoke an API key.
+  """
+  revokeApiKey(id: ID!): RevokeApiKeyPayload!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 20, window: 60)
+    @complexity(value: 2)
+    @audit(action: "auth.revoke_api_key", level: WARNING)
+
+  """
+  Rotate an API key (creates new key, revokes old).
+  """
+  rotateApiKey(id: ID!): RotateApiKeyPayload!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 5, window: 60)
+    @complexity(value: 5)
+    @audit(action: "auth.rotate_api_key", level: WARNING)
+
+  # ===========================================================================
+  # ACCOUNT SECURITY
+  # ===========================================================================
+
+  """
+  Request account deletion.
+  Initiates 30-day waiting period before permanent deletion.
+  """
+  requestAccountDeletion(
+    password: String!
+    reason: String
+  ): RequestDeletionPayload!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 1, window: 86400)
+    @complexity(value: 10)
+    @audit(action: "auth.request_account_deletion", level: CRITICAL)
+
+  """
+  Cancel pending account deletion request.
+  """
+  cancelAccountDeletion: CancelDeletionPayload!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 5, window: 60)
+    @complexity(value: 3)
+    @audit(action: "auth.cancel_account_deletion", level: WARNING)
+}
+
+# =============================================================================
+# PAYLOAD DEFINITIONS
+# =============================================================================
+
+"""
+Payload for login mutation
+"""
+type LoginPayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  JWT access token
+  """
+  accessToken: String
+
+  """
+  Refresh token for obtaining new access tokens
+  """
+  refreshToken: String
+
+  """
+  Token expiration timestamp
+  """
+  expiresAt: DateTime
+
+  """
+  The authenticated user
+  """
+  user: User
+
+  """
+  Whether MFA verification is required
+  """
+  requiresMfa: Boolean
+
+  """
+  MFA challenge token (if MFA required)
+  """
+  mfaChallengeToken: String
+}
+
+"""
+Payload for logout mutation
+"""
+type LogoutPayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  Number of sessions terminated
+  """
+  terminatedSessions: Int
+}
+
+"""
+Payload for refresh token mutation
+"""
+type RefreshTokenPayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  New JWT access token
+  """
+  accessToken: String
+
+  """
+  New refresh token (if rotated)
+  """
+  refreshToken: String
+
+  """
+  Token expiration timestamp
+  """
+  expiresAt: DateTime
+}
+
+"""
+Payload for register mutation
+"""
+type RegisterPayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  The created user (pending verification)
+  """
+  user: User
+
+  """
+  Whether email verification was sent
+  """
+  verificationEmailSent: Boolean
+}
+
+"""
+Payload for email verification
+"""
+type VerifyEmailPayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  The verified user
+  """
+  user: User
+
+  """
+  Access token (auto-login after verification)
+  """
+  accessToken: String
+
+  """
+  Refresh token
+  """
+  refreshToken: String
+}
+
+"""
+Payload for resend verification
+"""
+type ResendVerificationPayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  When the verification email was sent
+  """
+  sentAt: DateTime
+}
+
+"""
+Payload for password reset request
+"""
+type RequestPasswordResetPayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  Always returns success for security reasons.
+  Actual email is only sent if account exists.
+  """
+  message: String
+}
+
+"""
+Payload for password reset
+"""
+type ResetPasswordPayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  The user whose password was reset
+  """
+  user: User
+
+  """
+  Access token (auto-login after reset)
+  """
+  accessToken: String
+
+  """
+  Refresh token
+  """
+  refreshToken: String
+}
+
+"""
+Payload for password change
+"""
+type ChangePasswordPayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  When the password was changed
+  """
+  changedAt: DateTime
+
+  """
+  Whether other sessions were invalidated
+  """
+  otherSessionsInvalidated: Boolean
+}
+
+"""
+Payload for MFA enable
+"""
+type EnableMfaPayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  Secret key for authenticator apps
+  """
+  secret: String
+
+  """
+  QR code data URL for authenticator apps
+  """
+  qrCodeDataUrl: String
+
+  """
+  Backup codes for recovery
+  """
+  backupCodes: [String!]
+
+  """
+  Setup token for confirmation
+  """
+  setupToken: String
+}
+
+"""
+Payload for MFA confirmation
+"""
+type ConfirmMfaPayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  Updated user with MFA enabled
+  """
+  user: User
+
+  """
+  Backup codes (shown only once)
+  """
+  backupCodes: [String!]
+}
+
+"""
+Payload for MFA disable
+"""
+type DisableMfaPayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  Updated user with MFA disabled
+  """
+  user: User
+}
+
+"""
+Payload for MFA verification
+"""
+type VerifyMfaPayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  JWT access token
+  """
+  accessToken: String
+
+  """
+  Refresh token
+  """
+  refreshToken: String
+
+  """
+  Token expiration timestamp
+  """
+  expiresAt: DateTime
+
+  """
+  The authenticated user
+  """
+  user: User
+}
+
+"""
+Payload for backup codes regeneration
+"""
+type BackupCodesPayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  New backup codes
+  """
+  backupCodes: [String!]!
+
+  """
+  When the codes were generated
+  """
+  generatedAt: DateTime
+}
+
+"""
+Payload for OAuth initiation
+"""
+type InitiateOAuthPayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  Authorization URL to redirect user to
+  """
+  authorizationUrl: String
+
+  """
+  State parameter for CSRF protection
+  """
+  state: String
+}
+
+"""
+Payload for OAuth completion
+"""
+type CompleteOAuthPayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  JWT access token
+  """
+  accessToken: String
+
+  """
+  Refresh token
+  """
+  refreshToken: String
+
+  """
+  Token expiration timestamp
+  """
+  expiresAt: DateTime
+
+  """
+  The authenticated user
+  """
+  user: User
+
+  """
+  Whether this is a new user registration
+  """
+  isNewUser: Boolean
+}
+
+"""
+Payload for OAuth linking
+"""
+type LinkOAuthPayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  Updated user with linked provider
+  """
+  user: User
+
+  """
+  The linked provider
+  """
+  linkedProvider: OAuthProvider
+}
+
+"""
+Payload for OAuth unlinking
+"""
+type UnlinkOAuthPayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  Updated user with unlinked provider
+  """
+  user: User
+
+  """
+  The unlinked provider
+  """
+  unlinkedProvider: OAuthProvider
+}
+
+"""
+Payload for session revocation
+"""
+type RevokeSessionPayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  Number of sessions revoked
+  """
+  revokedCount: Int
+}
+
+"""
+Payload for API key creation
+"""
+type CreateApiKeyPayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  The created API key (shown only once)
+  """
+  apiKey: ApiKey
+
+  """
+  The raw key value (shown only once!)
+  """
+  keyValue: String
+}
+
+"""
+Payload for API key revocation
+"""
+type RevokeApiKeyPayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  ID of the revoked key
+  """
+  revokedKeyId: ID
+}
+
+"""
+Payload for API key rotation
+"""
+type RotateApiKeyPayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  The new API key
+  """
+  newApiKey: ApiKey
+
+  """
+  The new raw key value (shown only once!)
+  """
+  newKeyValue: String
+
+  """
+  ID of the old revoked key
+  """
+  revokedKeyId: ID
+}
+
+"""
+Payload for account deletion request
+"""
+type RequestDeletionPayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  When the account will be permanently deleted
+  """
+  scheduledDeletionDate: DateTime
+
+  """
+  Confirmation sent to email
+  """
+  confirmationEmailSent: Boolean
+}
+
+"""
+Payload for canceling account deletion
+"""
+type CancelDeletionPayload implements MutationPayload {
+  success: Boolean!
+  errors: [UserError!]!
+  clientMutationId: String
+
+  """
+  The user whose deletion was canceled
+  """
+  user: User
+}
+
+# =============================================================================
+# INPUT DEFINITIONS
+# =============================================================================
+
+"""
+Input for login mutation
+"""
+input LoginInput {
+  """
+  User email address
+  """
+  email: Email!
+
+  """
+  User password
+  """
+  password: String!
+
+  """
+  Remember me for extended session
+  """
+  rememberMe: Boolean = false
+
+  """
+  Device identifier for session tracking
+  """
+  deviceId: String
+
+  """
+  Device information
+  """
+  deviceInfo: DeviceInfoInput
+}
+
+"""
+Input for refresh token
+"""
+input RefreshTokenInput {
+  """
+  Current refresh token
+  """
+  refreshToken: String!
+}
+
+"""
+Input for registration
+"""
+input RegisterInput {
+  """
+  Email address
+  """
+  email: Email!
+
+  """
+  Password (min 8 chars, requires uppercase, lowercase, number)
+  """
+  password: String!
+
+  """
+  Display name
+  """
+  name: String!
+
+  """
+  Agree to terms of service
+  """
+  acceptTerms: Boolean!
+
+  """
+  Optional invitation code
+  """
+  inviteCode: String
+
+  """
+  Device information
+  """
+  deviceInfo: DeviceInfoInput
+}
+
+"""
+Input for password reset
+"""
+input ResetPasswordInput {
+  """
+  Reset token from email
+  """
+  token: String!
+
+  """
+  New password
+  """
+  newPassword: String!
+}
+
+"""
+Input for password change
+"""
+input ChangePasswordInput {
+  """
+  Current password
+  """
+  currentPassword: String!
+
+  """
+  New password
+  """
+  newPassword: String!
+
+  """
+  Logout from other devices
+  """
+  logoutOtherDevices: Boolean = false
+}
+
+"""
+Input for MFA verification
+"""
+input VerifyMfaInput {
+  """
+  MFA challenge token from login
+  """
+  challengeToken: String!
+
+  """
+  MFA code from authenticator or SMS
+  """
+  code: String!
+
+  """
+  Whether this is a backup code
+  """
+  isBackupCode: Boolean = false
+}
+
+"""
+Input for completing OAuth flow
+"""
+input CompleteOAuthInput {
+  """
+  OAuth provider
+  """
+  provider: OAuthProvider!
+
+  """
+  Authorization code from provider
+  """
+  code: String!
+
+  """
+  State parameter for CSRF verification
+  """
+  state: String!
+
+  """
+  Redirect URI used in authorization
+  """
+  redirectUri: String!
+}
+
+"""
+Input for linking OAuth provider
+"""
+input LinkOAuthInput {
+  """
+  OAuth provider
+  """
+  provider: OAuthProvider!
+
+  """
+  Authorization code from provider
+  """
+  code: String!
+
+  """
+  State parameter
+  """
+  state: String!
+
+  """
+  Redirect URI
+  """
+  redirectUri: String!
+}
+
+"""
+Device information for session tracking
+"""
+input DeviceInfoInput {
+  """
+  Device name
+  """
+  name: String
+
+  """
+  Device type
+  """
+  type: DeviceType
+
+  """
+  Browser or client
+  """
+  browser: String
+
+  """
+  Operating system
+  """
+  os: String
+
+  """
+  IP address (auto-detected if not provided)
+  """
+  ipAddress: String
+}
+
+# =============================================================================
+# SUPPORTING TYPES & ENUMS
+# =============================================================================
+
+"""
+Multi-factor authentication methods
+"""
+enum MfaMethod {
+  """
+  Time-based one-time password (authenticator app)
+  """
+  TOTP
+
+  """
+  SMS-based verification
+  """
+  SMS
+
+  """
+  Email-based verification
+  """
+  EMAIL
+
+  """
+  Hardware security key (WebAuthn)
+  """
+  WEBAUTHN
+}
+
+"""
+OAuth providers
+"""
+enum OAuthProvider {
+  """
+  Google OAuth
+  """
+  GOOGLE
+
+  """
+  GitHub OAuth
+  """
+  GITHUB
+
+  """
+  Microsoft OAuth
+  """
+  MICROSOFT
+
+  """
+  Apple OAuth
+  """
+  APPLE
+
+  """
+  Discord OAuth
+  """
+  DISCORD
+}
+
+"""
+Device types
+"""
+enum DeviceType {
+  """
+  Desktop computer
+  """
+  DESKTOP
+
+  """
+  Mobile phone
+  """
+  MOBILE
+
+  """
+  Tablet device
+  """
+  TABLET
+
+  """
+  Other device
+  """
+  OTHER
+}
+
+"""
+Represents an active session
+"""
+type Session implements Node {
+  id: ID!
+
+  """
+  Device information
+  """
+  device: DeviceInfo
+
+  """
+  IP address
+  """
+  ipAddress: String
+
+  """
+  Geographic location (if available)
+  """
+  location: String
+
+  """
+  When the session was created
+  """
+  createdAt: DateTime!
+
+  """
+  When the session was last active
+  """
+  lastActiveAt: DateTime!
+
+  """
+  Whether this is the current session
+  """
+  isCurrent: Boolean!
+
+  """
+  User agent string
+  """
+  userAgent: String
+}
+
+"""
+Device information
+"""
+type DeviceInfo {
+  """
+  Device name
+  """
+  name: String
+
+  """
+  Device type
+  """
+  type: DeviceType
+
+  """
+  Browser or client
+  """
+  browser: String
+
+  """
+  Operating system
+  """
+  os: String
+}

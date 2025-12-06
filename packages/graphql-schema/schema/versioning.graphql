@@ -1,0 +1,960 @@
+# =============================================================================
+# SCHEMA VERSIONING & GOVERNANCE - Neurectomy GraphQL Schema
+# =============================================================================
+# Provides infrastructure for schema evolution, deprecation tracking, and
+# backward compatibility management across API versions.
+# =============================================================================
+
+# =============================================================================
+# VERSION METADATA TYPES
+# =============================================================================
+
+"""
+Schema version information following semantic versioning.
+"""
+type SchemaVersion {
+  """
+  Major version - incremented for breaking changes.
+  """
+  major: Int!
+
+  """
+  Minor version - incremented for backward-compatible additions.
+  """
+  minor: Int!
+
+  """
+  Patch version - incremented for backward-compatible fixes.
+  """
+  patch: Int!
+
+  """
+  Full version string (e.g., "2.3.1")
+  """
+  version: String!
+
+  """
+  ISO 8601 date when this version was released.
+  """
+  releaseDate: DateTime!
+
+  """
+  Whether this is the current active version.
+  """
+  isLatest: Boolean!
+
+  """
+  Whether this version is still supported.
+  """
+  isSupported: Boolean!
+
+  """
+  Date when this version will be/was deprecated.
+  """
+  deprecatedAt: DateTime
+
+  """
+  Date when this version will be/was sunset (end of life).
+  """
+  sunsetAt: DateTime
+
+  """
+  Changelog entries for this version.
+  """
+  changelog: [ChangelogEntry!]!
+
+  """
+  Breaking changes introduced in this version (if major bump).
+  """
+  breakingChanges: [BreakingChange!]!
+
+  """
+  Migration guide URL for upgrading to this version.
+  """
+  migrationGuideUrl: String
+}
+
+"""
+Individual changelog entry.
+"""
+type ChangelogEntry {
+  """
+  Type of change.
+  """
+  type: ChangeType!
+
+  """
+  Human-readable description of the change.
+  """
+  description: String!
+
+  """
+  Affected types or fields (e.g., "Agent.status", "createAgent")
+  """
+  affectedPaths: [String!]!
+
+  """
+  Related issue or PR number.
+  """
+  issueNumber: String
+
+  """
+  Author of the change.
+  """
+  author: String
+}
+
+"""
+Type of schema change.
+"""
+enum ChangeType {
+  """
+  New type, field, or feature added.
+  """
+  ADDED
+
+  """
+  Existing type, field, or behavior modified.
+  """
+  CHANGED
+
+  """
+  Type, field, or feature removed.
+  """
+  REMOVED
+
+  """
+  Type or field marked as deprecated.
+  """
+  DEPRECATED
+
+  """
+  Bug fix or correction.
+  """
+  FIXED
+
+  """
+  Security-related change.
+  """
+  SECURITY
+
+  """
+  Performance improvement.
+  """
+  PERFORMANCE
+}
+
+"""
+Breaking change documentation.
+"""
+type BreakingChange {
+  """
+  Path to the affected element (e.g., "Query.agent", "Agent.status")
+  """
+  path: String!
+
+  """
+  Type of breaking change.
+  """
+  breakingType: BreakingChangeType!
+
+  """
+  Human-readable description of what changed.
+  """
+  description: String!
+
+  """
+  The old behavior or signature.
+  """
+  previousBehavior: String!
+
+  """
+  The new behavior or signature.
+  """
+  newBehavior: String!
+
+  """
+  Migration steps to update client code.
+  """
+  migrationSteps: [String!]!
+
+  """
+  Example of updated client code.
+  """
+  codeExample: String
+}
+
+"""
+Types of breaking changes.
+"""
+enum BreakingChangeType {
+  """
+  A field was removed from a type.
+  """
+  FIELD_REMOVED
+
+  """
+  A type was removed from the schema.
+  """
+  TYPE_REMOVED
+
+  """
+  An enum value was removed.
+  """
+  ENUM_VALUE_REMOVED
+
+  """
+  A required argument was added.
+  """
+  REQUIRED_ARGUMENT_ADDED
+
+  """
+  A field type was changed in an incompatible way.
+  """
+  TYPE_CHANGED
+
+  """
+  An argument type was changed.
+  """
+  ARGUMENT_TYPE_CHANGED
+
+  """
+  Default value was changed.
+  """
+  DEFAULT_VALUE_CHANGED
+
+  """
+  A field was made non-nullable.
+  """
+  MADE_NON_NULLABLE
+
+  """
+  A field was made nullable.
+  """
+  MADE_NULLABLE
+
+  """
+  Interface implementation changed.
+  """
+  INTERFACE_CHANGED
+
+  """
+  Union type members changed.
+  """
+  UNION_CHANGED
+}
+
+# =============================================================================
+# DEPRECATION TRACKING
+# =============================================================================
+
+"""
+Deprecation metadata for tracking field/type lifecycle.
+"""
+type DeprecationInfo {
+  """
+  Path to the deprecated element.
+  """
+  path: String!
+
+  """
+  Type of element (TYPE, FIELD, ARGUMENT, ENUM_VALUE, etc.)
+  """
+  elementType: SchemaElementType!
+
+  """
+  Deprecation reason from schema directive.
+  """
+  reason: String!
+
+  """
+  Recommended replacement path or approach.
+  """
+  replacement: String
+
+  """
+  Date when deprecation was announced.
+  """
+  deprecatedSince: DateTime!
+
+  """
+  Schema version when deprecated.
+  """
+  deprecatedInVersion: String!
+
+  """
+  Date when the element will be removed.
+  """
+  sunsetDate: DateTime
+
+  """
+  Schema version when element will be removed.
+  """
+  removalVersion: String
+
+  """
+  Current usage count (if tracking enabled).
+  """
+  usageCount: Int
+
+  """
+  Percentage of requests still using deprecated element.
+  """
+  usagePercentage: Float
+
+  """
+  Whether usage has been detected in the last 30 days.
+  """
+  hasRecentUsage: Boolean!
+
+  """
+  Client applications still using this element.
+  """
+  affectedClients: [ClientUsage!]
+}
+
+"""
+Schema element type for deprecation tracking.
+"""
+enum SchemaElementType {
+  TYPE
+  FIELD
+  ARGUMENT
+  INPUT_FIELD
+  ENUM_VALUE
+  DIRECTIVE
+  INTERFACE
+  UNION
+  SCALAR
+}
+
+"""
+Client usage information for deprecated elements.
+"""
+type ClientUsage {
+  """
+  Client identifier (e.g., app name, API key hash).
+  """
+  clientId: String!
+
+  """
+  Client name if known.
+  """
+  clientName: String
+
+  """
+  Client version if known.
+  """
+  clientVersion: String
+
+  """
+  Last time this client used the deprecated element.
+  """
+  lastUsed: DateTime!
+
+  """
+  Number of requests using the deprecated element.
+  """
+  requestCount: Int!
+}
+
+# =============================================================================
+# COMPATIBILITY CHECKING
+# =============================================================================
+
+"""
+Result of a schema compatibility check.
+"""
+type CompatibilityReport {
+  """
+  Whether the schemas are compatible.
+  """
+  isCompatible: Boolean!
+
+  """
+  Compatibility level achieved.
+  """
+  compatibilityLevel: CompatibilityLevel!
+
+  """
+  List of breaking changes found.
+  """
+  breakingChanges: [BreakingChange!]!
+
+  """
+  List of non-breaking additions.
+  """
+  additions: [SchemaAddition!]!
+
+  """
+  List of deprecations.
+  """
+  deprecations: [DeprecationInfo!]!
+
+  """
+  Warnings that don't block compatibility.
+  """
+  warnings: [CompatibilityWarning!]!
+
+  """
+  Schema versions being compared.
+  """
+  sourceVersion: String!
+  targetVersion: String!
+
+  """
+  When the check was performed.
+  """
+  checkedAt: DateTime!
+}
+
+"""
+Compatibility level between schema versions.
+"""
+enum CompatibilityLevel {
+  """
+  Fully compatible - no changes needed.
+  """
+  FULL
+
+  """
+  Backward compatible - new features added, old features work.
+  """
+  BACKWARD
+
+  """
+  Forward compatible - old clients work, new features may not.
+  """
+  FORWARD
+
+  """
+  Breaking - client updates required.
+  """
+  BREAKING
+
+  """
+  Unable to determine compatibility.
+  """
+  UNKNOWN
+}
+
+"""
+Non-breaking schema addition.
+"""
+type SchemaAddition {
+  """
+  Path to the new element.
+  """
+  path: String!
+
+  """
+  Type of addition.
+  """
+  additionType: SchemaElementType!
+
+  """
+  Description of what was added.
+  """
+  description: String!
+}
+
+"""
+Compatibility warning (non-blocking).
+"""
+type CompatibilityWarning {
+  """
+  Warning code.
+  """
+  code: String!
+
+  """
+  Warning message.
+  """
+  message: String!
+
+  """
+  Affected path.
+  """
+  path: String
+
+  """
+  Suggested action.
+  """
+  suggestion: String
+}
+
+# =============================================================================
+# SCHEMA INTROSPECTION EXTENSIONS
+# =============================================================================
+
+"""
+Extended schema metadata beyond standard introspection.
+"""
+type SchemaMetadata {
+  """
+  Current schema version.
+  """
+  version: SchemaVersion!
+
+  """
+  All available schema versions.
+  """
+  availableVersions: [SchemaVersion!]!
+
+  """
+  All deprecated elements in current schema.
+  """
+  deprecations: [DeprecationInfo!]!
+
+  """
+  Schema health metrics.
+  """
+  health: SchemaHealth!
+
+  """
+  Feature flags affecting schema.
+  """
+  featureFlags: [FeatureFlag!]!
+
+  """
+  Experimental types/fields in current schema.
+  """
+  experimentalFeatures: [ExperimentalFeature!]!
+}
+
+"""
+Schema health metrics.
+"""
+type SchemaHealth {
+  """
+  Overall health score (0-100).
+  """
+  score: Int!
+
+  """
+  Number of deprecated elements.
+  """
+  deprecatedCount: Int!
+
+  """
+  Number of deprecated elements past sunset date.
+  """
+  overdueDeprecations: Int!
+
+  """
+  Percentage of schema with documentation.
+  """
+  documentationCoverage: Float!
+
+  """
+  Number of types without descriptions.
+  """
+  undocumentedTypes: Int!
+
+  """
+  Number of fields without descriptions.
+  """
+  undocumentedFields: Int!
+
+  """
+  Average query complexity.
+  """
+  averageQueryComplexity: Float
+
+  """
+  Date of last schema update.
+  """
+  lastUpdated: DateTime!
+}
+
+"""
+Feature flag affecting schema behavior.
+"""
+type FeatureFlag {
+  """
+  Flag name.
+  """
+  name: String!
+
+  """
+  Whether the flag is enabled.
+  """
+  enabled: Boolean!
+
+  """
+  Description of what the flag controls.
+  """
+  description: String!
+
+  """
+  Types/fields gated by this flag.
+  """
+  affectedPaths: [String!]!
+}
+
+"""
+Experimental feature in the schema.
+"""
+type ExperimentalFeature {
+  """
+  Feature name.
+  """
+  name: String!
+
+  """
+  Path to experimental type/field.
+  """
+  path: String!
+
+  """
+  Description of the experimental feature.
+  """
+  description: String!
+
+  """
+  Date when feature was introduced.
+  """
+  introducedAt: DateTime!
+
+  """
+  Expected graduation date (when it becomes stable).
+  """
+  expectedStableDate: DateTime
+
+  """
+  Feedback URL for the feature.
+  """
+  feedbackUrl: String
+}
+
+# =============================================================================
+# QUERIES FOR VERSIONING
+# =============================================================================
+
+extend type Query {
+  """
+  Get current schema version information.
+  """
+  schemaVersion: SchemaVersion!
+
+  """
+  Get all available schema versions.
+  """
+  schemaVersions(
+    """
+    Include unsupported (sunset) versions.
+    """
+    includeUnsupported: Boolean = false
+  ): [SchemaVersion!]!
+
+  """
+  Get schema metadata including deprecations and health.
+  """
+  schemaMetadata: SchemaMetadata!
+
+  """
+  Get all deprecated elements in the schema.
+  """
+  deprecations(
+    """
+    Filter by element type.
+    """
+    elementType: SchemaElementType
+    """
+    Only show elements with recent usage.
+    """
+    hasRecentUsage: Boolean
+    """
+    Only show elements past sunset date.
+    """
+    isPastSunset: Boolean
+  ): [DeprecationInfo!]!
+
+  """
+  Check compatibility between two schema versions.
+  """
+  checkCompatibility(
+    """
+    Source schema version (default: current).
+    """
+    sourceVersion: String
+    """
+    Target schema version to compare against.
+    """
+    targetVersion: String!
+  ): CompatibilityReport!
+
+  """
+  Get migration guide between schema versions.
+  """
+  migrationGuide(
+    """
+    Version to migrate from.
+    """
+    fromVersion: String!
+    """
+    Version to migrate to.
+    """
+    toVersion: String!
+  ): MigrationGuide!
+}
+
+# =============================================================================
+# MIGRATION SUPPORT
+# =============================================================================
+
+"""
+Migration guide between schema versions.
+"""
+type MigrationGuide {
+  """
+  Source version.
+  """
+  fromVersion: String!
+
+  """
+  Target version.
+  """
+  toVersion: String!
+
+  """
+  Estimated effort to migrate.
+  """
+  estimatedEffort: MigrationEffort!
+
+  """
+  Ordered list of migration steps.
+  """
+  steps: [MigrationStep!]!
+
+  """
+  Code codemods available for automatic migration.
+  """
+  codemods: [Codemod!]!
+
+  """
+  Links to relevant documentation.
+  """
+  documentationLinks: [String!]!
+
+  """
+  Test cases to verify migration success.
+  """
+  verificationSteps: [String!]!
+}
+
+"""
+Estimated migration effort.
+"""
+enum MigrationEffort {
+  """
+  Trivial - no code changes needed.
+  """
+  NONE
+
+  """
+  Low - minor changes, can be done quickly.
+  """
+  LOW
+
+  """
+  Medium - moderate changes, may take a few hours.
+  """
+  MEDIUM
+
+  """
+  High - significant changes, may take days.
+  """
+  HIGH
+
+  """
+  Critical - major refactoring required.
+  """
+  CRITICAL
+}
+
+"""
+Individual migration step.
+"""
+type MigrationStep {
+  """
+  Step order number.
+  """
+  order: Int!
+
+  """
+  Step title.
+  """
+  title: String!
+
+  """
+  Detailed description.
+  """
+  description: String!
+
+  """
+  Affected paths in the codebase.
+  """
+  affectedPaths: [String!]!
+
+  """
+  Before/after code example.
+  """
+  codeExample: CodeExample
+
+  """
+  Whether this step is required.
+  """
+  isRequired: Boolean!
+
+  """
+  Whether a codemod exists for this step.
+  """
+  hasCodemod: Boolean!
+}
+
+"""
+Code example showing before/after migration.
+"""
+type CodeExample {
+  """
+  Code before migration.
+  """
+  before: String!
+
+  """
+  Code after migration.
+  """
+  after: String!
+
+  """
+  Programming language.
+  """
+  language: String!
+}
+
+"""
+Automatic code transformation for migration.
+"""
+type Codemod {
+  """
+  Codemod identifier.
+  """
+  id: String!
+
+  """
+  Human-readable name.
+  """
+  name: String!
+
+  """
+  Description of what the codemod does.
+  """
+  description: String!
+
+  """
+  Target programming language.
+  """
+  language: String!
+
+  """
+  Command to run the codemod.
+  """
+  command: String!
+
+  """
+  NPM package or tool containing the codemod.
+  """
+  package: String
+}
+
+# =============================================================================
+# SUBSCRIPTIONS FOR VERSION EVENTS
+# =============================================================================
+
+extend type Subscription {
+  """
+  Subscribe to schema version changes.
+  """
+  schemaVersionChanged: SchemaVersionEvent!
+
+  """
+  Subscribe to deprecation sunset warnings.
+  """
+  deprecationWarning(
+    """
+    Days before sunset to warn.
+    """
+    daysBeforeSunset: Int = 30
+  ): DeprecationWarningEvent!
+}
+
+"""
+Event emitted when schema version changes.
+"""
+type SchemaVersionEvent {
+  """
+  New schema version.
+  """
+  newVersion: SchemaVersion!
+
+  """
+  Previous schema version.
+  """
+  previousVersion: SchemaVersion!
+
+  """
+  Type of version change.
+  """
+  changeType: VersionChangeType!
+
+  """
+  When the change occurred.
+  """
+  timestamp: DateTime!
+}
+
+"""
+Type of version change.
+"""
+enum VersionChangeType {
+  MAJOR
+  MINOR
+  PATCH
+  PRERELEASE
+}
+
+"""
+Warning event for upcoming deprecation sunset.
+"""
+type DeprecationWarningEvent {
+  """
+  Deprecated element info.
+  """
+  deprecation: DeprecationInfo!
+
+  """
+  Days until sunset.
+  """
+  daysUntilSunset: Int!
+
+  """
+  Warning severity.
+  """
+  severity: WarningSeverity!
+
+  """
+  Suggested action.
+  """
+  suggestedAction: String!
+}
+
+"""
+Warning severity levels.
+"""
+enum WarningSeverity {
+  INFO
+  WARNING
+  URGENT
+  CRITICAL
+}

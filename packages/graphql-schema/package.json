@@ -1,0 +1,70 @@
+{
+  "name": "@neurectomy/graphql-schema",
+  "version": "0.1.0",
+  "description": "Unified GraphQL schema package for NEURECTOMY",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./schema": "./schema/schema.graphql",
+    "./generated": "./generated/typescript/index.ts"
+  },
+  "files": [
+    "dist",
+    "schema",
+    "generated"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "validate": "graphql-inspector validate './schema/**/*.graphql' './schema/schema.graphql'",
+    "validate:strict": "node scripts/validate-schema.js --strict",
+    "check:breaking": "graphql-inspector diff './schema/**/*.graphql' --rule suppressRemovalOfDeprecatedField",
+    "check:docs": "node scripts/check-documentation-coverage.js",
+    "codegen": "graphql-codegen --config codegen.yml",
+    "codegen:watch": "graphql-codegen --config codegen.yml --watch",
+    "codegen:rust": "graphql-codegen --config codegen.yml --require ts-node/register",
+    "codegen:python": "graphql-codegen --config codegen.yml --require ts-node/register",
+    "introspect": "graphql-codegen --config codegen.yml && node scripts/introspect.js",
+    "lint": "eslint src && graphql-inspector lint './schema/**/*.graphql'",
+    "lint:fix": "eslint src --fix",
+    "typecheck": "tsc --noEmit",
+    "docs:generate": "node scripts/generate-docs.js",
+    "test": "vitest run",
+    "test:watch": "vitest watch"
+  },
+  "dependencies": {
+    "graphql": "^16.8.1",
+    "graphql-tag": "^2.12.6"
+  },
+  "devDependencies": {
+    "@graphql-codegen/add": "^5.0.0",
+    "@graphql-codegen/cli": "^5.0.0",
+    "@graphql-codegen/fragment-matcher": "^5.0.0",
+    "@graphql-codegen/introspection": "^4.0.0",
+    "@graphql-codegen/schema-ast": "^4.0.0",
+    "@graphql-codegen/typed-document-node": "^5.0.1",
+    "@graphql-codegen/typescript": "^4.0.1",
+    "@graphql-codegen/typescript-graphql-request": "^6.0.1",
+    "@graphql-codegen/typescript-operations": "^4.0.1",
+    "@graphql-codegen/typescript-react-query": "^6.0.0",
+    "@graphql-inspector/cli": "^4.0.3",
+    "graphql-ws": "^5.14.3",
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.0"
+  },
+  "peerDependencies": {
+    "@tanstack/react-query": "^5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@tanstack/react-query": {
+      "optional": true
+    }
+  }
+}

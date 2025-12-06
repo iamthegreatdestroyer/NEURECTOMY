@@ -1,0 +1,1526 @@
+# =============================================================================
+# CONVERSATION MUTATIONS
+# =============================================================================
+# Unified mutation patterns for conversation management, messaging, and branches.
+# All mutations follow the MutationResponse pattern with success, message, errors.
+# =============================================================================
+
+extend type Mutation {
+  # ---------------------------------------------------------------------------
+  # CONVERSATION LIFECYCLE
+  # ---------------------------------------------------------------------------
+
+  """
+  Create a new conversation
+  """
+  createConversation(
+    input: CreateConversationInput!
+  ): CreateConversationPayload!
+
+  """
+  Update a conversation
+  """
+  updateConversation(
+    id: ID!
+    input: UpdateConversationInput!
+  ): UpdateConversationPayload!
+
+  """
+  Delete a conversation
+  """
+  deleteConversation(id: ID!): DeleteConversationPayload!
+
+  """
+  Archive a conversation
+  """
+  archiveConversation(id: ID!): ArchiveConversationPayload!
+
+  """
+  Restore an archived conversation
+  """
+  restoreConversation(id: ID!): RestoreConversationPayload!
+
+  """
+  Pin/unpin a conversation
+  """
+  pinConversation(id: ID!, pinned: Boolean!): PinConversationPayload!
+
+  # ---------------------------------------------------------------------------
+  # MESSAGING
+  # ---------------------------------------------------------------------------
+
+  """
+  Send a message in a conversation
+  """
+  sendMessage(input: SendMessageInput!): SendMessagePayload!
+
+  """
+  Update a message (user messages only)
+  """
+  updateMessage(id: ID!, input: UpdateMessageInput!): UpdateMessagePayload!
+
+  """
+  Delete a message
+  """
+  deleteMessage(id: ID!): DeleteMessagePayload!
+
+  """
+  Regenerate AI response
+  """
+  regenerateResponse(
+    input: RegenerateResponseInput!
+  ): RegenerateResponsePayload!
+
+  """
+  Edit message and resend
+  """
+  editAndResend(input: EditAndResendInput!): EditAndResendPayload!
+
+  """
+  Stop streaming response
+  """
+  stopStreaming(conversationId: ID!): StopStreamingPayload!
+
+  # ---------------------------------------------------------------------------
+  # MESSAGE FEEDBACK
+  # ---------------------------------------------------------------------------
+
+  """
+  Provide feedback on a message
+  """
+  submitMessageFeedback(
+    input: MessageFeedbackInput!
+  ): SubmitMessageFeedbackPayload!
+
+  """
+  Remove feedback from a message
+  """
+  removeMessageFeedback(messageId: ID!): RemoveMessageFeedbackPayload!
+
+  # ---------------------------------------------------------------------------
+  # CONVERSATION BRANCHING
+  # ---------------------------------------------------------------------------
+
+  """
+  Create a branch from a message
+  """
+  createBranch(input: CreateBranchInput!): CreateBranchPayload!
+
+  """
+  Merge a branch into main conversation
+  """
+  mergeBranch(input: MergeBranchInput!): MergeBranchPayload!
+
+  """
+  Delete a branch
+  """
+  deleteBranch(branchId: ID!): DeleteBranchPayload!
+
+  """
+  Switch to a different branch
+  """
+  switchBranch(conversationId: ID!, branchId: ID!): SwitchBranchPayload!
+
+  # ---------------------------------------------------------------------------
+  # CONVERSATION EXPORT/IMPORT
+  # ---------------------------------------------------------------------------
+
+  """
+  Export a conversation
+  """
+  exportConversation(
+    input: ExportConversationInput!
+  ): ExportConversationPayload!
+
+  """
+  Import a conversation
+  """
+  importConversation(
+    input: ImportConversationInput!
+  ): ImportConversationPayload!
+
+  # ---------------------------------------------------------------------------
+  # TYPING AND PRESENCE
+  # ---------------------------------------------------------------------------
+
+  """
+  Send typing indicator
+  """
+  sendTypingIndicator(input: TypingIndicatorInput!): SendTypingIndicatorPayload!
+
+  """
+  Mark messages as read
+  """
+  markRead(input: MarkReadInput!): MarkReadPayload!
+
+  # ---------------------------------------------------------------------------
+  # ATTACHMENTS
+  # ---------------------------------------------------------------------------
+
+  """
+  Upload attachment to conversation
+  """
+  uploadAttachment(
+    conversationId: ID!
+    attachment: AttachmentInput!
+  ): UploadAttachmentPayload!
+
+  """
+  Delete attachment
+  """
+  deleteAttachment(attachmentId: ID!): DeleteAttachmentPayload!
+
+  # ---------------------------------------------------------------------------
+  # CONVERSATION SHARING
+  # ---------------------------------------------------------------------------
+
+  """
+  Generate shareable link
+  """
+  generateShareLink(
+    conversationId: ID!
+    input: GenerateShareLinkInput
+  ): GenerateShareLinkPayload!
+
+  """
+  Revoke shareable link
+  """
+  revokeShareLink(conversationId: ID!, linkId: ID!): RevokeShareLinkPayload!
+
+  """
+  Fork shared conversation
+  """
+  forkConversation(shareToken: String!): ForkConversationPayload!
+
+  # ---------------------------------------------------------------------------
+  # CONVERSATION TEMPLATES
+  # ---------------------------------------------------------------------------
+
+  """
+  Save conversation as template
+  """
+  saveAsTemplate(
+    conversationId: ID!
+    input: SaveTemplateInput!
+  ): SaveTemplatePayload!
+
+  """
+  Create conversation from template
+  """
+  createFromTemplate(templateId: ID!, agentId: ID!): CreateFromTemplatePayload!
+}
+
+# =============================================================================
+# MUTATION PAYLOADS
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# CONVERSATION LIFECYCLE PAYLOADS
+# -----------------------------------------------------------------------------
+
+"""
+Payload for createConversation mutation
+"""
+type CreateConversationPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Created conversation
+  """
+  conversation: Conversation
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for updateConversation mutation
+"""
+type UpdateConversationPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Updated conversation
+  """
+  conversation: Conversation
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for deleteConversation mutation
+"""
+type DeleteConversationPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Deleted conversation ID
+  """
+  deletedConversationId: ID
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for archiveConversation mutation
+"""
+type ArchiveConversationPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Archived conversation
+  """
+  conversation: Conversation
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for restoreConversation mutation
+"""
+type RestoreConversationPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Restored conversation
+  """
+  conversation: Conversation
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for pinConversation mutation
+"""
+type PinConversationPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Updated conversation
+  """
+  conversation: Conversation
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+# -----------------------------------------------------------------------------
+# MESSAGING PAYLOADS
+# -----------------------------------------------------------------------------
+
+"""
+Payload for sendMessage mutation
+"""
+type SendMessagePayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Sent user message
+  """
+  userMessage: Message
+
+  """
+  AI response message (if not streaming)
+  """
+  aiResponse: Message
+
+  """
+  Streaming session ID (if streaming)
+  """
+  streamSessionId: ID
+
+  """
+  Updated conversation
+  """
+  conversation: Conversation
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for updateMessage mutation
+"""
+type UpdateMessagePayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Updated message
+  """
+  updatedMessage: Message
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for deleteMessage mutation
+"""
+type DeleteMessagePayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Deleted message ID
+  """
+  deletedMessageId: ID
+
+  """
+  Updated conversation
+  """
+  conversation: Conversation
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for regenerateResponse mutation
+"""
+type RegenerateResponsePayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Original message
+  """
+  originalMessage: Message
+
+  """
+  New AI response
+  """
+  newResponse: Message
+
+  """
+  Streaming session ID (if streaming)
+  """
+  streamSessionId: ID
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for editAndResend mutation
+"""
+type EditAndResendPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Edited message
+  """
+  editedMessage: Message
+
+  """
+  New AI response
+  """
+  newResponse: Message
+
+  """
+  Messages that were removed
+  """
+  removedMessageIds: [ID!]
+
+  """
+  Streaming session ID (if streaming)
+  """
+  streamSessionId: ID
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for stopStreaming mutation
+"""
+type StopStreamingPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Partial message content
+  """
+  partialMessage: Message
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+# -----------------------------------------------------------------------------
+# FEEDBACK PAYLOADS
+# -----------------------------------------------------------------------------
+
+"""
+Payload for submitMessageFeedback mutation
+"""
+type SubmitMessageFeedbackPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Message with feedback
+  """
+  messageWithFeedback: Message
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for removeMessageFeedback mutation
+"""
+type RemoveMessageFeedbackPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Updated message
+  """
+  messageWithoutFeedback: Message
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+# -----------------------------------------------------------------------------
+# BRANCHING PAYLOADS
+# -----------------------------------------------------------------------------
+
+"""
+Payload for createBranch mutation
+"""
+type CreateBranchPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Created branch
+  """
+  branch: ConversationBranch
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Conversation branch type
+"""
+type ConversationBranch {
+  """
+  Branch ID
+  """
+  id: ID!
+
+  """
+  Branch name
+  """
+  name: String
+
+  """
+  Parent conversation ID
+  """
+  parentConversationId: ID!
+
+  """
+  Branch point message ID
+  """
+  branchPointMessageId: ID!
+
+  """
+  Messages in this branch
+  """
+  messages(first: Int, after: String): MessageConnection!
+
+  """
+  Created at
+  """
+  createdAt: DateTime!
+
+  """
+  Active flag
+  """
+  isActive: Boolean!
+}
+
+"""
+Payload for mergeBranch mutation
+"""
+type MergeBranchPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Updated conversation
+  """
+  conversation: Conversation
+
+  """
+  Merged message count
+  """
+  mergedMessageCount: Int
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for deleteBranch mutation
+"""
+type DeleteBranchPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Deleted branch ID
+  """
+  deletedBranchId: ID
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for switchBranch mutation
+"""
+type SwitchBranchPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Active branch
+  """
+  activeBranch: ConversationBranch
+
+  """
+  Updated conversation
+  """
+  conversation: Conversation
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+# -----------------------------------------------------------------------------
+# EXPORT/IMPORT PAYLOADS
+# -----------------------------------------------------------------------------
+
+"""
+Payload for exportConversation mutation
+"""
+type ExportConversationPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Export download URL
+  """
+  downloadUrl: String
+
+  """
+  Export data (for JSON format)
+  """
+  data: JSON
+
+  """
+  Export format used
+  """
+  format: ExportFormat
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for importConversation mutation
+"""
+type ImportConversationPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Imported conversation
+  """
+  conversation: Conversation
+
+  """
+  Import stats
+  """
+  importStats: ImportStats
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Import statistics
+"""
+type ImportStats {
+  """
+  Number of messages imported
+  """
+  messagesImported: Int!
+
+  """
+  Number of attachments imported
+  """
+  attachmentsImported: Int!
+
+  """
+  Warnings during import
+  """
+  warnings: [String!]
+}
+
+# -----------------------------------------------------------------------------
+# TYPING AND PRESENCE PAYLOADS
+# -----------------------------------------------------------------------------
+
+"""
+Payload for sendTypingIndicator mutation
+"""
+type SendTypingIndicatorPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for markRead mutation
+"""
+type MarkReadPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Number of messages marked as read
+  """
+  markedReadCount: Int
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+# -----------------------------------------------------------------------------
+# ATTACHMENT PAYLOADS
+# -----------------------------------------------------------------------------
+
+"""
+Payload for uploadAttachment mutation
+"""
+type UploadAttachmentPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Uploaded attachment info
+  """
+  attachment: ConversationAttachment
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Conversation attachment type
+"""
+type ConversationAttachment {
+  """
+  Attachment ID
+  """
+  id: ID!
+
+  """
+  File name
+  """
+  fileName: String!
+
+  """
+  MIME type
+  """
+  mimeType: String!
+
+  """
+  File size in bytes
+  """
+  fileSize: Int!
+
+  """
+  Download URL
+  """
+  url: String!
+
+  """
+  Thumbnail URL (for images/videos)
+  """
+  thumbnailUrl: String
+
+  """
+  Upload timestamp
+  """
+  uploadedAt: DateTime!
+
+  """
+  Attachment type
+  """
+  type: AttachmentType!
+}
+
+"""
+Payload for deleteAttachment mutation
+"""
+type DeleteAttachmentPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Deleted attachment ID
+  """
+  deletedAttachmentId: ID
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+# -----------------------------------------------------------------------------
+# SHARING PAYLOADS
+# -----------------------------------------------------------------------------
+
+"""
+Input for generating share link
+"""
+input GenerateShareLinkInput {
+  """
+  Expiration hours (null = never)
+  """
+  expiresInHours: Int
+
+  """
+  Password protection
+  """
+  password: String
+
+  """
+  Allow forking
+  """
+  allowFork: Boolean = true
+
+  """
+  Messages to include (null = all)
+  """
+  messageRange: MessageRangeInput
+}
+
+"""
+Payload for generateShareLink mutation
+"""
+type GenerateShareLinkPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Generated share link
+  """
+  shareLink: ShareLink
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Share link type
+"""
+type ShareLink {
+  """
+  Link ID
+  """
+  id: ID!
+
+  """
+  Share URL
+  """
+  url: String!
+
+  """
+  Share token
+  """
+  token: String!
+
+  """
+  Expiration time
+  """
+  expiresAt: DateTime
+
+  """
+  Is password protected
+  """
+  isPasswordProtected: Boolean!
+
+  """
+  Allow forking
+  """
+  allowFork: Boolean!
+
+  """
+  Created at
+  """
+  createdAt: DateTime!
+
+  """
+  View count
+  """
+  viewCount: Int!
+}
+
+"""
+Payload for revokeShareLink mutation
+"""
+type RevokeShareLinkPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Revoked link ID
+  """
+  revokedLinkId: ID
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Payload for forkConversation mutation
+"""
+type ForkConversationPayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Forked conversation
+  """
+  conversation: Conversation
+
+  """
+  Original conversation ID
+  """
+  originalConversationId: ID
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+# -----------------------------------------------------------------------------
+# TEMPLATE PAYLOADS
+# -----------------------------------------------------------------------------
+
+"""
+Input for saving as template
+"""
+input SaveTemplateInput {
+  """
+  Template name
+  """
+  name: String!
+
+  """
+  Template description
+  """
+  description: String
+
+  """
+  Template category
+  """
+  category: String
+
+  """
+  Tags
+  """
+  tags: [String!]
+
+  """
+  Public/private
+  """
+  visibility: ResourceVisibility = PRIVATE
+}
+
+"""
+Payload for saveAsTemplate mutation
+"""
+type SaveTemplatePayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Created template
+  """
+  template: ConversationTemplate
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}
+
+"""
+Conversation template type
+"""
+type ConversationTemplate {
+  """
+  Template ID
+  """
+  id: ID!
+
+  """
+  Template name
+  """
+  name: String!
+
+  """
+  Template description
+  """
+  description: String
+
+  """
+  Category
+  """
+  category: String
+
+  """
+  Tags
+  """
+  tags: [String!]!
+
+  """
+  System context
+  """
+  systemContext: String
+
+  """
+  Initial messages
+  """
+  initialMessages: [InitialMessage!]!
+
+  """
+  Settings
+  """
+  settings: ConversationSettings
+
+  """
+  Visibility
+  """
+  visibility: ResourceVisibility!
+
+  """
+  Usage count
+  """
+  usageCount: Int!
+
+  """
+  Created by
+  """
+  createdBy: User!
+
+  """
+  Created at
+  """
+  createdAt: DateTime!
+
+  """
+  Updated at
+  """
+  updatedAt: DateTime!
+}
+
+"""
+Initial message in template
+"""
+type InitialMessage {
+  """
+  Role
+  """
+  role: MessageRole!
+
+  """
+  Content
+  """
+  content: String!
+
+  """
+  Name
+  """
+  name: String
+}
+
+"""
+Conversation settings type
+"""
+type ConversationSettings {
+  """
+  Auto title
+  """
+  autoTitle: Boolean!
+
+  """
+  Persist messages
+  """
+  persistMessages: Boolean!
+
+  """
+  Max messages
+  """
+  maxMessages: Int
+
+  """
+  Typing indicators
+  """
+  typingIndicators: Boolean!
+
+  """
+  Read receipts
+  """
+  readReceipts: Boolean!
+
+  """
+  Streaming mode
+  """
+  streamingMode: StreamingMode!
+}
+
+"""
+Payload for createFromTemplate mutation
+"""
+type CreateFromTemplatePayload implements MutationResponse {
+  """
+  Whether the mutation was successful
+  """
+  success: Boolean!
+
+  """
+  Human-readable message
+  """
+  message: String!
+
+  """
+  Error details if unsuccessful
+  """
+  errors: [MutationError!]
+
+  """
+  Created conversation
+  """
+  conversation: Conversation
+
+  """
+  Source template
+  """
+  template: ConversationTemplate
+
+  """
+  Client mutation ID for tracking
+  """
+  clientMutationId: String
+}

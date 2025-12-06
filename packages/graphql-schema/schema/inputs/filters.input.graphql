@@ -1,0 +1,996 @@
+# =============================================================================
+# FILTER INPUT TYPES
+# =============================================================================
+# Generic, reusable filter types for all query operations.
+# Supports comparison operators, logical composition, and type-specific filters.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# STRING FILTERS
+# -----------------------------------------------------------------------------
+
+"""
+Filter for string fields
+"""
+input StringFilter {
+  """
+  Exact match
+  """
+  eq: String
+
+  """
+  Not equal
+  """
+  ne: String
+
+  """
+  Contains substring (case-insensitive)
+  """
+  contains: String
+
+  """
+  Contains substring (case-sensitive)
+  """
+  containsCase: String
+
+  """
+  Does not contain substring
+  """
+  notContains: String
+
+  """
+  Starts with
+  """
+  startsWith: String
+
+  """
+  Ends with
+  """
+  endsWith: String
+
+  """
+  Matches regex pattern
+  """
+  regex: String
+
+  """
+  In list of values
+  """
+  in: [String!]
+
+  """
+  Not in list of values
+  """
+  notIn: [String!]
+
+  """
+  Is null
+  """
+  isNull: Boolean
+
+  """
+  String length equals
+  """
+  lengthEq: Int
+
+  """
+  String length greater than
+  """
+  lengthGt: Int
+
+  """
+  String length less than
+  """
+  lengthLt: Int
+}
+
+"""
+Filter for string fields with full-text search
+"""
+input TextSearchFilter {
+  """
+  Full-text search query
+  """
+  query: String!
+
+  """
+  Search language (default: english)
+  """
+  language: String
+
+  """
+  Minimum relevance score (0.0-1.0)
+  """
+  minScore: Float
+
+  """
+  Highlight matches in results
+  """
+  highlight: Boolean
+
+  """
+  Fields to search (if applicable)
+  """
+  fields: [String!]
+}
+
+# -----------------------------------------------------------------------------
+# NUMERIC FILTERS
+# -----------------------------------------------------------------------------
+
+"""
+Filter for integer fields
+"""
+input IntFilter {
+  """
+  Equal to
+  """
+  eq: Int
+
+  """
+  Not equal to
+  """
+  ne: Int
+
+  """
+  Greater than
+  """
+  gt: Int
+
+  """
+  Greater than or equal
+  """
+  gte: Int
+
+  """
+  Less than
+  """
+  lt: Int
+
+  """
+  Less than or equal
+  """
+  lte: Int
+
+  """
+  In list of values
+  """
+  in: [Int!]
+
+  """
+  Not in list of values
+  """
+  notIn: [Int!]
+
+  """
+  Between (inclusive)
+  """
+  between: IntRangeInput
+
+  """
+  Is null
+  """
+  isNull: Boolean
+}
+
+"""
+Integer range input
+"""
+input IntRangeInput {
+  """
+  Minimum value (inclusive)
+  """
+  min: Int!
+
+  """
+  Maximum value (inclusive)
+  """
+  max: Int!
+}
+
+"""
+Filter for float/decimal fields
+"""
+input FloatFilter {
+  """
+  Equal to
+  """
+  eq: Float
+
+  """
+  Not equal to
+  """
+  ne: Float
+
+  """
+  Greater than
+  """
+  gt: Float
+
+  """
+  Greater than or equal
+  """
+  gte: Float
+
+  """
+  Less than
+  """
+  lt: Float
+
+  """
+  Less than or equal
+  """
+  lte: Float
+
+  """
+  Between (inclusive)
+  """
+  between: FloatRangeInput
+
+  """
+  Is null
+  """
+  isNull: Boolean
+
+  """
+  Approximately equal (with tolerance)
+  """
+  approxEq: FloatApproxInput
+}
+
+"""
+Float range input
+"""
+input FloatRangeInput {
+  """
+  Minimum value (inclusive)
+  """
+  min: Float!
+
+  """
+  Maximum value (inclusive)
+  """
+  max: Float!
+}
+
+"""
+Float approximate equality input
+"""
+input FloatApproxInput {
+  """
+  Target value
+  """
+  value: Float!
+
+  """
+  Tolerance (default: 0.0001)
+  """
+  tolerance: Float
+}
+
+# -----------------------------------------------------------------------------
+# BOOLEAN FILTER
+# -----------------------------------------------------------------------------
+
+"""
+Filter for boolean fields
+"""
+input BooleanFilter {
+  """
+  Equal to
+  """
+  eq: Boolean
+
+  """
+  Not equal to
+  """
+  ne: Boolean
+
+  """
+  Is null
+  """
+  isNull: Boolean
+}
+
+# -----------------------------------------------------------------------------
+# DATE/TIME FILTERS
+# -----------------------------------------------------------------------------
+
+"""
+Filter for DateTime fields
+"""
+input DateTimeFilter {
+  """
+  Equal to
+  """
+  eq: DateTime
+
+  """
+  Not equal to
+  """
+  ne: DateTime
+
+  """
+  Greater than (after)
+  """
+  gt: DateTime
+
+  """
+  Greater than or equal (on or after)
+  """
+  gte: DateTime
+
+  """
+  Less than (before)
+  """
+  lt: DateTime
+
+  """
+  Less than or equal (on or before)
+  """
+  lte: DateTime
+
+  """
+  Between (inclusive)
+  """
+  between: DateTimeRange
+
+  """
+  In list of values
+  """
+  in: [DateTime!]
+
+  """
+  Not in list of values
+  """
+  notIn: [DateTime!]
+
+  """
+  Is null
+  """
+  isNull: Boolean
+}
+
+"""
+DateTime range
+"""
+input DateTimeRange {
+  """
+  Start of range (inclusive)
+  """
+  start: DateTime!
+
+  """
+  End of range (inclusive)
+  """
+  end: DateTime!
+}
+
+"""
+Filter for Date fields (without time)
+"""
+input DateFilter {
+  """
+  Equal to
+  """
+  eq: Date
+
+  """
+  Not equal to
+  """
+  ne: Date
+
+  """
+  Greater than (after)
+  """
+  gt: Date
+
+  """
+  Greater than or equal (on or after)
+  """
+  gte: Date
+
+  """
+  Less than (before)
+  """
+  lt: Date
+
+  """
+  Less than or equal (on or before)
+  """
+  lte: Date
+
+  """
+  Between (inclusive)
+  """
+  between: DateRange
+
+  """
+  Is null
+  """
+  isNull: Boolean
+}
+
+"""
+Date range
+"""
+input DateRange {
+  """
+  Start of range (inclusive)
+  """
+  start: Date!
+
+  """
+  End of range (inclusive)
+  """
+  end: Date!
+}
+
+"""
+Relative time filter (for common time-based queries)
+"""
+input RelativeTimeFilter {
+  """
+  Relative time period
+  """
+  period: RelativeTimePeriod!
+
+  """
+  Number of periods (default: 1)
+  """
+  count: Int
+
+  """
+  Include current period
+  """
+  includeCurrent: Boolean
+}
+
+"""
+Relative time periods
+"""
+enum RelativeTimePeriod {
+  """
+  Minutes ago
+  """
+  MINUTES
+
+  """
+  Hours ago
+  """
+  HOURS
+
+  """
+  Days ago
+  """
+  DAYS
+
+  """
+  Weeks ago
+  """
+  WEEKS
+
+  """
+  Months ago
+  """
+  MONTHS
+
+  """
+  Years ago
+  """
+  YEARS
+
+  """
+  Today
+  """
+  TODAY
+
+  """
+  Yesterday
+  """
+  YESTERDAY
+
+  """
+  This week
+  """
+  THIS_WEEK
+
+  """
+  Last week
+  """
+  LAST_WEEK
+
+  """
+  This month
+  """
+  THIS_MONTH
+
+  """
+  Last month
+  """
+  LAST_MONTH
+
+  """
+  This year
+  """
+  THIS_YEAR
+
+  """
+  Last year
+  """
+  LAST_YEAR
+}
+
+# -----------------------------------------------------------------------------
+# ID FILTERS
+# -----------------------------------------------------------------------------
+
+"""
+Filter for ID fields
+"""
+input IdFilter {
+  """
+  Equal to
+  """
+  eq: ID
+
+  """
+  Not equal to
+  """
+  ne: ID
+
+  """
+  In list of values
+  """
+  in: [ID!]
+
+  """
+  Not in list of values
+  """
+  notIn: [ID!]
+
+  """
+  Is null
+  """
+  isNull: Boolean
+}
+
+"""
+Filter for UUID fields
+"""
+input UuidFilter {
+  """
+  Equal to
+  """
+  eq: UUID
+
+  """
+  Not equal to
+  """
+  ne: UUID
+
+  """
+  In list of values
+  """
+  in: [UUID!]
+
+  """
+  Not in list of values
+  """
+  notIn: [UUID!]
+
+  """
+  Is null
+  """
+  isNull: Boolean
+}
+
+# -----------------------------------------------------------------------------
+# ARRAY FILTERS
+# -----------------------------------------------------------------------------
+
+"""
+Filter for string array fields
+"""
+input StringArrayFilter {
+  """
+  Contains all of these values
+  """
+  containsAll: [String!]
+
+  """
+  Contains any of these values
+  """
+  containsAny: [String!]
+
+  """
+  Contains none of these values
+  """
+  containsNone: [String!]
+
+  """
+  Equals exactly (same elements, same order)
+  """
+  equals: [String!]
+
+  """
+  Array is empty
+  """
+  isEmpty: Boolean
+
+  """
+  Array length equals
+  """
+  lengthEq: Int
+
+  """
+  Array length greater than
+  """
+  lengthGt: Int
+
+  """
+  Array length less than
+  """
+  lengthLt: Int
+}
+
+"""
+Filter for ID array fields
+"""
+input IdArrayFilter {
+  """
+  Contains all of these values
+  """
+  containsAll: [ID!]
+
+  """
+  Contains any of these values
+  """
+  containsAny: [ID!]
+
+  """
+  Contains none of these values
+  """
+  containsNone: [ID!]
+
+  """
+  Equals exactly
+  """
+  equals: [ID!]
+
+  """
+  Array is empty
+  """
+  isEmpty: Boolean
+
+  """
+  Array length equals
+  """
+  lengthEq: Int
+}
+
+# -----------------------------------------------------------------------------
+# ENUM FILTERS
+# -----------------------------------------------------------------------------
+
+"""
+Generic enum filter (use with specific enum types)
+"""
+input EnumFilter {
+  """
+  Equal to
+  """
+  eq: String
+
+  """
+  Not equal to
+  """
+  ne: String
+
+  """
+  In list of values
+  """
+  in: [String!]
+
+  """
+  Not in list of values
+  """
+  notIn: [String!]
+}
+
+# -----------------------------------------------------------------------------
+# JSON FILTERS
+# -----------------------------------------------------------------------------
+
+"""
+Filter for JSON fields
+"""
+input JsonFilter {
+  """
+  JSON path exists
+  """
+  pathExists: String
+
+  """
+  JSON path equals value
+  """
+  pathEquals: JsonPathEqualsInput
+
+  """
+  JSON path contains value
+  """
+  pathContains: JsonPathContainsInput
+
+  """
+  Is null
+  """
+  isNull: Boolean
+
+  """
+  Is empty object or array
+  """
+  isEmpty: Boolean
+}
+
+"""
+JSON path equals input
+"""
+input JsonPathEqualsInput {
+  """
+  JSON path (e.g., "$.config.enabled")
+  """
+  path: String!
+
+  """
+  Expected value (as JSON string)
+  """
+  value: String!
+}
+
+"""
+JSON path contains input
+"""
+input JsonPathContainsInput {
+  """
+  JSON path to array (e.g., "$.tags")
+  """
+  path: String!
+
+  """
+  Value that should be in the array
+  """
+  value: String!
+}
+
+# -----------------------------------------------------------------------------
+# COMPOSITE FILTERS
+# -----------------------------------------------------------------------------
+
+"""
+Logical AND composition
+"""
+input AndFilter {
+  """
+  Filters that must all match
+  """
+  conditions: [GenericFilter!]!
+}
+
+"""
+Logical OR composition
+"""
+input OrFilter {
+  """
+  Filters where at least one must match
+  """
+  conditions: [GenericFilter!]!
+}
+
+"""
+Logical NOT composition
+"""
+input NotFilter {
+  """
+  Filter to negate
+  """
+  condition: GenericFilter!
+}
+
+"""
+Generic filter wrapper for composition
+"""
+input GenericFilter {
+  """
+  String field filter
+  """
+  string: StringFieldFilter
+
+  """
+  Int field filter
+  """
+  int: IntFieldFilter
+
+  """
+  Float field filter
+  """
+  float: FloatFieldFilter
+
+  """
+  Boolean field filter
+  """
+  boolean: BooleanFieldFilter
+
+  """
+  DateTime field filter
+  """
+  dateTime: DateTimeFieldFilter
+}
+
+"""
+String field with filter
+"""
+input StringFieldFilter {
+  """
+  Field name
+  """
+  field: String!
+
+  """
+  Filter to apply
+  """
+  filter: StringFilter!
+}
+
+"""
+Int field with filter
+"""
+input IntFieldFilter {
+  """
+  Field name
+  """
+  field: String!
+
+  """
+  Filter to apply
+  """
+  filter: IntFilter!
+}
+
+"""
+Float field with filter
+"""
+input FloatFieldFilter {
+  """
+  Field name
+  """
+  field: String!
+
+  """
+  Filter to apply
+  """
+  filter: FloatFilter!
+}
+
+"""
+Boolean field with filter
+"""
+input BooleanFieldFilter {
+  """
+  Field name
+  """
+  field: String!
+
+  """
+  Filter to apply
+  """
+  filter: BooleanFilter!
+}
+
+"""
+DateTime field with filter
+"""
+input DateTimeFieldFilter {
+  """
+  Field name
+  """
+  field: String!
+
+  """
+  Filter to apply
+  """
+  filter: DateTimeFilter!
+}
+
+# -----------------------------------------------------------------------------
+# GEOSPATIAL FILTERS (for future use)
+# -----------------------------------------------------------------------------
+
+"""
+Filter for geographic coordinates
+"""
+input GeoFilter {
+  """
+  Within radius of point
+  """
+  withinRadius: GeoRadiusInput
+
+  """
+  Within bounding box
+  """
+  withinBounds: GeoBoundsInput
+
+  """
+  Within polygon
+  """
+  withinPolygon: GeoPolygonInput
+}
+
+"""
+Geographic radius query
+"""
+input GeoRadiusInput {
+  """
+  Center latitude
+  """
+  latitude: Float!
+
+  """
+  Center longitude
+  """
+  longitude: Float!
+
+  """
+  Radius in meters
+  """
+  radiusMeters: Float!
+}
+
+"""
+Geographic bounding box
+"""
+input GeoBoundsInput {
+  """
+  Northwest corner latitude
+  """
+  northLat: Float!
+
+  """
+  Northwest corner longitude
+  """
+  westLng: Float!
+
+  """
+  Southeast corner latitude
+  """
+  southLat: Float!
+
+  """
+  Southeast corner longitude
+  """
+  eastLng: Float!
+}
+
+"""
+Geographic polygon
+"""
+input GeoPolygonInput {
+  """
+  List of coordinates forming the polygon
+  """
+  coordinates: [GeoCoordinateInput!]!
+}
+
+"""
+Geographic coordinate
+"""
+input GeoCoordinateInput {
+  """
+  Latitude
+  """
+  latitude: Float!
+
+  """
+  Longitude
+  """
+  longitude: Float!
+}

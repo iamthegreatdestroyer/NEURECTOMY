@@ -1,0 +1,756 @@
+# =============================================================================
+# PAGINATION INPUT TYPES
+# =============================================================================
+# Standardized pagination inputs supporting both cursor-based (Relay)
+# and offset-based pagination patterns.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# CURSOR-BASED PAGINATION (Relay Style)
+# -----------------------------------------------------------------------------
+
+"""
+Relay-style cursor pagination input.
+Use either forward pagination (first/after) or backward pagination (last/before).
+"""
+input CursorPaginationInput {
+  """
+  Number of items to return (forward pagination)
+  """
+  first: Int
+
+  """
+  Cursor to start after (forward pagination)
+  """
+  after: String
+
+  """
+  Number of items to return (backward pagination)
+  """
+  last: Int
+
+  """
+  Cursor to start before (backward pagination)
+  """
+  before: String
+}
+
+"""
+Validated cursor pagination with defaults.
+Enforces limits and provides default values.
+"""
+input PaginationInput {
+  """
+  Number of items to return (max: 100, default: 20)
+  """
+  first: Int = 20
+
+  """
+  Cursor to start after
+  """
+  after: String
+
+  """
+  Number of items to return from end (max: 100)
+  """
+  last: Int
+
+  """
+  Cursor to start before
+  """
+  before: String
+}
+
+# -----------------------------------------------------------------------------
+# OFFSET-BASED PAGINATION
+# -----------------------------------------------------------------------------
+
+"""
+Traditional offset-based pagination.
+Better for jumping to specific pages but less efficient for large datasets.
+"""
+input OffsetPaginationInput {
+  """
+  Number of items to skip
+  """
+  offset: Int = 0
+
+  """
+  Maximum number of items to return (max: 100, default: 20)
+  """
+  limit: Int = 20
+}
+
+"""
+Page-based pagination input.
+More intuitive for UI pagination controls.
+"""
+input PagePaginationInput {
+  """
+  Page number (1-indexed)
+  """
+  page: Int = 1
+
+  """
+  Items per page (max: 100, default: 20)
+  """
+  pageSize: Int = 20
+}
+
+# -----------------------------------------------------------------------------
+# SORTING
+# -----------------------------------------------------------------------------
+
+"""
+Generic sort input
+"""
+input SortInput {
+  """
+  Field to sort by
+  """
+  field: String!
+
+  """
+  Sort direction
+  """
+  direction: SortDirection = ASC
+
+  """
+  Null handling
+  """
+  nulls: NullSortOrder = LAST
+}
+
+"""
+Sort direction enum
+"""
+enum SortDirection {
+  """
+  Ascending order (A-Z, 0-9, oldest first)
+  """
+  ASC
+
+  """
+  Descending order (Z-A, 9-0, newest first)
+  """
+  DESC
+}
+
+"""
+Null value sort ordering
+"""
+enum NullSortOrder {
+  """
+  Nulls appear first
+  """
+  FIRST
+
+  """
+  Nulls appear last
+  """
+  LAST
+}
+
+"""
+Multi-field sorting
+"""
+input MultiSortInput {
+  """
+  Primary sort
+  """
+  primary: SortInput!
+
+  """
+  Secondary sort (used when primary values are equal)
+  """
+  secondary: SortInput
+
+  """
+  Additional sorts
+  """
+  additional: [SortInput!]
+}
+
+# -----------------------------------------------------------------------------
+# ENTITY-SPECIFIC SORT INPUTS
+# -----------------------------------------------------------------------------
+
+"""
+Agent-specific sort input
+"""
+input AgentSortInput {
+  """
+  Field to sort by
+  """
+  field: AgentSortField!
+
+  """
+  Sort direction
+  """
+  direction: SortDirection = ASC
+
+  """
+  Null handling
+  """
+  nulls: NullSortOrder = LAST
+}
+
+"""
+Workflow-specific sort input
+"""
+input WorkflowSortInput {
+  """
+  Field to sort by
+  """
+  field: WorkflowSortField!
+
+  """
+  Sort direction
+  """
+  direction: SortDirection = ASC
+
+  """
+  Null handling
+  """
+  nulls: NullSortOrder = LAST
+}
+
+"""
+Conversation-specific sort input
+"""
+input ConversationSortInput {
+  """
+  Field to sort by
+  """
+  field: ConversationSortField!
+
+  """
+  Sort direction
+  """
+  direction: SortDirection = ASC
+
+  """
+  Null handling
+  """
+  nulls: NullSortOrder = LAST
+}
+
+"""
+User-specific sort input
+"""
+input UserSortInput {
+  """
+  Field to sort by
+  """
+  field: UserSortField!
+
+  """
+  Sort direction
+  """
+  direction: SortDirection = ASC
+
+  """
+  Null handling
+  """
+  nulls: NullSortOrder = LAST
+}
+
+"""
+Document-specific sort input
+"""
+input DocumentSortInput {
+  """
+  Field to sort by
+  """
+  field: DocumentSortField!
+
+  """
+  Sort direction
+  """
+  direction: SortDirection = ASC
+
+  """
+  Null handling
+  """
+  nulls: NullSortOrder = LAST
+}
+
+# -----------------------------------------------------------------------------
+# SORT FIELD ENUMS
+# -----------------------------------------------------------------------------
+
+"""
+Fields available for agent sorting
+"""
+enum AgentSortField {
+  """
+  Sort by agent name
+  """
+  NAME
+
+  """
+  Sort by creation date
+  """
+  CREATED_AT
+
+  """
+  Sort by last update date
+  """
+  UPDATED_AT
+
+  """
+  Sort by status
+  """
+  STATUS
+
+  """
+  Sort by conversation count
+  """
+  CONVERSATION_COUNT
+
+  """
+  Sort by total token usage
+  """
+  TOKEN_USAGE
+
+  """
+  Sort by model provider
+  """
+  MODEL_PROVIDER
+
+  """
+  Sort by visibility
+  """
+  VISIBILITY
+
+  """
+  Sort by owner name
+  """
+  OWNER_NAME
+
+  """
+  Sort by last active date
+  """
+  LAST_ACTIVE_AT
+}
+
+"""
+Fields available for workflow sorting
+"""
+enum WorkflowSortField {
+  """
+  Sort by workflow name
+  """
+  NAME
+
+  """
+  Sort by creation date
+  """
+  CREATED_AT
+
+  """
+  Sort by last update date
+  """
+  UPDATED_AT
+
+  """
+  Sort by status
+  """
+  STATUS
+
+  """
+  Sort by execution count
+  """
+  EXECUTION_COUNT
+
+  """
+  Sort by last execution date
+  """
+  LAST_EXECUTED_AT
+
+  """
+  Sort by step count
+  """
+  STEP_COUNT
+
+  """
+  Sort by owner name
+  """
+  OWNER_NAME
+}
+
+"""
+Fields available for conversation sorting
+"""
+enum ConversationSortField {
+  """
+  Sort by conversation title
+  """
+  TITLE
+
+  """
+  Sort by creation date
+  """
+  CREATED_AT
+
+  """
+  Sort by last update date
+  """
+  UPDATED_AT
+
+  """
+  Sort by last message date
+  """
+  LAST_MESSAGE_AT
+
+  """
+  Sort by message count
+  """
+  MESSAGE_COUNT
+
+  """
+  Sort by total tokens used
+  """
+  TOKEN_COUNT
+
+  """
+  Sort by agent name
+  """
+  AGENT_NAME
+}
+
+"""
+Fields available for user sorting
+"""
+enum UserSortField {
+  """
+  Sort by username
+  """
+  USERNAME
+
+  """
+  Sort by email
+  """
+  EMAIL
+
+  """
+  Sort by display name
+  """
+  DISPLAY_NAME
+
+  """
+  Sort by creation date
+  """
+  CREATED_AT
+
+  """
+  Sort by last login date
+  """
+  LAST_LOGIN_AT
+
+  """
+  Sort by role
+  """
+  ROLE
+
+  """
+  Sort by agent count
+  """
+  AGENT_COUNT
+}
+
+"""
+Fields available for document sorting
+"""
+enum DocumentSortField {
+  """
+  Sort by document title
+  """
+  TITLE
+
+  """
+  Sort by file name
+  """
+  FILE_NAME
+
+  """
+  Sort by creation date
+  """
+  CREATED_AT
+
+  """
+  Sort by last update date
+  """
+  UPDATED_AT
+
+  """
+  Sort by file size
+  """
+  FILE_SIZE
+
+  """
+  Sort by chunk count
+  """
+  CHUNK_COUNT
+
+  """
+  Sort by processing status
+  """
+  STATUS
+}
+
+# -----------------------------------------------------------------------------
+# COMBINED QUERY INPUT
+# -----------------------------------------------------------------------------
+
+"""
+Combined input for list queries with pagination, filtering, and sorting.
+Used as a standardized pattern across all list queries.
+"""
+input ListQueryInput {
+  """
+  Cursor-based pagination
+  """
+  pagination: PaginationInput
+
+  """
+  Offset-based pagination (alternative to cursor)
+  """
+  offset: OffsetPaginationInput
+
+  """
+  Generic filters
+  """
+  filters: [GenericFilter!]
+
+  """
+  Sort configuration
+  """
+  sort: SortInput
+
+  """
+  Multi-field sort
+  """
+  multiSort: MultiSortInput
+
+  """
+  Full-text search query
+  """
+  search: String
+
+  """
+  Include soft-deleted items
+  """
+  includeDeleted: Boolean = false
+}
+
+# -----------------------------------------------------------------------------
+# SEARCH INPUT
+# -----------------------------------------------------------------------------
+
+"""
+Full-text search input with advanced options
+"""
+input SearchInput {
+  """
+  Search query
+  """
+  query: String!
+
+  """
+  Fields to search (empty = all searchable fields)
+  """
+  fields: [String!]
+
+  """
+  Search mode
+  """
+  mode: SearchMode = BEST_MATCH
+
+  """
+  Minimum relevance score (0.0-1.0)
+  """
+  minScore: Float
+
+  """
+  Fuzziness level for typo tolerance
+  """
+  fuzziness: SearchFuzziness = AUTO
+
+  """
+  Highlight matching text in results
+  """
+  highlight: Boolean = false
+
+  """
+  Maximum highlighted fragments per field
+  """
+  maxHighlights: Int = 3
+}
+
+"""
+Search matching mode
+"""
+enum SearchMode {
+  """
+  Best match (TF-IDF based)
+  """
+  BEST_MATCH
+
+  """
+  All terms must match
+  """
+  ALL_TERMS
+
+  """
+  Any term can match
+  """
+  ANY_TERM
+
+  """
+  Exact phrase match
+  """
+  PHRASE
+
+  """
+  Prefix match
+  """
+  PREFIX
+
+  """
+  Wildcard match
+  """
+  WILDCARD
+}
+
+"""
+Search fuzziness level
+"""
+enum SearchFuzziness {
+  """
+  No fuzziness - exact matches only
+  """
+  NONE
+
+  """
+  Low fuzziness - minor typos
+  """
+  LOW
+
+  """
+  Medium fuzziness
+  """
+  MEDIUM
+
+  """
+  High fuzziness - more typo tolerance
+  """
+  HIGH
+
+  """
+  Auto - adjusts based on term length
+  """
+  AUTO
+}
+
+# -----------------------------------------------------------------------------
+# AGGREGATION INPUT
+# -----------------------------------------------------------------------------
+
+"""
+Input for aggregation queries
+"""
+input AggregationInput {
+  """
+  Field to aggregate on
+  """
+  field: String!
+
+  """
+  Aggregation type
+  """
+  type: AggregationType!
+
+  """
+  Filter to apply before aggregation
+  """
+  filter: GenericFilter
+
+  """
+  Number of buckets for histogram
+  """
+  buckets: Int
+
+  """
+  Interval for date histogram
+  """
+  dateInterval: DateInterval
+}
+
+"""
+Aggregation types
+"""
+enum AggregationType {
+  """
+  Count of items
+  """
+  COUNT
+
+  """
+  Sum of values
+  """
+  SUM
+
+  """
+  Average of values
+  """
+  AVERAGE
+
+  """
+  Minimum value
+  """
+  MIN
+
+  """
+  Maximum value
+  """
+  MAX
+
+  """
+  Distinct count
+  """
+  CARDINALITY
+
+  """
+  Group by value
+  """
+  TERMS
+
+  """
+  Date histogram
+  """
+  DATE_HISTOGRAM
+
+  """
+  Numeric histogram
+  """
+  HISTOGRAM
+
+  """
+  Percentiles
+  """
+  PERCENTILES
+}
+
+"""
+Date intervals for date histogram
+"""
+enum DateInterval {
+  MINUTE
+  HOUR
+  DAY
+  WEEK
+  MONTH
+  QUARTER
+  YEAR
+}

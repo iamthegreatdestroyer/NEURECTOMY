@@ -1,0 +1,244 @@
+# NEURECTOMY GraphQL Custom Directives
+# Security, rate limiting, complexity, and audit directives
+
+"""
+Requires authentication to access field or type.
+Applied to fields or types that need access control.
+"""
+directive @auth(
+  "Required role to access (default: USER)"
+  requires: UserRole = USER
+) on FIELD_DEFINITION | OBJECT | INTERFACE
+
+"""
+Rate limit for field or mutation.
+Prevents abuse by limiting request frequency.
+"""
+directive @rateLimit(
+  "Maximum requests allowed in the time window"
+  max: Int!
+  "Time window duration (e.g., '1m', '1h', '1d')"
+  window: String!
+  "Rate limit scope (default: per user)"
+  scope: RateLimitScope = USER
+  "Custom identifier field for rate limiting"
+  identifierArg: String
+) on FIELD_DEFINITION
+
+"""
+Query complexity cost for field.
+Used to prevent expensive queries from overloading the server.
+"""
+directive @complexity(
+  "Base complexity cost"
+  value: Int!
+  "Argument names that multiply the cost (e.g., 'first', 'limit')"
+  multipliers: [String!]
+) on FIELD_DEFINITION
+
+"""
+Marks a field as deprecated with migration info.
+Provides clear guidance for API evolution.
+"""
+directive @deprecated(
+  "Reason for deprecation"
+  reason: String!
+  "Version when field will be removed"
+  removeIn: String
+  "Field name that replaces this one"
+  replacedBy: String
+) on FIELD_DEFINITION | ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | ENUM_VALUE
+
+"""
+Audit logging for sensitive operations.
+Tracks access and modifications for compliance.
+"""
+directive @audit(
+  "Log level for this operation"
+  level: AuditLevel = INFO
+  "Include argument values in audit log"
+  includeArgs: Boolean = false
+  "Include result in audit log"
+  includeResult: Boolean = false
+) on FIELD_DEFINITION
+
+"""
+Caching directive for query fields.
+Enables response caching at the field level.
+"""
+directive @cacheControl(
+  "Maximum age in seconds"
+  maxAge: Int
+  "Cache scope"
+  scope: CacheScope
+  "Whether caching should inherit from parent"
+  inheritMaxAge: Boolean
+) on FIELD_DEFINITION | OBJECT | INTERFACE
+
+"""
+Cache scope options.
+"""
+enum CacheScope {
+  "Response can be cached publicly"
+  PUBLIC
+  "Response should only be cached privately (per-user)"
+  PRIVATE
+}
+
+"""
+Validation directive for input fields.
+Applies custom validation rules.
+"""
+directive @validate(
+  "Minimum length for strings"
+  minLength: Int
+  "Maximum length for strings"
+  maxLength: Int
+  "Regex pattern to match"
+  pattern: String
+  "Minimum value for numbers"
+  min: Float
+  "Maximum value for numbers"
+  max: Float
+  "Custom validation message"
+  message: String
+) on INPUT_FIELD_DEFINITION | ARGUMENT_DEFINITION
+
+"""
+Transform directive for input/output values.
+Applies transformations like trimming whitespace.
+"""
+directive @transform(
+  "Trim whitespace from string values"
+  trim: Boolean
+  "Convert string to lowercase"
+  lowercase: Boolean
+  "Convert string to uppercase"
+  uppercase: Boolean
+) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
+
+"""
+Cost directive for resolver execution.
+Used for query cost analysis and budgeting.
+"""
+directive @cost(
+  "Estimated cost to resolve this field"
+  cost: Int!
+  "Whether cost scales with result size"
+  multiplier: Boolean = false
+) on FIELD_DEFINITION
+
+"""
+Feature flag directive.
+Conditionally enables/disables fields based on feature flags.
+"""
+directive @feature(
+  "Feature flag name"
+  flag: String!
+  "Whether to hide or error when disabled"
+  behavior: FeatureBehavior = HIDE
+) on FIELD_DEFINITION | OBJECT
+
+"""
+Behavior when feature flag is disabled.
+"""
+enum FeatureBehavior {
+  "Hide the field from schema introspection"
+  HIDE
+  "Return null for the field"
+  NULL
+  "Return an error when field is queried"
+  ERROR
+}
+
+"""
+Tenant isolation directive.
+Ensures multi-tenant data isolation.
+"""
+directive @tenant(
+  "Tenant identifier field in the type"
+  field: String = "tenantId"
+) on OBJECT | FIELD_DEFINITION
+
+"""
+Sensitive data directive.
+Marks fields containing PII or sensitive data.
+"""
+directive @sensitive(
+  "Type of sensitive data"
+  type: SensitiveDataType!
+  "Masking behavior for logs/exports"
+  mask: Boolean = true
+) on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
+
+"""
+Types of sensitive data.
+"""
+enum SensitiveDataType {
+  "Personally Identifiable Information"
+  PII
+  "Payment Card Industry data"
+  PCI
+  "Protected Health Information"
+  PHI
+  "Authentication credentials"
+  CREDENTIALS
+  "API keys and tokens"
+  SECRETS
+  "Financial data"
+  FINANCIAL
+}
+
+"""
+Specifies the primary/unique key for a type.
+"""
+directive @key("Field names that make up the key" fields: String!) on OBJECT
+
+"""
+Marks a field as external (provided by another service).
+Used in federated schemas.
+"""
+directive @external on FIELD_DEFINITION
+
+"""
+Marks a type as extending another service's type.
+"""
+directive @extends on OBJECT | INTERFACE
+
+"""
+Specifies which fields are required to resolve this field.
+"""
+directive @requires(
+  "Fields required from the parent type"
+  fields: String!
+) on FIELD_DEFINITION
+
+"""
+Specifies that a field provides data for external fields.
+"""
+directive @provides(
+  "External fields this field provides"
+  fields: String!
+) on FIELD_DEFINITION
+
+"""
+Stream directive for large result sets.
+Enables incremental delivery of arrays.
+"""
+directive @stream(
+  "Number of items to include in initial response"
+  initialCount: Int!
+  "Label for the stream"
+  label: String
+) on FIELD
+
+"""
+Defer directive for slow fields.
+Enables deferred execution of expensive resolvers.
+"""
+directive @defer(
+  "Whether to defer (can be controlled dynamically)"
+  if: Boolean
+  "Label for the deferred fragment"
+  label: String
+) on FRAGMENT_SPREAD | INLINE_FRAGMENT

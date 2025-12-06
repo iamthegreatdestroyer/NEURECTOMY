@@ -133,12 +133,25 @@ export {
   type FaultInjector,
   type ChaosExperiment,
   type ChaosExperimentConfig,
-  type ChaosResults,
   type AffectedTarget,
   type FaultConfig,
   type FaultType,
   type FaultSeverity,
   type ExperimentState,
+  type SafetyConfig,
+  type ChaosStorage,
+  type ChaosNotifier,
+  type MetricsProvider,
+  type ExperimentResults,
+  type ActiveFault,
+  type HealthStatus,
+  type HealthCheckResult,
+  type MetricSnapshot,
+  type TimelineEvent,
+  type Finding,
+  type Approval,
+  type ChaosSimulatorEvents,
+  type ChaosNotification,
   FaultTypeSchema,
   FaultSeveritySchema,
   ExperimentStateSchema,
@@ -148,9 +161,6 @@ export {
   SafetyConfigSchema,
   HealthCheckConfigSchema,
   ChaosExperimentConfigSchema,
-  LatencyInjector,
-  ErrorInjector,
-  TimeoutInjector,
   // Extended faults
   NetworkPartitionInjector,
   PacketLossInjector,
@@ -210,71 +220,39 @@ export {
   // Arena
   SwarmArena,
   type SwarmArenaConfig,
-  SwarmArenaConfigSchema,
+  ArenaConfigSchema,
+  ArenaConfigSchema as SwarmArenaConfigSchema,
   type AgentState,
-  AgentStateSchema,
+  AgentTypeSchema,
+  AgentConfigSchema,
   type ArenaCell,
-  ArenaCellSchema,
   type Position,
-  PositionSchema,
-  type Velocity,
-  VelocitySchema,
-  type ArenaStats,
+  type ArenaState,
   type BehaviorEngine,
   RandomBehaviorEngine,
   RuleBasedBehaviorEngine,
   ScriptedBehaviorEngine,
-  type EmergentPattern,
-  EmergentPatternSchema,
-  type PatternType,
+  type EmergentBehavior,
   // Agents
   AgentSpawner,
   type AgentTemplate,
   AgentTemplateSchema,
-  type SpawnConfig,
-  SpawnConfigSchema,
+  type SpawnerConfig,
+  SpawnerConfigSchema,
   type SpawnPattern,
   type SpawnResult,
-  SpawnResultSchema,
-  type PopulationSnapshot,
-  PopulationSnapshotSchema,
   PredefinedTemplates,
   // Tournament
   Tournament,
   type TournamentConfig,
   TournamentConfigSchema,
   type Genome,
-  GenomeSchema,
-  type Individual,
-  IndividualSchema,
-  type Generation,
-  GenerationSchema,
-  type TournamentResult,
-  TournamentResultSchema,
-  type FitnessFunction,
+  type Match,
+  type TournamentResults,
   type SelectionMethod,
   type CrossoverMethod,
   type MutationMethod,
-  type EvolutionStats,
-  EvolutionStatsSchema,
-  // Evolution operators
-  topNSelection,
-  tournamentSelection,
-  rouletteSelection,
-  rankSelection,
-  elitistSelection,
-  uniformCrossover,
-  singlePointCrossover,
-  arithmeticCrossover,
-  blendCrossover,
-  gaussianMutation,
-  uniformMutation,
-  polynomialMutation,
-  // Factory functions
-  createQuickArena,
-  createArenaWithSpawner,
-  createQuickTournament,
-  runSwarmExperiment,
+  type TournamentFormat,
   // Metadata
   SWARM_VERSION,
   SWARM_CAPABILITIES,
@@ -291,11 +269,15 @@ export * from "./types";
 // =============================================================================
 
 import { HypothesisLab, type LabConfig } from "./hypothesis";
-import { ABTestingEngine, type ABExperimentConfig } from "./ab-testing";
+import { ABTestingEngine } from "./ab-testing";
+import type { ABEngineConfig } from "./ab-testing/engine";
 import {
   ChaosSimulator,
   ChaosScheduler,
-  type ChaosExperimentConfig,
+  type ChaosStorage,
+  type ChaosNotifier,
+  type MetricsProvider,
+  type SafetyConfig,
 } from "./chaos";
 import {
   SwarmArena,
@@ -303,6 +285,7 @@ import {
   Tournament,
   type SwarmArenaConfig,
   type TournamentConfig,
+  type SpawnerConfig,
 } from "./swarm";
 
 /**
@@ -310,10 +293,16 @@ import {
  */
 export interface ExperimentationEngineConfig {
   hypothesis?: Partial<LabConfig>;
-  abTesting?: Partial<ABExperimentConfig>;
-  chaos?: Partial<ChaosExperimentConfig>;
+  abTesting?: Partial<ABEngineConfig>;
+  chaos?: {
+    storage?: ChaosStorage;
+    notifier?: ChaosNotifier;
+    metricsProvider?: MetricsProvider;
+    defaultSafety?: Partial<SafetyConfig>;
+  };
   swarm?: Partial<SwarmArenaConfig>;
   tournament?: Partial<TournamentConfig>;
+  spawner?: Partial<Omit<SpawnerConfig, "arena">>;
 }
 
 /**
@@ -368,8 +357,8 @@ export function createExperimentationEngine(
 ): ExperimentationEngine {
   // Initialize all components
   const hypothesis = new HypothesisLab(config.hypothesis as LabConfig);
-  const abTesting = new ABTestingEngine(config.abTesting as ABExperimentConfig);
-  const chaos = new ChaosSimulator(config.chaos as ChaosExperimentConfig);
+  const abTesting = new ABTestingEngine(config.abTesting as ABEngineConfig);
+  const chaos = new ChaosSimulator(config.chaos);
   const scheduler = new ChaosScheduler(chaos);
   const arena = new SwarmArena({
     gridSize: { width: 100, height: 100 },
@@ -380,7 +369,14 @@ export function createExperimentationEngine(
     wrapAround: true,
     ...config.swarm,
   } as SwarmArenaConfig);
-  const spawner = new AgentSpawner(arena);
+  const spawner = new AgentSpawner({
+    arena,
+    templates: [],
+    defaultMutationRate: 0.1,
+    attributeNoise: 0.1,
+    uniqueNames: true,
+    ...config.spawner,
+  });
   const tournament = new Tournament({
     populationSize: 100,
     generations: 50,
@@ -428,7 +424,7 @@ export function createExperimentationEngine(
           totalFaultsInjected: 0,
         },
         swarm: {
-          activeAgents: arena.getAgents?.()?.length ?? 0,
+          activeAgents: arena.getAliveAgents?.()?.length ?? 0,
           currentGeneration: tournament.getCurrentGeneration?.() ?? 0,
           patternsDetected: 0,
         },
@@ -468,7 +464,13 @@ export function createSwarmEngine(config?: {
     ...config?.arenaConfig,
   } as SwarmArenaConfig);
 
-  const spawner = new AgentSpawner(arena);
+  const spawner = new AgentSpawner({
+    arena,
+    templates: [],
+    defaultMutationRate: 0.1,
+    attributeNoise: 0.1,
+    uniqueNames: true,
+  });
 
   const tournament = new Tournament({
     populationSize: 100,
@@ -488,10 +490,13 @@ export function createSwarmEngine(config?: {
 /**
  * Create an engine focused on chaos engineering
  */
-export function createChaosEngine(
-  config?: Partial<ChaosExperimentConfig>
-): Pick<ExperimentationEngine, "chaos" | "scheduler"> {
-  const chaos = new ChaosSimulator(config as ChaosExperimentConfig);
+export function createChaosEngine(config?: {
+  storage?: ChaosStorage;
+  notifier?: ChaosNotifier;
+  metricsProvider?: MetricsProvider;
+  defaultSafety?: Partial<SafetyConfig>;
+}): Pick<ExperimentationEngine, "chaos" | "scheduler"> {
+  const chaos = new ChaosSimulator(config);
   const scheduler = new ChaosScheduler(chaos);
 
   return { chaos, scheduler };

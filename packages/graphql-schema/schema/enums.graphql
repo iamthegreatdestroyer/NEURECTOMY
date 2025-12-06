@@ -1,0 +1,570 @@
+# NEURECTOMY GraphQL Enums
+# All enumeration types for the GraphQL schema
+
+# ====================
+# User & Auth Enums
+# ====================
+
+"""
+User roles for authorization.
+"""
+enum UserRole {
+  "Standard user with basic permissions"
+  USER
+  "Administrator with elevated permissions"
+  ADMIN
+  "Super administrator with all permissions"
+  SUPERADMIN
+  "Read-only viewer"
+  VIEWER
+  "API-only access for integrations"
+  API
+  "Guest with limited temporary access"
+  GUEST
+}
+
+"""
+Account status for users.
+"""
+enum AccountStatus {
+  "Account is active and can be used"
+  ACTIVE
+  "Account is pending email verification"
+  PENDING_VERIFICATION
+  "Account is temporarily suspended"
+  SUSPENDED
+  "Account is permanently deactivated"
+  DEACTIVATED
+  "Account is locked due to security concerns"
+  LOCKED
+}
+
+"""
+Authentication provider types.
+"""
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+  GITHUB
+  MICROSOFT
+  OKTA
+  SAML
+}
+
+# ====================
+# Agent Enums
+# ====================
+
+"""
+Current status of an agent.
+"""
+enum AgentStatus {
+  "Agent is created but not yet initialized"
+  CREATED
+  "Agent is fully configured and ready to run"
+  READY
+  "Agent is currently running/executing"
+  RUNNING
+  "Agent execution is paused"
+  PAUSED
+  "Agent has completed its task"
+  COMPLETED
+  "Agent encountered an error"
+  ERROR
+  "Agent was manually stopped"
+  STOPPED
+  "Agent is being terminated"
+  TERMINATING
+  "Agent configuration is being updated"
+  UPDATING
+}
+
+"""
+Types of agents in the system.
+"""
+enum AgentType {
+  "Conversational assistant agent"
+  ASSISTANT
+  "Task execution agent"
+  TASK
+  "Research and information gathering agent"
+  RESEARCH
+  "Code generation and analysis agent"
+  CODE
+  "Data analysis agent"
+  ANALYSIS
+  "Multi-agent orchestrator"
+  ORCHESTRATOR
+  "Specialized tool-using agent"
+  TOOL
+  "Custom agent type"
+  CUSTOM
+}
+
+"""
+Agent capability categories.
+"""
+enum AgentCapability {
+  CHAT
+  CODE_GENERATION
+  CODE_REVIEW
+  DATA_ANALYSIS
+  FILE_OPERATIONS
+  WEB_SEARCH
+  WEB_BROWSING
+  IMAGE_GENERATION
+  IMAGE_ANALYSIS
+  AUDIO_TRANSCRIPTION
+  DOCUMENT_PROCESSING
+  EMAIL
+  CALENDAR
+  API_INTEGRATION
+  DATABASE_QUERY
+  SHELL_EXECUTION
+}
+
+"""
+Log level for agent outputs.
+"""
+enum LogLevel {
+  TRACE
+  DEBUG
+  INFO
+  WARN
+  ERROR
+  FATAL
+}
+
+# ====================
+# Workflow Enums
+# ====================
+
+"""
+Current status of a workflow.
+"""
+enum WorkflowStatus {
+  "Workflow is in draft mode"
+  DRAFT
+  "Workflow is active and can be triggered"
+  ACTIVE
+  "Workflow is currently executing"
+  RUNNING
+  "Workflow is paused"
+  PAUSED
+  "Workflow is disabled"
+  DISABLED
+  "Workflow completed successfully"
+  COMPLETED
+  "Workflow failed"
+  FAILED
+  "Workflow was cancelled"
+  CANCELLED
+  "Workflow is archived"
+  ARCHIVED
+}
+
+"""
+Types of workflow triggers.
+"""
+enum TriggerType {
+  "Manual trigger via API or UI"
+  MANUAL
+  "Scheduled trigger (cron)"
+  SCHEDULED
+  "Webhook trigger"
+  WEBHOOK
+  "Event-based trigger"
+  EVENT
+  "File change trigger"
+  FILE_CHANGE
+  "Database change trigger"
+  DATABASE_CHANGE
+  "API call trigger"
+  API_CALL
+  "Conditional trigger"
+  CONDITIONAL
+}
+
+"""
+Workflow execution status.
+"""
+enum ExecutionStatus {
+  PENDING
+  QUEUED
+  RUNNING
+  WAITING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  TIMED_OUT
+  SKIPPED
+}
+
+"""
+Step types in a workflow.
+"""
+enum StepType {
+  "Agent execution step"
+  AGENT
+  "Conditional branching"
+  CONDITION
+  "Parallel execution"
+  PARALLEL
+  "Wait/delay step"
+  WAIT
+  "HTTP request"
+  HTTP
+  "JavaScript code execution"
+  SCRIPT
+  "Sub-workflow invocation"
+  WORKFLOW
+  "Human approval step"
+  APPROVAL
+  "Notification step"
+  NOTIFICATION
+  "Data transformation"
+  TRANSFORM
+  "Loop iteration"
+  LOOP
+}
+
+# ====================
+# Conversation Enums
+# ====================
+
+"""
+Types of conversation messages.
+"""
+enum MessageRole {
+  "User input message"
+  USER
+  "AI assistant response"
+  ASSISTANT
+  "System instruction"
+  SYSTEM
+  "Tool/function call"
+  TOOL
+  "Error message"
+  ERROR
+}
+
+"""
+Message content types.
+"""
+enum ContentType {
+  TEXT
+  MARKDOWN
+  HTML
+  CODE
+  IMAGE
+  AUDIO
+  VIDEO
+  FILE
+  EMBED
+  CARD
+}
+
+"""
+Conversation status.
+"""
+enum ConversationStatus {
+  ACTIVE
+  ARCHIVED
+  DELETED
+}
+
+# ====================
+# Knowledge Base Enums
+# ====================
+
+"""
+Types of documents in knowledge base.
+"""
+enum DocumentType {
+  TEXT
+  PDF
+  MARKDOWN
+  HTML
+  CODE
+  JSON
+  XML
+  CSV
+  SPREADSHEET
+  PRESENTATION
+  IMAGE
+  AUDIO
+  VIDEO
+  ARCHIVE
+  UNKNOWN
+}
+
+"""
+Document processing status.
+"""
+enum ProcessingStatus {
+  "Document is queued for processing"
+  PENDING
+  "Document is being processed"
+  PROCESSING
+  "Document was processed successfully"
+  COMPLETED
+  "Document processing failed"
+  FAILED
+  "Document processing was skipped"
+  SKIPPED
+}
+
+"""
+Indexing status for searchable content.
+"""
+enum IndexingStatus {
+  NOT_INDEXED
+  INDEXING
+  INDEXED
+  FAILED
+  OUTDATED
+}
+
+# ====================
+# API & Integration Enums
+# ====================
+
+"""
+API key status.
+"""
+enum ApiKeyStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+"""
+API key permission scopes.
+"""
+enum ApiScope {
+  "Read-only access"
+  READ
+  "Read and write access"
+  WRITE
+  "Administrative access"
+  ADMIN
+  "Agent management"
+  AGENTS
+  "Workflow management"
+  WORKFLOWS
+  "Knowledge base management"
+  KNOWLEDGE
+  "User management"
+  USERS
+  "Billing access"
+  BILLING
+}
+
+"""
+Integration connection status.
+"""
+enum ConnectionStatus {
+  CONNECTED
+  CONNECTING
+  DISCONNECTED
+  RECONNECTING
+  FAILED
+  UNAUTHORIZED
+}
+
+# ====================
+# System Enums
+# ====================
+
+"""
+System health status.
+"""
+enum HealthStatus {
+  HEALTHY
+  DEGRADED
+  UNHEALTHY
+  UNKNOWN
+}
+
+"""
+Service status.
+"""
+enum ServiceStatus {
+  OPERATIONAL
+  DEGRADED
+  PARTIAL_OUTAGE
+  MAJOR_OUTAGE
+  MAINTENANCE
+}
+
+"""
+Notification types.
+"""
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+  ALERT
+}
+
+"""
+Notification priority.
+"""
+enum NotificationPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+"""
+Notification channel.
+"""
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  SMS
+  SLACK
+  WEBHOOK
+  PUSH
+}
+
+# ====================
+# Error Enums
+# ====================
+
+"""
+Error codes for mutation failures.
+"""
+enum ErrorCode {
+  "Invalid input data"
+  INVALID_INPUT
+  "Resource not found"
+  NOT_FOUND
+  "User not authenticated"
+  UNAUTHORIZED
+  "User lacks permission"
+  FORBIDDEN
+  "Resource already exists or version conflict"
+  CONFLICT
+  "Rate limit exceeded"
+  RATE_LIMITED
+  "Internal server error"
+  INTERNAL_ERROR
+  "Input validation failed"
+  VALIDATION_FAILED
+  "Dependent resource error"
+  DEPENDENCY_ERROR
+  "Service temporarily unavailable"
+  SERVICE_UNAVAILABLE
+  "Request timeout"
+  TIMEOUT
+  "Feature not implemented"
+  NOT_IMPLEMENTED
+  "Quota exceeded"
+  QUOTA_EXCEEDED
+  "Payment required"
+  PAYMENT_REQUIRED
+}
+
+# ====================
+# Sorting & Filtering Enums
+# ====================
+
+"""
+Sort direction.
+"""
+enum SortDirection {
+  ASC
+  DESC
+}
+
+"""
+Common sortable fields.
+"""
+enum SortField {
+  CREATED_AT
+  UPDATED_AT
+  NAME
+  STATUS
+  RELEVANCE
+  POPULARITY
+}
+
+"""
+Date range presets.
+"""
+enum DateRangePreset {
+  TODAY
+  YESTERDAY
+  LAST_7_DAYS
+  LAST_30_DAYS
+  THIS_MONTH
+  LAST_MONTH
+  THIS_YEAR
+  LAST_YEAR
+  ALL_TIME
+  CUSTOM
+}
+
+# ====================
+# Rate Limiting Enums
+# ====================
+
+"""
+Rate limit scope.
+"""
+enum RateLimitScope {
+  "Per user rate limit"
+  USER
+  "Per IP address rate limit"
+  IP
+  "Per API key rate limit"
+  API_KEY
+  "Global rate limit"
+  GLOBAL
+}
+
+# ====================
+# Audit Enums
+# ====================
+
+"""
+Audit log level.
+"""
+enum AuditLevel {
+  DEBUG
+  INFO
+  WARN
+  CRITICAL
+}
+
+# ====================
+# Subscription Enums
+# ====================
+
+"""
+Throttle strategy for high-volume subscriptions.
+"""
+enum ThrottleStrategy {
+  "Drop oldest events when buffer full"
+  DROP_OLDEST
+  "Drop newest events when buffer full"
+  DROP_NEWEST
+  "Sample events at interval"
+  SAMPLE
+  "No throttling (default)"
+  NONE
+}
+
+"""
+Agent update event types.
+"""
+enum AgentUpdateType {
+  STATUS_CHANGE
+  CONFIG_UPDATE
+  METRICS_UPDATE
+  ERROR
+  LOG
+}

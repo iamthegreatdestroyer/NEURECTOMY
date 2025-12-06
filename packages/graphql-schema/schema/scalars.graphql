@@ -1,0 +1,152 @@
+# NEURECTOMY GraphQL Custom Scalars
+# Custom scalar types for precise data representation
+
+"""
+A universally unique identifier (UUID) conforming to RFC 4122.
+Example: "550e8400-e29b-41d4-a716-446655440000"
+"""
+scalar UUID
+
+"""
+An ISO-8601 encoded UTC datetime string.
+Example: "2025-12-05T10:30:00.000Z"
+"""
+scalar DateTime
+
+"""
+An ISO-8601 encoded date string (without time).
+Example: "2025-12-05"
+"""
+scalar Date
+
+"""
+An ISO-8601 encoded time string (without date).
+Example: "10:30:00"
+"""
+scalar Time
+
+"""
+An arbitrary JSON object.
+Used for flexible configuration and metadata storage.
+"""
+scalar JSON
+
+"""
+A JSON object specifically for configuration purposes.
+Validates structure where applicable.
+"""
+scalar JSONObject
+
+"""
+A valid email address string.
+Example: "user@example.com"
+"""
+scalar Email
+
+"""
+A valid URL string.
+Example: "https://example.com/path"
+"""
+scalar URL
+
+"""
+A valid phone number in E.164 format.
+Example: "+14155552671"
+"""
+scalar PhoneNumber
+
+"""
+A non-empty string with leading/trailing whitespace trimmed.
+"""
+scalar NonEmptyString
+
+"""
+A positive integer (greater than 0).
+"""
+scalar PositiveInt
+
+"""
+A non-negative integer (0 or greater).
+"""
+scalar NonNegativeInt
+
+"""
+A floating point number representing currency.
+Precision: 2 decimal places.
+"""
+scalar Currency
+
+"""
+A duration in ISO-8601 format.
+Example: "PT1H30M" (1 hour 30 minutes)
+"""
+scalar Duration
+
+"""
+A semantic version string.
+Example: "1.2.3" or "1.2.3-beta.1"
+"""
+scalar SemVer
+
+"""
+A base64-encoded binary data string.
+"""
+scalar Base64
+
+"""
+A hexadecimal color code.
+Example: "#FF5733" or "FF5733"
+"""
+scalar HexColor
+
+"""
+A valid IPv4 or IPv6 address.
+"""
+scalar IPAddress
+
+"""
+A valid CIDR network notation.
+Example: "192.168.1.0/24"
+"""
+scalar CIDR
+
+"""
+A cron expression for scheduling.
+Example: "0 0 * * *" (daily at midnight)
+"""
+scalar CronExpression
+
+"""
+A percentage value (0-100).
+"""
+scalar Percentage
+
+"""
+A longitude value (-180 to 180).
+"""
+scalar Longitude
+
+"""
+A latitude value (-90 to 90).
+"""
+scalar Latitude
+
+"""
+Geographic coordinates (latitude, longitude).
+"""
+type GeoPoint {
+  latitude: Latitude!
+  longitude: Longitude!
+}
+
+"""
+File size in bytes.
+Displayed with human-readable formatting.
+"""
+scalar FileSize
+
+"""
+MIME type string.
+Example: "application/json"
+"""
+scalar MimeType

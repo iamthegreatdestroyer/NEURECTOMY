@@ -1,0 +1,1190 @@
+# =============================================================================
+# Reliable Delivery GraphQL Schema
+# Event ordering, backpressure, and delivery guarantees for subscriptions
+# =============================================================================
+
+"""
+Delivery guarantee level for subscriptions
+"""
+enum DeliveryGuarantee {
+  """
+  At most once - fire and forget, no retry
+  """
+  AT_MOST_ONCE
+
+  """
+  At least once - retry until acknowledged
+  """
+  AT_LEAST_ONCE
+
+  """
+  Exactly once - deduplicated delivery with transactional semantics
+  """
+  EXACTLY_ONCE
+}
+
+"""
+Message ordering mode for subscription events
+"""
+enum OrderingMode {
+  """
+  No ordering guarantee - events may arrive out of order
+  """
+  UNORDERED
+
+  """
+  Ordered within partition key - events with same key are ordered
+  """
+  PARTITION_ORDERED
+
+  """
+  Strictly ordered - all events arrive in exact sequence
+  """
+  STRICTLY_ORDERED
+
+  """
+  Causal ordering - events that depend on each other are ordered
+  """
+  CAUSAL
+}
+
+"""
+Backpressure strategy for handling slow consumers
+"""
+enum BackpressureStrategy {
+  """
+  Drop oldest events when buffer is full
+  """
+  DROP_OLDEST
+
+  """
+  Drop newest events when buffer is full
+  """
+  DROP_NEWEST
+
+  """
+  Block producer until consumer catches up
+  """
+  BLOCK
+
+  """
+  Sample events at configured interval
+  """
+  SAMPLE
+
+  """
+  Buffer events with overflow to persistent storage
+  """
+  BUFFER_TO_DISK
+
+  """
+  Automatically adjust delivery rate
+  """
+  ADAPTIVE
+}
+
+"""
+Event priority level
+"""
+enum EventPriority {
+  LOW
+  NORMAL
+  HIGH
+  CRITICAL
+}
+
+# =============================================================================
+# Event Envelope Types
+# =============================================================================
+
+"""
+Event envelope containing metadata and payload
+"""
+type EventEnvelope {
+  """
+  Unique event identifier
+  """
+  eventId: ID!
+
+  """
+  Event sequence number for ordering
+  """
+  sequenceNumber: Int!
+
+  """
+  Partition key for ordered delivery
+  """
+  partitionKey: String
+
+  """
+  Event timestamp
+  """
+  timestamp: DateTime!
+
+  """
+  Event type/name
+  """
+  eventType: String!
+
+  """
+  Event priority
+  """
+  priority: EventPriority!
+
+  """
+  Causation ID - ID of event that caused this one
+  """
+  causationId: ID
+
+  """
+  Correlation ID - for tracking related events
+  """
+  correlationId: ID
+
+  """
+  Event source identifier
+  """
+  source: String!
+
+  """
+  Schema version of the payload
+  """
+  schemaVersion: String!
+
+  """
+  Event payload as JSON
+  """
+  payload: JSON!
+
+  """
+  Event metadata
+  """
+  metadata: EventMetadata!
+
+  """
+  Delivery information
+  """
+  delivery: DeliveryInfo!
+}
+
+"""
+Event metadata
+"""
+type EventMetadata {
+  """
+  Content type of payload
+  """
+  contentType: String!
+
+  """
+  Content encoding
+  """
+  encoding: String
+
+  """
+  Payload size in bytes
+  """
+  payloadSize: Int!
+
+  """
+  Custom headers
+  """
+  headers: JSON
+
+  """
+  Trace context for distributed tracing
+  """
+  traceContext: TraceContext
+
+  """
+  Event tags for filtering
+  """
+  tags: [String!]!
+}
+
+"""
+Trace context for distributed tracing
+"""
+type TraceContext {
+  """
+  Trace ID
+  """
+  traceId: String!
+
+  """
+  Span ID
+  """
+  spanId: String!
+
+  """
+  Parent span ID
+  """
+  parentSpanId: String
+
+  """
+  Trace flags
+  """
+  traceFlags: Int
+
+  """
+  Trace state
+  """
+  traceState: String
+}
+
+"""
+Delivery information for an event
+"""
+type DeliveryInfo {
+  """
+  Delivery attempt number
+  """
+  attemptNumber: Int!
+
+  """
+  First delivery attempt timestamp
+  """
+  firstAttemptAt: DateTime
+
+  """
+  Last delivery attempt timestamp
+  """
+  lastAttemptAt: DateTime
+
+  """
+  Delivery guarantee for this event
+  """
+  guarantee: DeliveryGuarantee!
+
+  """
+  Whether acknowledgment is required
+  """
+  requiresAck: Boolean!
+
+  """
+  Acknowledgment deadline
+  """
+  ackDeadline: DateTime
+
+  """
+  Whether event was redelivered
+  """
+  isRedelivery: Boolean!
+
+  """
+  Delivery status
+  """
+  status: DeliveryStatus!
+}
+
+"""
+Delivery status
+"""
+enum DeliveryStatus {
+  """
+  Event is pending delivery
+  """
+  PENDING
+
+  """
+  Event has been sent
+  """
+  SENT
+
+  """
+  Event has been acknowledged
+  """
+  ACKNOWLEDGED
+
+  """
+  Event was rejected by consumer
+  """
+  REJECTED
+
+  """
+  Event delivery failed
+  """
+  FAILED
+
+  """
+  Event expired before delivery
+  """
+  EXPIRED
+
+  """
+  Event is being retried
+  """
+  RETRYING
+}
+
+# =============================================================================
+# Subscription Configuration Types
+# =============================================================================
+
+"""
+Configuration for reliable subscription delivery
+"""
+input ReliableDeliveryConfig {
+  """
+  Delivery guarantee level
+  """
+  guarantee: DeliveryGuarantee! = AT_LEAST_ONCE
+
+  """
+  Ordering mode
+  """
+  ordering: OrderingMode! = PARTITION_ORDERED
+
+  """
+  Backpressure strategy
+  """
+  backpressure: BackpressureStrategy! = ADAPTIVE
+
+  """
+  Maximum buffer size
+  """
+  bufferSize: Int = 1000
+
+  """
+  Acknowledgment timeout in milliseconds
+  """
+  ackTimeoutMs: Int = 30000
+
+  """
+  Maximum retry attempts
+  """
+  maxRetries: Int = 3
+
+  """
+  Retry backoff configuration
+  """
+  retryBackoff: RetryBackoffConfig
+
+  """
+  Enable deduplication
+  """
+  enableDeduplication: Boolean = true
+
+  """
+  Deduplication window in seconds
+  """
+  deduplicationWindowSec: Int = 300
+
+  """
+  Event TTL in seconds (0 = no expiry)
+  """
+  eventTtlSec: Int = 0
+
+  """
+  Priority filter - only receive events of these priorities
+  """
+  priorityFilter: [EventPriority!]
+}
+
+"""
+Retry backoff configuration
+"""
+input RetryBackoffConfig {
+  """
+  Initial delay in milliseconds
+  """
+  initialDelayMs: Int! = 1000
+
+  """
+  Maximum delay in milliseconds
+  """
+  maxDelayMs: Int! = 60000
+
+  """
+  Backoff multiplier
+  """
+  multiplier: Float! = 2.0
+
+  """
+  Add jitter to prevent thundering herd
+  """
+  jitter: Boolean! = true
+}
+
+"""
+Subscription flow control configuration
+"""
+input FlowControlConfig {
+  """
+  Maximum outstanding events
+  """
+  maxOutstanding: Int! = 100
+
+  """
+  Maximum outstanding bytes
+  """
+  maxOutstandingBytes: Int
+
+  """
+  Enable automatic flow control
+  """
+  autoFlowControl: Boolean! = true
+
+  """
+  Request batch size
+  """
+  batchSize: Int! = 10
+
+  """
+  Batch timeout in milliseconds
+  """
+  batchTimeoutMs: Int! = 100
+}
+
+"""
+Event filter configuration for subscriptions
+"""
+input EventFilterConfig {
+  """
+  Filter by event types
+  """
+  eventTypes: [String!]
+
+  """
+  Filter by partition keys
+  """
+  partitionKeys: [String!]
+
+  """
+  Filter by tags (AND logic)
+  """
+  requiredTags: [String!]
+
+  """
+  Filter by tags (OR logic)
+  """
+  anyTags: [String!]
+
+  """
+  Exclude event types
+  """
+  excludeEventTypes: [String!]
+
+  """
+  Custom filter expression (CEL)
+  """
+  filterExpression: String
+
+  """
+  Minimum event priority
+  """
+  minPriority: EventPriority
+}
+
+# =============================================================================
+# Consumer State Types
+# =============================================================================
+
+"""
+Consumer state information
+"""
+type ConsumerState {
+  """
+  Consumer ID
+  """
+  consumerId: ID!
+
+  """
+  Consumer group ID
+  """
+  groupId: String
+
+  """
+  Subscription name
+  """
+  subscriptionName: String!
+
+  """
+  Current position in event stream
+  """
+  position: StreamPosition!
+
+  """
+  Events pending acknowledgment
+  """
+  pendingEvents: Int!
+
+  """
+  Events successfully processed
+  """
+  processedEvents: Int!
+
+  """
+  Events that failed processing
+  """
+  failedEvents: Int!
+
+  """
+  Consumer lag (events behind)
+  """
+  lag: Int!
+
+  """
+  Average processing time in ms
+  """
+  avgProcessingTimeMs: Float!
+
+  """
+  Consumer health status
+  """
+  health: ConsumerHealth!
+
+  """
+  Flow control state
+  """
+  flowControl: FlowControlState!
+
+  """
+  Last activity timestamp
+  """
+  lastActivityAt: DateTime!
+}
+
+"""
+Stream position information
+"""
+type StreamPosition {
+  """
+  Last acknowledged sequence number
+  """
+  lastAckedSequence: Int!
+
+  """
+  Last received sequence number
+  """
+  lastReceivedSequence: Int!
+
+  """
+  Checkpoint timestamp
+  """
+  checkpointAt: DateTime
+
+  """
+  Checkpoint data for resumption
+  """
+  checkpointData: String
+}
+
+"""
+Consumer health status
+"""
+type ConsumerHealth {
+  """
+  Health status
+  """
+  status: HealthStatus!
+
+  """
+  Health score (0-100)
+  """
+  score: Int!
+
+  """
+  Active issues
+  """
+  issues: [HealthIssue!]!
+
+  """
+  Last health check timestamp
+  """
+  lastCheckAt: DateTime!
+}
+
+"""
+Health status enum
+"""
+enum HealthStatus {
+  HEALTHY
+  DEGRADED
+  UNHEALTHY
+  UNKNOWN
+}
+
+"""
+Health issue description
+"""
+type HealthIssue {
+  """
+  Issue severity
+  """
+  severity: IssueSeverity!
+
+  """
+  Issue code
+  """
+  code: String!
+
+  """
+  Issue message
+  """
+  message: String!
+
+  """
+  Suggested action
+  """
+  suggestion: String
+}
+
+"""
+Issue severity level
+"""
+enum IssueSeverity {
+  INFO
+  WARNING
+  ERROR
+  CRITICAL
+}
+
+"""
+Flow control state
+"""
+type FlowControlState {
+  """
+  Is flow control active
+  """
+  isActive: Boolean!
+
+  """
+  Current outstanding events
+  """
+  outstandingEvents: Int!
+
+  """
+  Current outstanding bytes
+  """
+  outstandingBytes: Int!
+
+  """
+  Is consumer paused
+  """
+  isPaused: Boolean!
+
+  """
+  Pause reason if paused
+  """
+  pauseReason: String
+
+  """
+  Backpressure level (0-100)
+  """
+  backpressureLevel: Int!
+}
+
+# =============================================================================
+# Acknowledgment Types
+# =============================================================================
+
+"""
+Event acknowledgment input
+"""
+input EventAckInput {
+  """
+  Event ID to acknowledge
+  """
+  eventId: ID!
+
+  """
+  Acknowledgment type
+  """
+  ackType: AckType!
+
+  """
+  Reason for negative ack (if applicable)
+  """
+  reason: String
+
+  """
+  Delay before redelivery (for NACK_RETRY)
+  """
+  redeliveryDelayMs: Int
+}
+
+"""
+Acknowledgment type
+"""
+enum AckType {
+  """
+  Positive acknowledgment - event processed successfully
+  """
+  ACK
+
+  """
+  Negative acknowledgment - event should be redelivered
+  """
+  NACK_RETRY
+
+  """
+  Negative acknowledgment - event should be dead-lettered
+  """
+  NACK_DEAD_LETTER
+
+  """
+  Extend acknowledgment deadline
+  """
+  EXTEND_DEADLINE
+}
+
+"""
+Batch acknowledgment input
+"""
+input BatchAckInput {
+  """
+  Events to acknowledge
+  """
+  events: [EventAckInput!]!
+
+  """
+  Acknowledge all events up to sequence number
+  """
+  upToSequence: Int
+}
+
+"""
+Acknowledgment result
+"""
+type AckResult {
+  """
+  Whether acknowledgment was successful
+  """
+  success: Boolean!
+
+  """
+  Events that were acknowledged
+  """
+  acknowledgedCount: Int!
+
+  """
+  Events that failed acknowledgment
+  """
+  failedCount: Int!
+
+  """
+  Failure details
+  """
+  failures: [AckFailure!]!
+}
+
+"""
+Acknowledgment failure details
+"""
+type AckFailure {
+  """
+  Event ID that failed
+  """
+  eventId: ID!
+
+  """
+  Failure reason
+  """
+  reason: String!
+
+  """
+  Error code
+  """
+  code: String!
+}
+
+# =============================================================================
+# Checkpoint and Recovery Types
+# =============================================================================
+
+"""
+Checkpoint information for subscription recovery
+"""
+type Checkpoint {
+  """
+  Checkpoint ID
+  """
+  id: ID!
+
+  """
+  Consumer ID
+  """
+  consumerId: ID!
+
+  """
+  Subscription name
+  """
+  subscriptionName: String!
+
+  """
+  Checkpoint sequence number
+  """
+  sequenceNumber: Int!
+
+  """
+  Checkpoint timestamp
+  """
+  timestamp: DateTime!
+
+  """
+  Checkpoint metadata
+  """
+  metadata: JSON
+
+  """
+  Is this an automatic checkpoint
+  """
+  isAutomatic: Boolean!
+}
+
+"""
+Checkpoint creation input
+"""
+input CreateCheckpointInput {
+  """
+  Subscription name
+  """
+  subscriptionName: String!
+
+  """
+  Sequence number to checkpoint
+  """
+  sequenceNumber: Int!
+
+  """
+  Optional metadata
+  """
+  metadata: JSON
+}
+
+"""
+Recovery options for subscription resumption
+"""
+input RecoveryOptions {
+  """
+  Recovery strategy
+  """
+  strategy: RecoveryStrategy!
+
+  """
+  Checkpoint ID to recover from
+  """
+  checkpointId: ID
+
+  """
+  Sequence number to start from
+  """
+  fromSequence: Int
+
+  """
+  Timestamp to start from
+  """
+  fromTimestamp: DateTime
+
+  """
+  Skip to latest events
+  """
+  skipToLatest: Boolean
+}
+
+"""
+Recovery strategy
+"""
+enum RecoveryStrategy {
+  """
+  Resume from last checkpoint
+  """
+  FROM_CHECKPOINT
+
+  """
+  Resume from specific sequence
+  """
+  FROM_SEQUENCE
+
+  """
+  Resume from specific timestamp
+  """
+  FROM_TIMESTAMP
+
+  """
+  Start from beginning
+  """
+  FROM_BEGINNING
+
+  """
+  Start from latest
+  """
+  FROM_LATEST
+}
+
+# =============================================================================
+# Dead Letter Queue Types
+# =============================================================================
+
+"""
+Dead letter event
+"""
+type DeadLetterEvent {
+  """
+  Dead letter entry ID
+  """
+  id: ID!
+
+  """
+  Original event
+  """
+  event: EventEnvelope!
+
+  """
+  Reason for dead lettering
+  """
+  reason: String!
+
+  """
+  Error code
+  """
+  errorCode: String!
+
+  """
+  Failure attempts
+  """
+  attempts: Int!
+
+  """
+  Dead lettered at
+  """
+  deadLetteredAt: DateTime!
+
+  """
+  Original subscription
+  """
+  originalSubscription: String!
+
+  """
+  Can be retried
+  """
+  canRetry: Boolean!
+}
+
+"""
+Dead letter queue statistics
+"""
+type DeadLetterStats {
+  """
+  Total dead letter events
+  """
+  totalCount: Int!
+
+  """
+  Events in last 24 hours
+  """
+  last24Hours: Int!
+
+  """
+  Events by error code
+  """
+  byErrorCode: [ErrorCodeCount!]!
+
+  """
+  Events by subscription
+  """
+  bySubscription: [SubscriptionCount!]!
+
+  """
+  Oldest event timestamp
+  """
+  oldestEventAt: DateTime
+}
+
+"""
+Count by error code
+"""
+type ErrorCodeCount {
+  errorCode: String!
+  count: Int!
+}
+
+"""
+Count by subscription
+"""
+type SubscriptionCount {
+  subscription: String!
+  count: Int!
+}
+
+# =============================================================================
+# Query Extensions
+# =============================================================================
+
+extend type Query {
+  """
+  Get consumer state for a subscription
+  """
+  consumerState(subscriptionName: String!, consumerId: ID): ConsumerState
+
+  """
+  List all consumers for a subscription
+  """
+  consumers(subscriptionName: String!, limit: Int = 50): [ConsumerState!]!
+
+  """
+  Get checkpoints for a subscription
+  """
+  checkpoints(subscriptionName: String!, limit: Int = 10): [Checkpoint!]!
+
+  """
+  Get dead letter events
+  """
+  deadLetterEvents(
+    subscriptionName: String
+    limit: Int = 50
+    offset: Int = 0
+  ): [DeadLetterEvent!]!
+
+  """
+  Get dead letter queue statistics
+  """
+  deadLetterStats(subscriptionName: String): DeadLetterStats!
+
+  """
+  Get event by ID
+  """
+  event(eventId: ID!): EventEnvelope
+
+  """
+  Get events by sequence range
+  """
+  eventsByRange(
+    subscriptionName: String!
+    fromSequence: Int!
+    toSequence: Int!
+  ): [EventEnvelope!]!
+}
+
+# =============================================================================
+# Mutation Extensions
+# =============================================================================
+
+extend type Mutation {
+  """
+  Acknowledge events
+  """
+  acknowledgeEvents(
+    subscriptionName: String!
+    acks: [EventAckInput!]!
+  ): AckResult!
+
+  """
+  Batch acknowledge events
+  """
+  batchAcknowledge(subscriptionName: String!, batch: BatchAckInput!): AckResult!
+
+  """
+  Create a checkpoint
+  """
+  createCheckpoint(input: CreateCheckpointInput!): Checkpoint!
+
+  """
+  Retry dead letter events
+  """
+  retryDeadLetterEvents(eventIds: [ID!]!): Int!
+
+  """
+  Purge dead letter events
+  """
+  purgeDeadLetterEvents(subscriptionName: String, olderThanDays: Int = 30): Int!
+
+  """
+  Pause a consumer
+  """
+  pauseConsumer(
+    subscriptionName: String!
+    consumerId: ID!
+    reason: String
+  ): ConsumerState!
+
+  """
+  Resume a consumer
+  """
+  resumeConsumer(subscriptionName: String!, consumerId: ID!): ConsumerState!
+
+  """
+  Seek consumer to position
+  """
+  seekConsumer(
+    subscriptionName: String!
+    consumerId: ID!
+    options: RecoveryOptions!
+  ): ConsumerState!
+}
+
+# =============================================================================
+# Subscription Extensions
+# =============================================================================
+
+extend type Subscription {
+  """
+  Subscribe to events with reliable delivery
+  Supports at-least-once and exactly-once delivery guarantees
+  """
+  reliableEvents(
+    """
+    Subscription name
+    """
+    subscriptionName: String!
+
+    """
+    Reliable delivery configuration
+    """
+    config: ReliableDeliveryConfig!
+
+    """
+    Flow control configuration
+    """
+    flowControl: FlowControlConfig
+
+    """
+    Event filter
+    """
+    filter: EventFilterConfig
+
+    """
+    Recovery options for resumption
+    """
+    recovery: RecoveryOptions
+  ): EventEnvelope!
+
+  """
+  Subscribe to consumer state changes
+  """
+  consumerStateChanges(
+    subscriptionName: String!
+    consumerId: ID
+  ): ConsumerState!
+
+  """
+  Subscribe to dead letter events
+  """
+  deadLetterAlerts(
+    subscriptionName: String
+    minSeverity: IssueSeverity = WARNING
+  ): DeadLetterEvent!
+
+  """
+  Subscribe to backpressure alerts
+  """
+  backpressureAlerts(
+    subscriptionName: String!
+    thresholdPercent: Int = 80
+  ): FlowControlState!
+}
+
+# =============================================================================
+# Custom Scalars
+# =============================================================================
+
+"""
+DateTime scalar for timestamps
+"""
+scalar DateTime
+
+"""
+JSON scalar for arbitrary JSON data
+"""
+scalar JSON

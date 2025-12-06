@@ -1,0 +1,998 @@
+# =============================================================================
+# NEURECTOMY MASTER SCHEMA
+# =============================================================================
+# This is the root GraphQL schema that imports and combines all type definitions.
+# It defines the Query, Mutation, and Subscription root types.
+#
+# Schema Organization:
+# - directives.graphql  : Custom directive definitions
+# - scalars.graphql     : Custom scalar types (UUID, DateTime, JSON, etc.)
+# - enums.graphql       : All enumeration types
+# - interfaces.graphql  : Interface definitions (Node, Timestamped, etc.)
+# - connections.graphql : Relay-style pagination types
+# - types/              : Entity type definitions
+# - inputs/             : Input type definitions
+# - mutations/          : Mutation definitions and payloads
+# - subscriptions/      : Subscription definitions
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# ROOT QUERY TYPE
+# -----------------------------------------------------------------------------
+
+type Query {
+  # ===========================================================================
+  # SYSTEM QUERIES
+  # ===========================================================================
+
+  """
+  Get the current system health status.
+  """
+  systemHealth: SystemHealth! @complexity(value: 1)
+
+  """
+  Get API version information.
+  """
+  apiVersion: APIVersion! @complexity(value: 1)
+
+  # ===========================================================================
+  # CURRENT USER QUERIES
+  # ===========================================================================
+
+  """
+  Get the currently authenticated user.
+  """
+  me: User! @auth(requires: [USER, ADMIN, SUPER_ADMIN]) @complexity(value: 2)
+
+  """
+  Get active sessions for the current user.
+  """
+  mySessions: [Session!]!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 30, window: 60)
+    @complexity(value: 5)
+
+  """
+  Get notifications for the current user.
+  """
+  myNotifications(
+    first: Int = 20
+    after: String
+    unreadOnly: Boolean = false
+    types: [NotificationType!]
+  ): NotificationConnection!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 60, window: 60)
+    @complexity(value: 5, multipliers: ["first"])
+
+  # ===========================================================================
+  # NODE QUERY (Relay Global Object Identification)
+  # ===========================================================================
+
+  """
+  Fetch any node by its global ID.
+  """
+  node(id: ID!): Node
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @complexity(value: 3)
+
+  """
+  Fetch multiple nodes by their global IDs.
+  """
+  nodes(ids: [ID!]!): [Node]!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @complexity(value: 5, multipliers: ["ids"])
+
+  # ===========================================================================
+  # AGENT QUERIES
+  # ===========================================================================
+
+  """
+  Get a single agent by ID.
+  """
+  agent(id: ID!): Agent
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "AGENT_VIEW")
+    @rateLimit(limit: 100, window: 60)
+    @complexity(value: 3)
+
+  """
+  List agents with pagination and filtering.
+  """
+  agents(
+    first: Int = 20
+    after: String
+    last: Int
+    before: String
+    filter: AgentFilterInput
+    orderBy: AgentOrderByInput
+  ): AgentConnection!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "AGENT_VIEW")
+    @rateLimit(limit: 60, window: 60)
+    @complexity(value: 5, multipliers: ["first", "last"])
+
+  """
+  Get agent statistics for the current user.
+  """
+  agentStats: AgentStats!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 30, window: 60)
+    @complexity(value: 8)
+
+  """
+  Search agents by name or description.
+  """
+  searchAgents(query: String!, first: Int = 10): AgentConnection!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 30, window: 60)
+    @complexity(value: 10, multipliers: ["first"])
+
+  # ===========================================================================
+  # USER QUERIES (Admin)
+  # ===========================================================================
+
+  """
+  Get a single user by ID (admin only).
+  """
+  user(id: ID!): User
+    @auth(requires: [ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 100, window: 60)
+    @complexity(value: 3)
+    @audit(action: "admin.view_user", level: INFO)
+
+  """
+  List users with pagination (admin only).
+  """
+  users(
+    first: Int = 20
+    after: String
+    filter: UserFilterInput
+    orderBy: UserOrderByInput
+  ): UserConnection!
+    @auth(requires: [ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 30, window: 60)
+    @complexity(value: 5, multipliers: ["first"])
+    @audit(action: "admin.list_users", level: INFO)
+
+  # ===========================================================================
+  # WORKFLOW QUERIES
+  # ===========================================================================
+
+  """
+  Get a single workflow by ID.
+  """
+  workflow(id: ID!): Workflow
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "WORKFLOW_VIEW")
+    @rateLimit(limit: 100, window: 60)
+    @complexity(value: 3)
+
+  """
+  List workflows with pagination.
+  """
+  workflows(
+    first: Int = 20
+    after: String
+    filter: WorkflowFilterInput
+    orderBy: WorkflowOrderByInput
+  ): WorkflowConnection!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "WORKFLOW_VIEW")
+    @rateLimit(limit: 60, window: 60)
+    @complexity(value: 5, multipliers: ["first"])
+
+  """
+  Get a workflow execution by ID.
+  """
+  workflowExecution(id: ID!): WorkflowExecution
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "WORKFLOW_VIEW")
+    @rateLimit(limit: 100, window: 60)
+    @complexity(value: 5)
+
+  """
+  List workflow executions.
+  """
+  workflowExecutions(
+    workflowId: ID
+    first: Int = 20
+    after: String
+    filter: WorkflowExecutionFilterInput
+  ): WorkflowExecutionConnection!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "WORKFLOW_VIEW")
+    @rateLimit(limit: 60, window: 60)
+    @complexity(value: 5, multipliers: ["first"])
+
+  # ===========================================================================
+  # CONVERSATION QUERIES
+  # ===========================================================================
+
+  """
+  Get a single conversation by ID.
+  """
+  conversation(id: ID!): Conversation
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 100, window: 60)
+    @complexity(value: 3)
+
+  """
+  List conversations with pagination.
+  """
+  conversations(
+    first: Int = 20
+    after: String
+    agentId: ID
+    filter: ConversationFilterInput
+  ): ConversationConnection!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 60, window: 60)
+    @complexity(value: 5, multipliers: ["first"])
+
+  # ===========================================================================
+  # KNOWLEDGE BASE QUERIES
+  # ===========================================================================
+
+  """
+  Get a knowledge base by ID.
+  """
+  knowledgeBase(id: ID!): KnowledgeBase
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "KNOWLEDGE_VIEW")
+    @rateLimit(limit: 100, window: 60)
+    @complexity(value: 3)
+
+  """
+  List knowledge bases.
+  """
+  knowledgeBases(
+    first: Int = 20
+    after: String
+    filter: KnowledgeBaseFilterInput
+  ): KnowledgeBaseConnection!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "KNOWLEDGE_VIEW")
+    @rateLimit(limit: 60, window: 60)
+    @complexity(value: 5, multipliers: ["first"])
+
+  """
+  Search within a knowledge base.
+  """
+  searchKnowledge(
+    knowledgeBaseId: ID!
+    query: String!
+    first: Int = 10
+    scoreThreshold: Float = 0.7
+  ): KnowledgeSearchResults!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "KNOWLEDGE_VIEW")
+    @rateLimit(limit: 30, window: 60)
+    @complexity(value: 15, multipliers: ["first"])
+
+  # ===========================================================================
+  # TOOL QUERIES
+  # ===========================================================================
+
+  """
+  Get a tool by ID.
+  """
+  tool(id: ID!): Tool
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 100, window: 60)
+    @complexity(value: 2)
+
+  """
+  List available tools.
+  """
+  tools(
+    first: Int = 50
+    after: String
+    filter: ToolFilterInput
+  ): ToolConnection!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 60, window: 60)
+    @complexity(value: 5, multipliers: ["first"])
+
+  """
+  Get available tool categories.
+  """
+  toolCategories: [ToolCategory!]!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 100, window: 60)
+    @complexity(value: 2)
+
+  # ===========================================================================
+  # MODEL QUERIES
+  # ===========================================================================
+
+  """
+  List available AI models.
+  """
+  models(provider: ModelProvider, capability: ModelCapability): [AIModel!]!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 60, window: 60)
+    @complexity(value: 3)
+
+  """
+  Get model pricing information.
+  """
+  modelPricing(modelId: String!): ModelPricing
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 60, window: 60)
+    @complexity(value: 2)
+
+  # ===========================================================================
+  # ANALYTICS QUERIES
+  # ===========================================================================
+
+  """
+  Get usage analytics for the current user.
+  """
+  usageAnalytics(
+    period: AnalyticsPeriod = LAST_30_DAYS
+    granularity: AnalyticsGranularity = DAY
+  ): UsageAnalytics!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 30, window: 60)
+    @complexity(value: 10)
+
+  """
+  Get cost breakdown for the current billing period.
+  """
+  costBreakdown(period: AnalyticsPeriod = CURRENT_MONTH): CostBreakdown!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 30, window: 60)
+    @complexity(value: 8)
+
+  # ===========================================================================
+  # ADMIN QUERIES
+  # ===========================================================================
+
+  """
+  Get system analytics (admin only).
+  """
+  systemAnalytics(period: AnalyticsPeriod = LAST_7_DAYS): SystemAnalytics!
+    @auth(requires: [ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 30, window: 60)
+    @complexity(value: 15)
+    @audit(action: "admin.view_analytics", level: INFO)
+
+  """
+  Get audit logs (admin only).
+  """
+  auditLogs(
+    first: Int = 50
+    after: String
+    filter: AuditLogFilterInput
+  ): AuditLogConnection!
+    @auth(requires: [ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 30, window: 60)
+    @complexity(value: 10, multipliers: ["first"])
+    @audit(action: "admin.view_audit_logs", level: INFO)
+}
+
+# -----------------------------------------------------------------------------
+# ROOT MUTATION TYPE
+# -----------------------------------------------------------------------------
+
+type Mutation {
+  """
+  Placeholder - actual mutations are defined in mutation files via extend type.
+  This enables modular schema organization.
+  """
+  _empty: Boolean
+}
+
+# -----------------------------------------------------------------------------
+# ROOT SUBSCRIPTION TYPE
+# -----------------------------------------------------------------------------
+
+type Subscription {
+  """
+  Placeholder - actual subscriptions are defined in subscription files via extend type.
+  This enables modular schema organization.
+  """
+  _empty: Boolean
+}
+
+# =============================================================================
+# SUPPORTING TYPES FOR ROOT QUERIES
+# =============================================================================
+
+"""
+System health information
+"""
+type SystemHealth implements Node {
+  id: ID!
+
+  """
+  Overall system status
+  """
+  status: HealthStatus!
+
+  """
+  System version
+  """
+  version: String!
+
+  """
+  System uptime in seconds
+  """
+  uptimeSeconds: Int!
+
+  """
+  Individual service health
+  """
+  services: [ServiceHealth!]!
+
+  """
+  Last health check timestamp
+  """
+  lastCheck: DateTime!
+}
+
+"""
+API version information
+"""
+type APIVersion {
+  """
+  API version string
+  """
+  version: String!
+
+  """
+  Build hash
+  """
+  buildHash: String
+
+  """
+  Build date
+  """
+  buildDate: DateTime
+
+  """
+  Minimum supported client version
+  """
+  minClientVersion: String
+
+  """
+  Deprecation notices
+  """
+  deprecations: [DeprecationNotice!]!
+}
+
+"""
+Deprecation notice
+"""
+type DeprecationNotice {
+  """
+  Field or feature being deprecated
+  """
+  feature: String!
+
+  """
+  Reason for deprecation
+  """
+  reason: String!
+
+  """
+  When it will be removed
+  """
+  removalDate: DateTime
+
+  """
+  Alternative to use
+  """
+  alternative: String
+}
+
+"""
+Agent statistics
+"""
+type AgentStats {
+  """
+  Total agents owned
+  """
+  totalAgents: Int!
+
+  """
+  Active agents
+  """
+  activeAgents: Int!
+
+  """
+  Agents by status
+  """
+  byStatus: [StatusCount!]!
+
+  """
+  Total conversations today
+  """
+  conversationsToday: Int!
+
+  """
+  Total tokens used today
+  """
+  tokensToday: Int!
+
+  """
+  Estimated cost today
+  """
+  costToday: Float!
+}
+
+"""
+Status count for statistics
+"""
+type StatusCount {
+  """
+  Status
+  """
+  status: AgentStatus!
+
+  """
+  Count
+  """
+  count: Int!
+}
+
+"""
+Knowledge search results
+"""
+type KnowledgeSearchResults {
+  """
+  Search hits
+  """
+  hits: [KnowledgeSearchHit!]!
+
+  """
+  Total matching documents
+  """
+  totalHits: Int!
+
+  """
+  Search query
+  """
+  query: String!
+
+  """
+  Search duration in milliseconds
+  """
+  took: Int!
+}
+
+"""
+Single knowledge search hit
+"""
+type KnowledgeSearchHit {
+  """
+  Document chunk
+  """
+  content: String!
+
+  """
+  Relevance score (0-1)
+  """
+  score: Float!
+
+  """
+  Source document
+  """
+  document: Document!
+
+  """
+  Highlighted matches
+  """
+  highlights: [String!]
+
+  """
+  Metadata from the chunk
+  """
+  metadata: JSON
+}
+
+"""
+Usage analytics
+"""
+type UsageAnalytics {
+  """
+  Time period
+  """
+  period: AnalyticsPeriod!
+
+  """
+  Total requests
+  """
+  totalRequests: Int!
+
+  """
+  Total tokens consumed
+  """
+  totalTokens: Int!
+
+  """
+  Total cost
+  """
+  totalCost: Float!
+
+  """
+  Usage by day/hour/etc.
+  """
+  timeSeries: [UsageDataPoint!]!
+
+  """
+  Usage by agent
+  """
+  byAgent: [AgentUsage!]!
+
+  """
+  Usage by model
+  """
+  byModel: [ModelUsage!]!
+}
+
+"""
+Usage data point for time series
+"""
+type UsageDataPoint {
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+
+  """
+  Request count
+  """
+  requests: Int!
+
+  """
+  Token count
+  """
+  tokens: Int!
+
+  """
+  Cost
+  """
+  cost: Float!
+}
+
+"""
+Usage by agent
+"""
+type AgentUsage {
+  """
+  Agent
+  """
+  agent: Agent!
+
+  """
+  Request count
+  """
+  requests: Int!
+
+  """
+  Token count
+  """
+  tokens: Int!
+
+  """
+  Cost
+  """
+  cost: Float!
+
+  """
+  Percentage of total
+  """
+  percentage: Float!
+}
+
+"""
+Usage by model
+"""
+type ModelUsage {
+  """
+  Model ID
+  """
+  modelId: String!
+
+  """
+  Model name
+  """
+  modelName: String!
+
+  """
+  Request count
+  """
+  requests: Int!
+
+  """
+  Token count
+  """
+  tokens: Int!
+
+  """
+  Cost
+  """
+  cost: Float!
+}
+
+"""
+Cost breakdown
+"""
+type CostBreakdown {
+  """
+  Billing period start
+  """
+  periodStart: DateTime!
+
+  """
+  Billing period end
+  """
+  periodEnd: DateTime!
+
+  """
+  Total cost
+  """
+  totalCost: Float!
+
+  """
+  Cost by category
+  """
+  byCategory: [CategoryCost!]!
+
+  """
+  Daily breakdown
+  """
+  daily: [DailyCost!]!
+
+  """
+  Budget information
+  """
+  budget: BudgetInfo
+}
+
+"""
+Cost by category
+"""
+type CategoryCost {
+  """
+  Category name
+  """
+  category: String!
+
+  """
+  Cost amount
+  """
+  amount: Float!
+
+  """
+  Percentage of total
+  """
+  percentage: Float!
+}
+
+"""
+Daily cost
+"""
+type DailyCost {
+  """
+  Date
+  """
+  date: Date!
+
+  """
+  Cost amount
+  """
+  amount: Float!
+}
+
+"""
+Budget information
+"""
+type BudgetInfo {
+  """
+  Monthly budget
+  """
+  monthlyBudget: Float!
+
+  """
+  Amount spent
+  """
+  spent: Float!
+
+  """
+  Percentage used
+  """
+  percentageUsed: Float!
+
+  """
+  Projected month-end cost
+  """
+  projectedCost: Float!
+
+  """
+  Alert threshold percentage
+  """
+  alertThreshold: Float!
+}
+
+"""
+System analytics (admin)
+"""
+type SystemAnalytics {
+  """
+  Active users count
+  """
+  activeUsers: Int!
+
+  """
+  Total agents in system
+  """
+  totalAgents: Int!
+
+  """
+  Total requests processed
+  """
+  totalRequests: Int!
+
+  """
+  System load metrics
+  """
+  systemLoad: SystemLoadMetrics!
+
+  """
+  Revenue metrics
+  """
+  revenue: RevenueMetrics!
+
+  """
+  Growth metrics
+  """
+  growth: GrowthMetrics!
+}
+
+"""
+System load metrics
+"""
+type SystemLoadMetrics {
+  """
+  Average CPU usage
+  """
+  avgCpu: Float!
+
+  """
+  Average memory usage
+  """
+  avgMemory: Float!
+
+  """
+  Request rate per second
+  """
+  requestRate: Float!
+
+  """
+  Error rate percentage
+  """
+  errorRate: Float!
+
+  """
+  P95 latency in milliseconds
+  """
+  p95Latency: Float!
+}
+
+"""
+Revenue metrics
+"""
+type RevenueMetrics {
+  """
+  Revenue this period
+  """
+  periodRevenue: Float!
+
+  """
+  Previous period revenue
+  """
+  previousPeriodRevenue: Float!
+
+  """
+  Growth percentage
+  """
+  growthPercent: Float!
+
+  """
+  Monthly recurring revenue
+  """
+  mrr: Float!
+}
+
+"""
+Growth metrics
+"""
+type GrowthMetrics {
+  """
+  New users this period
+  """
+  newUsers: Int!
+
+  """
+  Churned users this period
+  """
+  churnedUsers: Int!
+
+  """
+  Net user growth
+  """
+  netGrowth: Int!
+
+  """
+  Growth rate percentage
+  """
+  growthRate: Float!
+}
+
+# =============================================================================
+# ANALYTICS ENUMS
+# =============================================================================
+
+"""
+Analytics time periods
+"""
+enum AnalyticsPeriod {
+  """
+  Last 24 hours
+  """
+  LAST_24_HOURS
+
+  """
+  Last 7 days
+  """
+  LAST_7_DAYS
+
+  """
+  Last 30 days
+  """
+  LAST_30_DAYS
+
+  """
+  Last 90 days
+  """
+  LAST_90_DAYS
+
+  """
+  Current month
+  """
+  CURRENT_MONTH
+
+  """
+  Previous month
+  """
+  PREVIOUS_MONTH
+
+  """
+  Year to date
+  """
+  YEAR_TO_DATE
+
+  """
+  Custom range (requires start/end params)
+  """
+  CUSTOM
+}
+
+"""
+Analytics granularity
+"""
+enum AnalyticsGranularity {
+  """
+  Hourly data points
+  """
+  HOUR
+
+  """
+  Daily data points
+  """
+  DAY
+
+  """
+  Weekly data points
+  """
+  WEEK
+
+  """
+  Monthly data points
+  """
+  MONTH
+}

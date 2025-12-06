@@ -1,0 +1,174 @@
+# NEURECTOMY GraphQL Interfaces
+# Core interfaces for DRY schema patterns and Relay compliance
+
+"""
+Relay-compliant Node interface for global object identification.
+All entities that can be fetched by ID must implement this interface.
+"""
+interface Node {
+  "Globally unique identifier"
+  id: UUID!
+}
+
+"""
+Interface for entities with audit timestamps.
+Provides standard createdAt/updatedAt tracking.
+"""
+interface Timestamped {
+  "When the entity was created"
+  createdAt: DateTime!
+  "When the entity was last updated"
+  updatedAt: DateTime!
+}
+
+"""
+Interface for entities owned by a user.
+Enables ownership-based access control.
+"""
+interface Owned {
+  "The user who owns this entity"
+  owner: User!
+  "The owner's ID for quick access control checks"
+  ownerId: UUID!
+}
+
+"""
+Interface for soft-deletable entities.
+Supports data retention and recovery.
+"""
+interface SoftDeletable {
+  "Whether the entity is deleted"
+  isDeleted: Boolean!
+  "When the entity was deleted"
+  deletedAt: DateTime
+  "Who deleted the entity"
+  deletedBy: User
+}
+
+"""
+Interface for entities with a status lifecycle.
+Used for agents, workflows, and other stateful resources.
+"""
+interface Stateful {
+  "Current status of the entity"
+  status: String!
+}
+
+"""
+Combined interface for standard CRUD entities.
+Most domain objects should implement this interface.
+"""
+interface Entity implements Node & Timestamped {
+  id: UUID!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+"""
+Interface for auditable operations.
+Tracks who made changes and when.
+"""
+interface Auditable {
+  "User who last modified the entity"
+  lastModifiedBy: User
+  "Audit trail of changes"
+  auditLog: [AuditEntry!]
+}
+
+"""
+Individual audit log entry.
+"""
+type AuditEntry {
+  "Unique ID for this audit entry"
+  id: UUID!
+  "When the action occurred"
+  timestamp: DateTime!
+  "Who performed the action"
+  actor: User!
+  "Type of action performed"
+  action: AuditAction!
+  "Description of what changed"
+  description: String
+  "Previous value (for updates)"
+  previousValue: JSON
+  "New value (for updates)"
+  newValue: JSON
+}
+
+"""
+Types of auditable actions.
+"""
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  RESTORE
+  ACCESS
+  EXPORT
+  SHARE
+  PERMISSION_CHANGE
+}
+
+"""
+Interface for searchable entities.
+Supports full-text and semantic search.
+"""
+interface Searchable {
+  "Text content for full-text search"
+  searchableContent: String
+  "Vector embedding for semantic search"
+  embedding: [Float!]
+}
+
+"""
+Interface for entities that can be tagged.
+"""
+interface Taggable {
+  "Tags associated with this entity"
+  tags: [String!]!
+}
+
+"""
+Interface for entities with versioning.
+"""
+interface Versioned {
+  "Current version number"
+  version: Int!
+  "Previous version of this entity"
+  previousVersion: Node
+  "History of all versions"
+  versionHistory(first: Int, after: String): VersionConnection
+}
+
+"""
+Version history connection for paginated version lists.
+"""
+type VersionConnection {
+  edges: [VersionEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+"""
+Edge in version history.
+"""
+type VersionEdge {
+  cursor: String!
+  node: VersionInfo!
+}
+
+"""
+Information about a specific version.
+"""
+type VersionInfo {
+  "Version number"
+  version: Int!
+  "When this version was created"
+  createdAt: DateTime!
+  "Who created this version"
+  createdBy: User!
+  "Description of changes"
+  changeDescription: String
+  "The entity at this version"
+  snapshot: JSON!
+}

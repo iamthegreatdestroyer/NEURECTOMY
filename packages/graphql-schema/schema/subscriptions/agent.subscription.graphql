@@ -1,0 +1,1067 @@
+# =============================================================================
+# AGENT SUBSCRIPTIONS - Real-Time Agent Events
+# =============================================================================
+# Comprehensive subscription definitions for real-time agent monitoring,
+# execution tracking, and state change notifications.
+# =============================================================================
+
+extend type Subscription {
+  # ===========================================================================
+  # AGENT STATE SUBSCRIPTIONS
+  # ===========================================================================
+
+  """
+  Subscribe to state changes for a specific agent.
+  Emits when agent starts, stops, pauses, errors, etc.
+  """
+  agentStateChanged(agentId: ID!): AgentStateChangedEvent!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "AGENT_VIEW")
+    @rateLimit(limit: 10, window: 60)
+    @complexity(value: 5)
+
+  """
+  Subscribe to state changes for all agents owned by the current user.
+  """
+  myAgentsStateChanged: AgentStateChangedEvent!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 5, window: 60)
+    @complexity(value: 10)
+
+  """
+  Subscribe to agent creation events.
+  Admins can see all creations, users see only their own.
+  """
+  agentCreated(filter: AgentSubscriptionFilter): AgentCreatedEvent!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 5, window: 60)
+    @complexity(value: 5)
+
+  """
+  Subscribe to agent update events.
+  """
+  agentUpdated(
+    agentId: ID
+    filter: AgentSubscriptionFilter
+  ): AgentUpdatedEvent!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 10, window: 60)
+    @complexity(value: 5)
+
+  """
+  Subscribe to agent deletion events.
+  """
+  agentDeleted(filter: AgentSubscriptionFilter): AgentDeletedEvent!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 5, window: 60)
+    @complexity(value: 3)
+
+  # ===========================================================================
+  # AGENT EXECUTION SUBSCRIPTIONS
+  # ===========================================================================
+
+  """
+  Subscribe to real-time agent execution/conversation events.
+  Provides streaming output as the agent processes requests.
+  """
+  agentExecution(agentId: ID!, conversationId: ID!): AgentExecutionEvent!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "AGENT_EXECUTE")
+    @rateLimit(limit: 20, window: 60)
+    @complexity(value: 8)
+
+  """
+  Subscribe to tool call events during agent execution.
+  """
+  agentToolCall(agentId: ID!, conversationId: ID!): AgentToolCallEvent!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "AGENT_EXECUTE")
+    @rateLimit(limit: 20, window: 60)
+    @complexity(value: 5)
+
+  """
+  Subscribe to streaming token output from an agent.
+  Used for real-time typing effect in UI.
+  """
+  agentTokenStream(agentId: ID!, conversationId: ID!): AgentTokenStreamEvent!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "AGENT_EXECUTE")
+    @rateLimit(limit: 20, window: 60)
+    @complexity(value: 10)
+
+  # ===========================================================================
+  # AGENT METRICS SUBSCRIPTIONS
+  # ===========================================================================
+
+  """
+  Subscribe to real-time metrics for a specific agent.
+  Includes token usage, latency, error rates.
+  """
+  agentMetrics(
+    agentId: ID!
+    interval: MetricsInterval = SECOND
+  ): AgentMetricsEvent!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "AGENT_VIEW")
+    @rateLimit(limit: 5, window: 60)
+    @complexity(value: 8)
+
+  """
+  Subscribe to aggregated metrics for all user's agents.
+  """
+  aggregateAgentMetrics(
+    interval: MetricsInterval = MINUTE
+  ): AggregateMetricsEvent!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 3, window: 60)
+    @complexity(value: 15)
+
+  # ===========================================================================
+  # AGENT LOG SUBSCRIPTIONS
+  # ===========================================================================
+
+  """
+  Subscribe to real-time log stream for an agent.
+  """
+  agentLogs(
+    agentId: ID!
+    levels: [LogLevel!] = [INFO, WARNING, ERROR]
+  ): AgentLogEvent!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "AGENT_VIEW")
+    @rateLimit(limit: 10, window: 60)
+    @complexity(value: 5)
+
+  # ===========================================================================
+  # DEPLOYMENT SUBSCRIPTIONS
+  # ===========================================================================
+
+  """
+  Subscribe to deployment progress for an agent.
+  """
+  agentDeploymentProgress(
+    agentId: ID!
+    deploymentId: ID!
+  ): DeploymentProgressEvent!
+    @auth(requires: [ADMIN, SUPER_ADMIN], permission: "AGENT_DEPLOY")
+    @rateLimit(limit: 10, window: 60)
+    @complexity(value: 5)
+
+  """
+  Subscribe to deployment health changes.
+  """
+  agentDeploymentHealth(
+    agentId: ID!
+    environment: DeploymentEnvironment!
+  ): DeploymentHealthEvent!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "AGENT_VIEW")
+    @rateLimit(limit: 5, window: 60)
+    @complexity(value: 5)
+}
+
+# =============================================================================
+# EVENT TYPE DEFINITIONS
+# =============================================================================
+
+"""
+Event emitted when an agent's state changes
+"""
+type AgentStateChangedEvent {
+  """
+  The agent that changed state
+  """
+  agent: Agent!
+
+  """
+  Previous state
+  """
+  previousState: AgentStatus!
+
+  """
+  New state
+  """
+  newState: AgentStatus!
+
+  """
+  What triggered the state change
+  """
+  trigger: StateChangeTrigger!
+
+  """
+  Timestamp of the change
+  """
+  timestamp: DateTime!
+
+  """
+  Additional context about the change
+  """
+  context: JSON
+}
+
+"""
+What triggered a state change
+"""
+enum StateChangeTrigger {
+  """
+  Manual user action
+  """
+  USER_ACTION
+
+  """
+  System scheduled action
+  """
+  SCHEDULED
+
+  """
+  Auto-scaling event
+  """
+  AUTO_SCALE
+
+  """
+  Error recovery
+  """
+  ERROR_RECOVERY
+
+  """
+  Health check failure
+  """
+  HEALTH_CHECK
+
+  """
+  Resource limit reached
+  """
+  RESOURCE_LIMIT
+
+  """
+  External API call
+  """
+  API_CALL
+}
+
+"""
+Event emitted when an agent is created
+"""
+type AgentCreatedEvent {
+  """
+  The newly created agent
+  """
+  agent: Agent!
+
+  """
+  User who created the agent
+  """
+  createdBy: User!
+
+  """
+  Timestamp of creation
+  """
+  timestamp: DateTime!
+}
+
+"""
+Event emitted when an agent is updated
+"""
+type AgentUpdatedEvent {
+  """
+  The updated agent
+  """
+  agent: Agent!
+
+  """
+  Fields that were changed
+  """
+  changedFields: [String!]!
+
+  """
+  Previous values (for changed fields)
+  """
+  previousValues: JSON
+
+  """
+  User who made the update
+  """
+  updatedBy: User!
+
+  """
+  Timestamp of update
+  """
+  timestamp: DateTime!
+}
+
+"""
+Event emitted when an agent is deleted
+"""
+type AgentDeletedEvent {
+  """
+  ID of the deleted agent
+  """
+  agentId: ID!
+
+  """
+  Name of the deleted agent (for display)
+  """
+  agentName: String!
+
+  """
+  Whether this was a soft or hard delete
+  """
+  isSoftDelete: Boolean!
+
+  """
+  User who deleted the agent
+  """
+  deletedBy: User!
+
+  """
+  Timestamp of deletion
+  """
+  timestamp: DateTime!
+}
+
+"""
+Event emitted during agent execution
+"""
+type AgentExecutionEvent {
+  """
+  Type of execution event
+  """
+  eventType: ExecutionEventType!
+
+  """
+  The agent executing
+  """
+  agent: Agent!
+
+  """
+  Conversation ID
+  """
+  conversationId: ID!
+
+  """
+  Message ID (if applicable)
+  """
+  messageId: ID
+
+  """
+  Event payload data
+  """
+  payload: ExecutionEventPayload!
+
+  """
+  Timestamp of the event
+  """
+  timestamp: DateTime!
+
+  """
+  Sequence number for ordering
+  """
+  sequenceNumber: Int!
+}
+
+"""
+Types of execution events
+"""
+enum ExecutionEventType {
+  """
+  Execution started
+  """
+  STARTED
+
+  """
+  Processing input
+  """
+  PROCESSING
+
+  """
+  Generating response
+  """
+  GENERATING
+
+  """
+  Tool being called
+  """
+  TOOL_CALL
+
+  """
+  Tool returned result
+  """
+  TOOL_RESULT
+
+  """
+  Chunk of response ready
+  """
+  CHUNK
+
+  """
+  Execution completed
+  """
+  COMPLETED
+
+  """
+  Execution failed
+  """
+  ERROR
+
+  """
+  Execution cancelled
+  """
+  CANCELLED
+}
+
+"""
+Payload for execution events
+"""
+type ExecutionEventPayload {
+  """
+  Text content (for CHUNK events)
+  """
+  text: String
+
+  """
+  Tool call information
+  """
+  toolCall: ToolCallInfo
+
+  """
+  Error information
+  """
+  error: ExecutionError
+
+  """
+  Completion information
+  """
+  completion: ExecutionCompletion
+
+  """
+  Progress percentage (0-100)
+  """
+  progress: Int
+
+  """
+  Additional metadata
+  """
+  metadata: JSON
+}
+
+"""
+Information about a tool call
+"""
+type ToolCallInfo {
+  """
+  Tool call ID
+  """
+  id: ID!
+
+  """
+  Name of the tool
+  """
+  toolName: String!
+
+  """
+  Arguments passed to the tool
+  """
+  arguments: JSON
+
+  """
+  Status of the tool call
+  """
+  status: ToolCallStatus!
+}
+
+"""
+Status of a tool call
+"""
+enum ToolCallStatus {
+  """
+  Tool call initiated
+  """
+  PENDING
+
+  """
+  Tool is executing
+  """
+  RUNNING
+
+  """
+  Tool completed successfully
+  """
+  SUCCESS
+
+  """
+  Tool execution failed
+  """
+  FAILED
+}
+
+"""
+Information about execution errors
+"""
+type ExecutionError {
+  """
+  Error code
+  """
+  code: ErrorCode!
+
+  """
+  Error message
+  """
+  message: String!
+
+  """
+  Whether the error is recoverable
+  """
+  isRecoverable: Boolean!
+
+  """
+  Suggested recovery action
+  """
+  recoveryAction: String
+}
+
+"""
+Information about completed execution
+"""
+type ExecutionCompletion {
+  """
+  Total tokens used
+  """
+  totalTokens: Int!
+
+  """
+  Input tokens
+  """
+  inputTokens: Int!
+
+  """
+  Output tokens
+  """
+  outputTokens: Int!
+
+  """
+  Execution duration in milliseconds
+  """
+  durationMs: Int!
+
+  """
+  Number of tool calls made
+  """
+  toolCallCount: Int!
+
+  """
+  Finish reason
+  """
+  finishReason: FinishReason!
+}
+
+"""
+Reasons for execution completion
+"""
+enum FinishReason {
+  """
+  Natural end of response
+  """
+  STOP
+
+  """
+  Hit max tokens limit
+  """
+  MAX_TOKENS
+
+  """
+  Tool use required
+  """
+  TOOL_USE
+
+  """
+  Content filter triggered
+  """
+  CONTENT_FILTER
+
+  """
+  User cancelled
+  """
+  CANCELLED
+
+  """
+  Error occurred
+  """
+  ERROR
+}
+
+"""
+Event for tool calls
+"""
+type AgentToolCallEvent {
+  """
+  The agent making the tool call
+  """
+  agent: Agent!
+
+  """
+  Conversation context
+  """
+  conversationId: ID!
+
+  """
+  Message that triggered the tool call
+  """
+  messageId: ID!
+
+  """
+  Tool call details
+  """
+  toolCall: ToolCallInfo!
+
+  """
+  Tool result (if completed)
+  """
+  result: ToolResultInfo
+
+  """
+  Duration of tool execution in milliseconds
+  """
+  durationMs: Int
+
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+}
+
+"""
+Information about tool results
+"""
+type ToolResultInfo {
+  """
+  Whether the tool succeeded
+  """
+  success: Boolean!
+
+  """
+  Result data
+  """
+  data: JSON
+
+  """
+  Error message if failed
+  """
+  error: String
+}
+
+"""
+Event for streaming tokens
+"""
+type AgentTokenStreamEvent {
+  """
+  Token or chunk of text
+  """
+  token: String!
+
+  """
+  Conversation ID
+  """
+  conversationId: ID!
+
+  """
+  Message being generated
+  """
+  messageId: ID!
+
+  """
+  Position in the stream
+  """
+  index: Int!
+
+  """
+  Whether this is the final token
+  """
+  isFinal: Boolean!
+
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+}
+
+"""
+Event for agent metrics updates
+"""
+type AgentMetricsEvent {
+  """
+  The agent
+  """
+  agent: Agent!
+
+  """
+  Metric type
+  """
+  metricType: MetricType!
+
+  """
+  Metric value
+  """
+  value: Float!
+
+  """
+  Unit of measurement
+  """
+  unit: String!
+
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+
+  """
+  Comparison to previous period
+  """
+  changePercent: Float
+}
+
+"""
+Types of metrics
+"""
+enum MetricType {
+  """
+  Tokens used per minute
+  """
+  TOKENS_PER_MINUTE
+
+  """
+  Requests per minute
+  """
+  REQUESTS_PER_MINUTE
+
+  """
+  Average latency
+  """
+  LATENCY_AVG
+
+  """
+  P95 latency
+  """
+  LATENCY_P95
+
+  """
+  P99 latency
+  """
+  LATENCY_P99
+
+  """
+  Error rate percentage
+  """
+  ERROR_RATE
+
+  """
+  Active conversations
+  """
+  ACTIVE_CONVERSATIONS
+
+  """
+  Memory usage
+  """
+  MEMORY_USAGE
+
+  """
+  CPU usage
+  """
+  CPU_USAGE
+
+  """
+  Cost per hour
+  """
+  COST_PER_HOUR
+}
+
+"""
+Event for aggregate metrics
+"""
+type AggregateMetricsEvent {
+  """
+  Total agents
+  """
+  totalAgents: Int!
+
+  """
+  Active agents
+  """
+  activeAgents: Int!
+
+  """
+  Total requests in period
+  """
+  totalRequests: Int!
+
+  """
+  Total tokens in period
+  """
+  totalTokens: Int!
+
+  """
+  Average latency
+  """
+  avgLatency: Float!
+
+  """
+  Error rate
+  """
+  errorRate: Float!
+
+  """
+  Estimated cost
+  """
+  estimatedCost: Float!
+
+  """
+  Period covered
+  """
+  period: DateTimeRange!
+
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+}
+
+"""
+Event for agent logs
+"""
+type AgentLogEvent {
+  """
+  The agent
+  """
+  agentId: ID!
+
+  """
+  Log level
+  """
+  level: LogLevel!
+
+  """
+  Log message
+  """
+  message: String!
+
+  """
+  Structured log data
+  """
+  data: JSON
+
+  """
+  Source of the log
+  """
+  source: String
+
+  """
+  Trace ID for correlation
+  """
+  traceId: String
+
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+}
+
+"""
+Log levels
+"""
+enum LogLevel {
+  """
+  Debug information
+  """
+  DEBUG
+
+  """
+  Informational messages
+  """
+  INFO
+
+  """
+  Warning messages
+  """
+  WARNING
+
+  """
+  Error messages
+  """
+  ERROR
+
+  """
+  Critical errors
+  """
+  CRITICAL
+}
+
+"""
+Event for deployment progress
+"""
+type DeploymentProgressEvent {
+  """
+  The agent being deployed
+  """
+  agent: Agent!
+
+  """
+  Deployment ID
+  """
+  deploymentId: ID!
+
+  """
+  Current phase
+  """
+  phase: DeploymentPhase!
+
+  """
+  Progress percentage (0-100)
+  """
+  progress: Int!
+
+  """
+  Status message
+  """
+  message: String!
+
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+}
+
+"""
+Deployment phases
+"""
+enum DeploymentPhase {
+  """
+  Initializing deployment
+  """
+  INITIALIZING
+
+  """
+  Building container image
+  """
+  BUILDING
+
+  """
+  Pushing to registry
+  """
+  PUSHING
+
+  """
+  Creating resources
+  """
+  CREATING_RESOURCES
+
+  """
+  Starting containers
+  """
+  STARTING
+
+  """
+  Running health checks
+  """
+  HEALTH_CHECK
+
+  """
+  Deployment complete
+  """
+  COMPLETE
+
+  """
+  Deployment failed
+  """
+  FAILED
+}
+
+"""
+Event for deployment health changes
+"""
+type DeploymentHealthEvent {
+  """
+  The agent
+  """
+  agent: Agent!
+
+  """
+  Environment
+  """
+  environment: DeploymentEnvironment!
+
+  """
+  Health status
+  """
+  health: DeploymentHealth!
+
+  """
+  Previous health status
+  """
+  previousHealth: HealthStatus
+
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+}
+
+# =============================================================================
+# INPUT DEFINITIONS
+# =============================================================================
+
+"""
+Filter for agent subscriptions
+"""
+input AgentSubscriptionFilter {
+  """
+  Filter by agent types
+  """
+  types: [AgentType!]
+
+  """
+  Filter by agent statuses
+  """
+  statuses: [AgentStatus!]
+
+  """
+  Filter by owner IDs
+  """
+  ownerIds: [ID!]
+
+  """
+  Include shared agents
+  """
+  includeShared: Boolean = true
+}
+
+"""
+Metrics interval for aggregation
+"""
+enum MetricsInterval {
+  """
+  Per-second metrics
+  """
+  SECOND
+
+  """
+  Per-minute metrics
+  """
+  MINUTE
+
+  """
+  Per-hour metrics
+  """
+  HOUR
+
+  """
+  Per-day metrics
+  """
+  DAY
+}
+
+"""
+Date/time range
+"""
+type DateTimeRange {
+  """
+  Start of range
+  """
+  start: DateTime!
+
+  """
+  End of range
+  """
+  end: DateTime!
+}

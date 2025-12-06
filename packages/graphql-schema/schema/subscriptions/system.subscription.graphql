@@ -1,0 +1,1561 @@
+# =============================================================================
+# SYSTEM SUBSCRIPTIONS - Real-Time System Events
+# =============================================================================
+# Comprehensive subscription definitions for system-wide events including
+# health monitoring, notifications, workflow events, and admin operations.
+# =============================================================================
+
+extend type Subscription {
+  # ===========================================================================
+  # SYSTEM HEALTH & STATUS
+  # ===========================================================================
+
+  """
+  Subscribe to system health updates.
+  Provides real-time status of all system components.
+  """
+  systemHealth(interval: MetricsInterval = MINUTE): SystemHealthEvent!
+    @auth(requires: [ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 5, window: 60)
+    @complexity(value: 10)
+
+  """
+  Subscribe to service status changes.
+  Emits when any monitored service changes state.
+  """
+  serviceStatusChanged: ServiceStatusEvent!
+    @auth(requires: [ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 5, window: 60)
+    @complexity(value: 5)
+
+  """
+  Subscribe to system alerts.
+  Real-time notifications for critical system events.
+  """
+  systemAlerts(
+    severity: [AlertSeverity!] = [WARNING, CRITICAL]
+  ): SystemAlertEvent!
+    @auth(requires: [ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 5, window: 60)
+    @complexity(value: 5)
+
+  # ===========================================================================
+  # USER NOTIFICATIONS
+  # ===========================================================================
+
+  """
+  Subscribe to notifications for the current user.
+  """
+  userNotifications(
+    types: [NotificationType!]
+    unreadOnly: Boolean = false
+  ): UserNotificationEvent!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 10, window: 60)
+    @complexity(value: 3)
+
+  """
+  Subscribe to unread notification count changes.
+  """
+  notificationCount: NotificationCountEvent!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 10, window: 60)
+    @complexity(value: 1)
+
+  # ===========================================================================
+  # WORKFLOW SUBSCRIPTIONS
+  # ===========================================================================
+
+  """
+  Subscribe to workflow execution events.
+  """
+  workflowExecution(workflowId: ID!): WorkflowExecutionEvent!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "WORKFLOW_VIEW")
+    @rateLimit(limit: 20, window: 60)
+    @complexity(value: 5)
+
+  """
+  Subscribe to workflow state changes.
+  """
+  workflowStateChanged(workflowId: ID): WorkflowStateChangedEvent!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "WORKFLOW_VIEW")
+    @rateLimit(limit: 10, window: 60)
+    @complexity(value: 5)
+
+  """
+  Subscribe to step execution within a workflow.
+  """
+  workflowStepExecution(
+    workflowId: ID!
+    executionId: ID!
+  ): WorkflowStepExecutionEvent!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "WORKFLOW_VIEW")
+    @rateLimit(limit: 20, window: 60)
+    @complexity(value: 5)
+
+  # ===========================================================================
+  # CONVERSATION SUBSCRIPTIONS
+  # ===========================================================================
+
+  """
+  Subscribe to new messages in a conversation.
+  """
+  conversationMessages(conversationId: ID!): ConversationMessageEvent!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 20, window: 60)
+    @complexity(value: 5)
+
+  """
+  Subscribe to typing indicators in a conversation.
+  """
+  typingIndicator(conversationId: ID!): TypingIndicatorEvent!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 50, window: 60)
+    @complexity(value: 1)
+
+  """
+  Subscribe to conversation participant changes.
+  """
+  conversationParticipants(conversationId: ID!): ParticipantChangeEvent!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 10, window: 60)
+    @complexity(value: 3)
+
+  # ===========================================================================
+  # KNOWLEDGE BASE SUBSCRIPTIONS
+  # ===========================================================================
+
+  """
+  Subscribe to document processing progress.
+  """
+  documentProcessing(knowledgeBaseId: ID!): DocumentProcessingEvent!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "KNOWLEDGE_VIEW")
+    @rateLimit(limit: 10, window: 60)
+    @complexity(value: 5)
+
+  """
+  Subscribe to indexing progress.
+  """
+  indexingProgress(knowledgeBaseId: ID!): IndexingProgressEvent!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN], permission: "KNOWLEDGE_VIEW")
+    @rateLimit(limit: 10, window: 60)
+    @complexity(value: 5)
+
+  # ===========================================================================
+  # ASYNC OPERATION SUBSCRIPTIONS
+  # ===========================================================================
+
+  """
+  Subscribe to async operation progress.
+  """
+  operationProgress(operationId: ID!): OperationProgressEvent!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 20, window: 60)
+    @complexity(value: 3)
+
+  """
+  Subscribe to all pending operations for current user.
+  """
+  myOperations: OperationProgressEvent!
+    @auth(requires: [USER, ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 10, window: 60)
+    @complexity(value: 5)
+
+  # ===========================================================================
+  # ADMIN SUBSCRIPTIONS
+  # ===========================================================================
+
+  """
+  Subscribe to user activity events (admin only).
+  """
+  userActivity(userId: ID): UserActivityEvent!
+    @auth(requires: [ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 5, window: 60)
+    @complexity(value: 10)
+    @audit(action: "admin.subscribe_user_activity", level: INFO)
+
+  """
+  Subscribe to audit log entries.
+  """
+  auditLog(filter: AuditLogFilter): AuditLogEvent!
+    @auth(requires: [ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 5, window: 60)
+    @complexity(value: 10)
+    @audit(action: "admin.subscribe_audit_log", level: INFO)
+
+  """
+  Subscribe to rate limit events.
+  """
+  rateLimitEvents: RateLimitEvent!
+    @auth(requires: [ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 5, window: 60)
+    @complexity(value: 5)
+
+  """
+  Subscribe to error events across the system.
+  """
+  systemErrors(
+    severity: [ErrorSeverity!] = [HIGH, CRITICAL]
+  ): SystemErrorEvent!
+    @auth(requires: [ADMIN, SUPER_ADMIN])
+    @rateLimit(limit: 5, window: 60)
+    @complexity(value: 8)
+}
+
+# =============================================================================
+# EVENT TYPE DEFINITIONS
+# =============================================================================
+
+"""
+System health status event
+"""
+type SystemHealthEvent {
+  """
+  Overall system status
+  """
+  status: HealthStatus!
+
+  """
+  Individual service statuses
+  """
+  services: [ServiceHealth!]!
+
+  """
+  System metrics
+  """
+  metrics: SystemMetrics!
+
+  """
+  Active alerts count
+  """
+  activeAlerts: Int!
+
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+}
+
+"""
+Health status of a service
+"""
+type ServiceHealth {
+  """
+  Service name
+  """
+  name: String!
+
+  """
+  Service status
+  """
+  status: HealthStatus!
+
+  """
+  Response time in milliseconds
+  """
+  responseTime: Int
+
+  """
+  Last successful health check
+  """
+  lastCheck: DateTime!
+
+  """
+  Error message if unhealthy
+  """
+  error: String
+
+  """
+  Service version
+  """
+  version: String
+}
+
+"""
+System-wide metrics
+"""
+type SystemMetrics {
+  """
+  CPU usage percentage
+  """
+  cpuUsage: Float!
+
+  """
+  Memory usage percentage
+  """
+  memoryUsage: Float!
+
+  """
+  Disk usage percentage
+  """
+  diskUsage: Float!
+
+  """
+  Active connections
+  """
+  activeConnections: Int!
+
+  """
+  Requests per second
+  """
+  requestsPerSecond: Float!
+
+  """
+  Average response time
+  """
+  avgResponseTime: Float!
+
+  """
+  Error rate percentage
+  """
+  errorRate: Float!
+}
+
+"""
+Service status change event
+"""
+type ServiceStatusEvent {
+  """
+  Service name
+  """
+  serviceName: String!
+
+  """
+  Previous status
+  """
+  previousStatus: HealthStatus!
+
+  """
+  New status
+  """
+  newStatus: HealthStatus!
+
+  """
+  Reason for status change
+  """
+  reason: String
+
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+}
+
+"""
+System alert event
+"""
+type SystemAlertEvent {
+  """
+  Alert ID
+  """
+  id: ID!
+
+  """
+  Alert severity
+  """
+  severity: AlertSeverity!
+
+  """
+  Alert type
+  """
+  type: AlertType!
+
+  """
+  Alert title
+  """
+  title: String!
+
+  """
+  Alert description
+  """
+  description: String!
+
+  """
+  Affected component
+  """
+  component: String
+
+  """
+  Recommended action
+  """
+  action: String
+
+  """
+  Whether alert is acknowledged
+  """
+  acknowledged: Boolean!
+
+  """
+  Alert metadata
+  """
+  metadata: JSON
+
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+}
+
+"""
+Alert severity levels
+"""
+enum AlertSeverity {
+  """
+  Informational alert
+  """
+  INFO
+
+  """
+  Warning - action may be needed
+  """
+  WARNING
+
+  """
+  Critical - immediate action required
+  """
+  CRITICAL
+}
+
+"""
+Types of system alerts
+"""
+enum AlertType {
+  """
+  High resource usage
+  """
+  RESOURCE_USAGE
+
+  """
+  Service degradation
+  """
+  SERVICE_DEGRADED
+
+  """
+  Service failure
+  """
+  SERVICE_DOWN
+
+  """
+  Security alert
+  """
+  SECURITY
+
+  """
+  Rate limit threshold
+  """
+  RATE_LIMIT
+
+  """
+  Error rate threshold
+  """
+  ERROR_RATE
+
+  """
+  Latency threshold
+  """
+  LATENCY
+
+  """
+  Capacity warning
+  """
+  CAPACITY
+
+  """
+  Scheduled maintenance
+  """
+  MAINTENANCE
+}
+
+"""
+User notification event
+"""
+type UserNotificationEvent {
+  """
+  Notification
+  """
+  notification: Notification!
+
+  """
+  Event type
+  """
+  eventType: NotificationEventType!
+
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+}
+
+"""
+Notification event types
+"""
+enum NotificationEventType {
+  """
+  New notification created
+  """
+  CREATED
+
+  """
+  Notification updated
+  """
+  UPDATED
+
+  """
+  Notification deleted
+  """
+  DELETED
+
+  """
+  Notification marked as read
+  """
+  READ
+}
+
+"""
+Notification count change event
+"""
+type NotificationCountEvent {
+  """
+  Total unread count
+  """
+  unreadCount: Int!
+
+  """
+  Count by type
+  """
+  countByType: [NotificationTypeCount!]!
+
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+}
+
+"""
+Count of notifications by type
+"""
+type NotificationTypeCount {
+  """
+  Notification type
+  """
+  type: NotificationType!
+
+  """
+  Count
+  """
+  count: Int!
+}
+
+"""
+Workflow execution event
+"""
+type WorkflowExecutionEvent {
+  """
+  Workflow
+  """
+  workflow: Workflow!
+
+  """
+  Execution ID
+  """
+  executionId: ID!
+
+  """
+  Event type
+  """
+  eventType: WorkflowEventType!
+
+  """
+  Current step (if applicable)
+  """
+  currentStep: WorkflowStep
+
+  """
+  Execution status
+  """
+  status: ExecutionStatus!
+
+  """
+  Progress percentage
+  """
+  progress: Int
+
+  """
+  Event payload
+  """
+  payload: JSON
+
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+}
+
+"""
+Workflow event types
+"""
+enum WorkflowEventType {
+  """
+  Workflow started
+  """
+  STARTED
+
+  """
+  Step started
+  """
+  STEP_STARTED
+
+  """
+  Step completed
+  """
+  STEP_COMPLETED
+
+  """
+  Step failed
+  """
+  STEP_FAILED
+
+  """
+  Step skipped
+  """
+  STEP_SKIPPED
+
+  """
+  Workflow completed
+  """
+  COMPLETED
+
+  """
+  Workflow failed
+  """
+  FAILED
+
+  """
+  Workflow cancelled
+  """
+  CANCELLED
+
+  """
+  Workflow paused
+  """
+  PAUSED
+
+  """
+  Workflow resumed
+  """
+  RESUMED
+}
+
+"""
+Workflow state change event
+"""
+type WorkflowStateChangedEvent {
+  """
+  Workflow
+  """
+  workflow: Workflow!
+
+  """
+  Previous status
+  """
+  previousStatus: WorkflowStatus!
+
+  """
+  New status
+  """
+  newStatus: WorkflowStatus!
+
+  """
+  Who triggered the change
+  """
+  changedBy: User
+
+  """
+  Reason for change
+  """
+  reason: String
+
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+}
+
+"""
+Workflow step execution event
+"""
+type WorkflowStepExecutionEvent {
+  """
+  Workflow ID
+  """
+  workflowId: ID!
+
+  """
+  Execution ID
+  """
+  executionId: ID!
+
+  """
+  Step being executed
+  """
+  step: WorkflowStep!
+
+  """
+  Step status
+  """
+  status: ExecutionStatus!
+
+  """
+  Step output (if completed)
+  """
+  output: JSON
+
+  """
+  Error (if failed)
+  """
+  error: String
+
+  """
+  Duration in milliseconds
+  """
+  durationMs: Int
+
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+}
+
+"""
+Conversation message event
+"""
+type ConversationMessageEvent {
+  """
+  The conversation
+  """
+  conversationId: ID!
+
+  """
+  The message
+  """
+  message: Message!
+
+  """
+  Event type
+  """
+  eventType: MessageEventType!
+
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+}
+
+"""
+Message event types
+"""
+enum MessageEventType {
+  """
+  New message created
+  """
+  CREATED
+
+  """
+  Message updated
+  """
+  UPDATED
+
+  """
+  Message deleted
+  """
+  DELETED
+
+  """
+  Message reaction added
+  """
+  REACTION_ADDED
+
+  """
+  Message reaction removed
+  """
+  REACTION_REMOVED
+}
+
+"""
+Typing indicator event
+"""
+type TypingIndicatorEvent {
+  """
+  Conversation ID
+  """
+  conversationId: ID!
+
+  """
+  Who is typing
+  """
+  participant: TypingParticipant!
+
+  """
+  Whether they are typing
+  """
+  isTyping: Boolean!
+
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+}
+
+"""
+Typing participant (can be user or agent)
+"""
+type TypingParticipant {
+  """
+  Participant ID
+  """
+  id: ID!
+
+  """
+  Participant type
+  """
+  type: ParticipantType!
+
+  """
+  Display name
+  """
+  name: String!
+}
+
+"""
+Participant types
+"""
+enum ParticipantType {
+  """
+  Human user
+  """
+  USER
+
+  """
+  AI agent
+  """
+  AGENT
+
+  """
+  System
+  """
+  SYSTEM
+}
+
+"""
+Participant change event
+"""
+type ParticipantChangeEvent {
+  """
+  Conversation ID
+  """
+  conversationId: ID!
+
+  """
+  Event type
+  """
+  eventType: ParticipantEventType!
+
+  """
+  Affected participant
+  """
+  participant: TypingParticipant!
+
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+}
+
+"""
+Participant event types
+"""
+enum ParticipantEventType {
+  """
+  Participant joined
+  """
+  JOINED
+
+  """
+  Participant left
+  """
+  LEFT
+
+  """
+  Participant role changed
+  """
+  ROLE_CHANGED
+}
+
+"""
+Document processing event
+"""
+type DocumentProcessingEvent {
+  """
+  Knowledge base ID
+  """
+  knowledgeBaseId: ID!
+
+  """
+  Document being processed
+  """
+  document: Document!
+
+  """
+  Processing status
+  """
+  status: ProcessingStatus!
+
+  """
+  Progress percentage
+  """
+  progress: Int!
+
+  """
+  Current processing stage
+  """
+  stage: ProcessingStage!
+
+  """
+  Error message if failed
+  """
+  error: String
+
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+}
+
+"""
+Processing status
+"""
+enum ProcessingStatus {
+  """
+  Queued for processing
+  """
+  QUEUED
+
+  """
+  Currently processing
+  """
+  PROCESSING
+
+  """
+  Processing completed
+  """
+  COMPLETED
+
+  """
+  Processing failed
+  """
+  FAILED
+}
+
+"""
+Document processing stages
+"""
+enum ProcessingStage {
+  """
+  Extracting text
+  """
+  EXTRACTING
+
+  """
+  Chunking content
+  """
+  CHUNKING
+
+  """
+  Generating embeddings
+  """
+  EMBEDDING
+
+  """
+  Indexing in vector store
+  """
+  INDEXING
+
+  """
+  Verifying
+  """
+  VERIFYING
+}
+
+"""
+Indexing progress event
+"""
+type IndexingProgressEvent {
+  """
+  Knowledge base ID
+  """
+  knowledgeBaseId: ID!
+
+  """
+  Total documents
+  """
+  totalDocuments: Int!
+
+  """
+  Processed documents
+  """
+  processedDocuments: Int!
+
+  """
+  Failed documents
+  """
+  failedDocuments: Int!
+
+  """
+  Progress percentage
+  """
+  progress: Int!
+
+  """
+  Estimated time remaining in seconds
+  """
+  estimatedTimeRemaining: Int
+
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+}
+
+"""
+Operation progress event
+"""
+type OperationProgressEvent {
+  """
+  Operation ID
+  """
+  operationId: ID!
+
+  """
+  Operation type
+  """
+  type: String!
+
+  """
+  Operation status
+  """
+  status: OperationStatus!
+
+  """
+  Progress percentage
+  """
+  progress: Int!
+
+  """
+  Status message
+  """
+  message: String
+
+  """
+  Result (if completed)
+  """
+  result: JSON
+
+  """
+  Error (if failed)
+  """
+  error: String
+
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+}
+
+"""
+User activity event
+"""
+type UserActivityEvent {
+  """
+  User
+  """
+  user: User!
+
+  """
+  Activity type
+  """
+  activityType: UserActivityType!
+
+  """
+  Activity description
+  """
+  description: String!
+
+  """
+  IP address
+  """
+  ipAddress: String
+
+  """
+  User agent
+  """
+  userAgent: String
+
+  """
+  Location (if available)
+  """
+  location: String
+
+  """
+  Additional data
+  """
+  metadata: JSON
+
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+}
+
+"""
+Types of user activity
+"""
+enum UserActivityType {
+  """
+  User logged in
+  """
+  LOGIN
+
+  """
+  User logged out
+  """
+  LOGOUT
+
+  """
+  Password changed
+  """
+  PASSWORD_CHANGE
+
+  """
+  Profile updated
+  """
+  PROFILE_UPDATE
+
+  """
+  API key created
+  """
+  API_KEY_CREATED
+
+  """
+  Agent created
+  """
+  AGENT_CREATED
+
+  """
+  Conversation started
+  """
+  CONVERSATION_STARTED
+
+  """
+  Settings changed
+  """
+  SETTINGS_CHANGED
+
+  """
+  Suspicious activity
+  """
+  SUSPICIOUS_ACTIVITY
+}
+
+"""
+Audit log event
+"""
+type AuditLogEvent {
+  """
+  Log entry ID
+  """
+  id: ID!
+
+  """
+  Action performed
+  """
+  action: String!
+
+  """
+  Actor who performed the action
+  """
+  actor: AuditActor!
+
+  """
+  Resource affected
+  """
+  resource: AuditResource!
+
+  """
+  Audit level
+  """
+  level: AuditLevel!
+
+  """
+  Whether action was successful
+  """
+  success: Boolean!
+
+  """
+  Request details
+  """
+  request: AuditRequest
+
+  """
+  Response details
+  """
+  response: AuditResponse
+
+  """
+  Additional data
+  """
+  metadata: JSON
+
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+}
+
+"""
+Actor in audit log
+"""
+type AuditActor {
+  """
+  Actor type
+  """
+  type: ActorType!
+
+  """
+  Actor ID
+  """
+  id: ID
+
+  """
+  Actor name/identifier
+  """
+  name: String
+
+  """
+  IP address
+  """
+  ipAddress: String
+}
+
+"""
+Types of actors
+"""
+enum ActorType {
+  """
+  Human user
+  """
+  USER
+
+  """
+  System process
+  """
+  SYSTEM
+
+  """
+  API client
+  """
+  API_CLIENT
+
+  """
+  Service account
+  """
+  SERVICE
+
+  """
+  Unknown
+  """
+  UNKNOWN
+}
+
+"""
+Resource in audit log
+"""
+type AuditResource {
+  """
+  Resource type
+  """
+  type: String!
+
+  """
+  Resource ID
+  """
+  id: ID
+
+  """
+  Resource name
+  """
+  name: String
+}
+
+"""
+Request details for audit
+"""
+type AuditRequest {
+  """
+  HTTP method
+  """
+  method: String
+
+  """
+  Request path
+  """
+  path: String
+
+  """
+  Request body (sanitized)
+  """
+  body: JSON
+
+  """
+  User agent
+  """
+  userAgent: String
+}
+
+"""
+Response details for audit
+"""
+type AuditResponse {
+  """
+  Status code
+  """
+  statusCode: Int
+
+  """
+  Response time in milliseconds
+  """
+  responseTimeMs: Int
+
+  """
+  Error if any
+  """
+  error: String
+}
+
+"""
+Audit levels
+"""
+enum AuditLevel {
+  """
+  Debug level
+  """
+  DEBUG
+
+  """
+  Informational
+  """
+  INFO
+
+  """
+  Warning
+  """
+  WARNING
+
+  """
+  Critical
+  """
+  CRITICAL
+}
+
+"""
+Rate limit event
+"""
+type RateLimitEvent {
+  """
+  User or IP that hit the limit
+  """
+  identifier: String!
+
+  """
+  Identifier type
+  """
+  identifierType: RateLimitIdentifierType!
+
+  """
+  Operation that was rate limited
+  """
+  operation: String!
+
+  """
+  Current count
+  """
+  currentCount: Int!
+
+  """
+  Limit
+  """
+  limit: Int!
+
+  """
+  Window size in seconds
+  """
+  windowSeconds: Int!
+
+  """
+  Time until reset
+  """
+  resetIn: Int!
+
+  """
+  Whether request was blocked
+  """
+  blocked: Boolean!
+
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+}
+
+"""
+Rate limit identifier types
+"""
+enum RateLimitIdentifierType {
+  """
+  User ID
+  """
+  USER
+
+  """
+  IP address
+  """
+  IP
+
+  """
+  API key
+  """
+  API_KEY
+
+  """
+  Anonymous
+  """
+  ANONYMOUS
+}
+
+"""
+System error event
+"""
+type SystemErrorEvent {
+  """
+  Error ID
+  """
+  id: ID!
+
+  """
+  Error severity
+  """
+  severity: ErrorSeverity!
+
+  """
+  Error code
+  """
+  code: String!
+
+  """
+  Error message
+  """
+  message: String!
+
+  """
+  Stack trace (if available)
+  """
+  stackTrace: String
+
+  """
+  Service where error occurred
+  """
+  service: String!
+
+  """
+  Affected operation
+  """
+  operation: String
+
+  """
+  User affected (if applicable)
+  """
+  userId: ID
+
+  """
+  Request ID for correlation
+  """
+  requestId: String
+
+  """
+  Additional context
+  """
+  context: JSON
+
+  """
+  Timestamp
+  """
+  timestamp: DateTime!
+}
+
+"""
+Error severity levels
+"""
+enum ErrorSeverity {
+  """
+  Low severity - minor issue
+  """
+  LOW
+
+  """
+  Medium severity - degraded functionality
+  """
+  MEDIUM
+
+  """
+  High severity - significant impact
+  """
+  HIGH
+
+  """
+  Critical - system failure
+  """
+  CRITICAL
+}
+
+# =============================================================================
+# INPUT DEFINITIONS
+# =============================================================================
+
+"""
+Filter for audit log subscription
+"""
+input AuditLogFilter {
+  """
+  Filter by actions
+  """
+  actions: [String!]
+
+  """
+  Filter by actor types
+  """
+  actorTypes: [ActorType!]
+
+  """
+  Filter by resource types
+  """
+  resourceTypes: [String!]
+
+  """
+  Filter by audit levels
+  """
+  levels: [AuditLevel!]
+
+  """
+  Include only failures
+  """
+  failuresOnly: Boolean = false
+}
