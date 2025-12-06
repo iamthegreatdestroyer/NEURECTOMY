@@ -1,0 +1,24 @@
+{{ define "neurectomy.title" }}
+[{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .CommonLabels.alertname }}
+{{ end }}
+
+{{ define "neurectomy.text" }}
+{{ range .Alerts }}
+*Alert:* {{ .Labels.alertname }}{{ if .Labels.severity }} - {{ .Labels.severity }}{{ end }}
+*Service:* {{ if .Labels.service }}{{ .Labels.service }}{{ else }}unknown{{ end }}
+*Description:* {{ .Annotations.description }}
+*Summary:* {{ .Annotations.summary }}
+*Started:* {{ .StartsAt.Format "2006-01-02 15:04:05 UTC" }}
+{{ if .EndsAt }}*Ended:* {{ .EndsAt.Format "2006-01-02 15:04:05 UTC" }}{{ end }}
+*Source:* {{ .GeneratorURL }}
+---
+{{ end }}
+{{ end }}
+
+{{ define "neurectomy.slack.title" }}
+{{ if eq .Status "firing" }}🔥{{ else }}✅{{ end }} {{ .CommonLabels.alertname }}
+{{ end }}
+
+{{ define "neurectomy.slack.color" }}
+{{ if eq .Status "firing" }}{{ if eq .CommonLabels.severity "critical" }}danger{{ else if eq .CommonLabels.severity "warning" }}warning{{ else }}#439FE0{{ end }}{{ else }}good{{ end }}
+{{ end }}

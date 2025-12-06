@@ -59,6 +59,41 @@ from .metrics import (
     PROMETHEUS_AVAILABLE,
 )
 
+# Import tracing module
+from .tracing import (
+    # Initialization
+    init_tracer,
+    shutdown_tracer,
+    get_service_tracer,
+    instrument_fastapi,
+    uninstrument_fastapi,
+    
+    # Span creation
+    create_span,
+    traced,
+    
+    # Span utilities
+    add_span_attributes,
+    add_span_event,
+    set_span_error,
+    get_trace_context,
+    extract_trace_context,
+    
+    # ML-specific tracing
+    trace_inference,
+    trace_training,
+    trace_embedding,
+    trace_llm_call,
+    
+    # Database tracing
+    trace_db_operation,
+    trace_cache_operation,
+    
+    # Context propagation
+    inject_context_to_headers,
+    create_context_from_headers,
+)
+
 __all__ = [
     # Request metrics
     "REQUEST_COUNT",
@@ -104,4 +139,36 @@ __all__ = [
     
     # Constants
     "PROMETHEUS_AVAILABLE",
+    
+    # Tracing - Initialization
+    "init_tracer",
+    "shutdown_tracer",
+    "get_service_tracer",
+    "instrument_fastapi",
+    "uninstrument_fastapi",
+    
+    # Tracing - Span creation
+    "create_span",
+    "traced",
+    
+    # Tracing - Span utilities
+    "add_span_attributes",
+    "add_span_event",
+    "set_span_error",
+    "get_trace_context",
+    "extract_trace_context",
+    
+    # Tracing - ML-specific
+    "trace_inference",
+    "trace_training",
+    "trace_embedding",
+    "trace_llm_call",
+    
+    # Tracing - Database
+    "trace_db_operation",
+    "trace_cache_operation",
+    
+    # Tracing - Context propagation
+    "inject_context_to_headers",
+    "create_context_from_headers",
 ]

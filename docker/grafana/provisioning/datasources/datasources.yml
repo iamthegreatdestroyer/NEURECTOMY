@@ -48,3 +48,30 @@ datasources:
     access: proxy
     url: http://jaeger:16686
     editable: false
+
+  # Loki - Log aggregation
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    editable: false
+    jsonData:
+      maxLines: 1000
+      derivedFields:
+        - datasourceName: Jaeger
+          matcherRegex: '"traceId":"(\w+)"'
+          name: TraceID
+          url: "$${__value.raw}"
+        - datasourceName: Jaeger
+          matcherRegex: 'trace_id=(\w+)'
+          name: TraceID
+          url: "$${__value.raw}"
+
+  # Alertmanager - Alert management
+  - name: Alertmanager
+    type: alertmanager
+    access: proxy
+    url: http://alertmanager:9093
+    editable: false
+    jsonData:
+      implementation: prometheus

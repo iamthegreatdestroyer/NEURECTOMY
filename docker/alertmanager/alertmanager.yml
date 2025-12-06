@@ -1,0 +1,152 @@
+# ============================================================================
+# NEURECTOMY Alertmanager Configuration
+# Routes alerts from Prometheus to notification channels
+# ============================================================================
+
+global:
+  # Default resolve timeout
+  resolve_timeout: 5m
+
+  # PagerDuty settings (uncomment and configure for production)
+  # pagerduty_url: "https://events.pagerduty.com/v2/enqueue"
+
+  # SMTP settings (uncomment and configure for production)
+  # smtp_smarthost: "smtp.example.com:587"
+  # smtp_from: "alertmanager@neurectomy.local"
+  # smtp_auth_username: ""
+  # smtp_auth_password: ""
+  # smtp_require_tls: true
+
+  # Slack settings (uncomment and configure for production)
+  # slack_api_url: "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+
+# Route tree - defines how alerts are routed to receivers
+route:
+  # Default receiver
+  receiver: "default-receiver"
+
+  # Group alerts by these labels
+  group_by: ["alertname", "severity", "service"]
+
+  # Wait before sending first notification for a group
+  group_wait: 30s
+
+  # Wait before sending updated notifications
+  group_interval: 5m
+
+  # Wait before resending a notification
+  repeat_interval: 4h
+
+  # Child routes for specific alert handling
+  routes:
+    # Critical alerts - immediate notification
+    - match:
+        severity: critical
+      receiver: "critical-receiver"
+      group_wait: 10s
+      repeat_interval: 1h
+      continue: true
+
+    # Warning alerts - standard notification
+    - match:
+        severity: warning
+      receiver: "warning-receiver"
+      group_wait: 1m
+      repeat_interval: 4h
+
+    # Info alerts - batched notifications
+    - match:
+        severity: info
+      receiver: "info-receiver"
+      group_wait: 5m
+      repeat_interval: 12h
+
+    # Security-specific alerts
+    - match_re:
+        alertname: "(HighAuthFailureRate|PossibleBruteForce|HighRateLimitHits)"
+      receiver: "security-receiver"
+      group_wait: 10s
+      repeat_interval: 30m
+
+    # Training-specific alerts
+    - match_re:
+        alertname: "(TrainingJobStuck|HighTrainingFailureRate|TrainingLossNotDecreasing)"
+      receiver: "ml-ops-receiver"
+      group_wait: 5m
+      repeat_interval: 2h
+
+# Inhibition rules - suppress alerts when parent alert fires
+inhibit_rules:
+  # If service is down, suppress other alerts from that service
+  - source_match:
+      severity: "critical"
+    target_match:
+      severity: "warning"
+    equal: ["service", "alertname"]
+
+  # If service is down, suppress info alerts
+  - source_match:
+      severity: "critical"
+    target_match:
+      severity: "info"
+    equal: ["service"]
+
+# Receivers - notification endpoints
+receivers:
+  # Default receiver - logs alerts (development mode)
+  - name: "default-receiver"
+    # In development, alerts are logged to Alertmanager's own logs
+    # Configure webhook_configs for production notification endpoints
+
+  # Critical alerts - multiple channels
+  - name: "critical-receiver"
+    # Uncomment and configure for production:
+    # webhook_configs:
+    #   - url: "http://your-webhook-service:5001/webhook"
+    #     send_resolved: true
+    # slack_configs:
+    #   - channel: '#neurectomy-alerts-critical'
+    #     send_resolved: true
+    #     title: '🚨 CRITICAL: {{ .CommonLabels.alertname }}'
+    #     text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+    # pagerduty_configs:
+    #   - service_key: '<your-pagerduty-key>'
+    #     severity: 'critical'
+
+  # Warning alerts
+  - name: "warning-receiver"
+    # webhook_configs:
+    #   - url: "http://your-webhook-service:5001/webhook"
+    #     send_resolved: true
+    # slack_configs:
+    #   - channel: '#neurectomy-alerts'
+    #     send_resolved: true
+
+  # Info alerts
+  - name: "info-receiver"
+    # webhook_configs:
+    #   - url: "http://your-webhook-service:5001/webhook"
+    #     send_resolved: true
+
+  # Security alerts - dedicated channel
+  - name: "security-receiver"
+    # webhook_configs:
+    #   - url: "http://your-webhook-service:5001/webhook"
+    #     send_resolved: true
+    # slack_configs:
+    #   - channel: '#neurectomy-security'
+    #     send_resolved: true
+    #     color: '{{ if eq .Status "firing" }}danger{{ else }}good{{ end }}'
+
+  # ML Ops alerts
+  - name: "ml-ops-receiver"
+    # webhook_configs:
+    #   - url: "http://your-webhook-service:5001/webhook"
+    #     send_resolved: true
+    # slack_configs:
+    #   - channel: '#neurectomy-mlops'
+    #     send_resolved: true
+
+# Templates for notification formatting
+templates:
+  - "/etc/alertmanager/templates/*.tmpl"

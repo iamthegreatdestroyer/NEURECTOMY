@@ -1,0 +1,170 @@
+# ============================================================================
+# NEURECTOMY Promtail Configuration
+# Log collector agent for shipping logs to Loki
+# ============================================================================
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+  log_level: info
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+    tenant_id: neurectomy
+    batchwait: 1s
+    batchsize: 1048576
+    timeout: 10s
+    backoff_config:
+      min_period: 500ms
+      max_period: 5m
+      max_retries: 10
+
+scrape_configs:
+  # ==========================================================================
+  # Docker Container Logs
+  # ==========================================================================
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        filters:
+          - name: label
+            values: ["com.docker.compose.project=neurectomy"]
+    relabel_configs:
+      # Extract container name
+      - source_labels: ["__meta_docker_container_name"]
+        regex: "/(.*)"
+        target_label: "container"
+
+      # Extract service name from compose label
+      - source_labels:
+          ["__meta_docker_container_label_com_docker_compose_service"]
+        target_label: "service"
+
+      # Extract compose project
+      - source_labels:
+          ["__meta_docker_container_label_com_docker_compose_project"]
+        target_label: "project"
+
+      # Add container ID
+      - source_labels: ["__meta_docker_container_id"]
+        target_label: "container_id"
+
+      # Extract image name
+      - source_labels: ["__meta_docker_container_image"]
+        target_label: "image"
+
+    pipeline_stages:
+      # Parse JSON logs if present
+      - json:
+          expressions:
+            level: level
+            message: message
+            timestamp: timestamp
+            service: service
+            correlation_id: correlationId
+            trace_id: traceId
+            span_id: spanId
+          # Don't fail on non-JSON logs
+
+      # Fallback for non-JSON logs
+      - regex:
+          expression: '^(?P<timestamp>\S+)\s+(?P<level>\w+)\s+(?P<message>.*)$'
+
+      # Normalize log levels
+      - template:
+          source: level
+          template: "{{ ToLower .Value }}"
+
+      # Add labels from extracted fields
+      - labels:
+          level:
+          correlation_id:
+          trace_id:
+
+      # Set timestamp from log if available
+      - timestamp:
+          source: timestamp
+          format: RFC3339Nano
+          fallback_formats:
+            - "2006-01-02T15:04:05.999999999Z07:00"
+            - "2006-01-02 15:04:05"
+
+      # Output stage - set log line to message if extracted
+      - output:
+          source: message
+
+  # ==========================================================================
+  # System Logs (if available)
+  # ==========================================================================
+  - job_name: system
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: system
+          __path__: /var/log/*.log
+    pipeline_stages:
+      - regex:
+          expression: '^(?P<timestamp>\w+\s+\d+\s+\d+:\d+:\d+)\s+(?P<host>\S+)\s+(?P<process>\S+):\s+(?P<message>.*)$'
+      - labels:
+          host:
+          process:
+
+  # ==========================================================================
+  # Application-specific log patterns
+  # ==========================================================================
+
+  # ML Service Python logs
+  - job_name: ml-service
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        filters:
+          - name: name
+            values: ["neurectomy-ml-service"]
+    relabel_configs:
+      - source_labels: ["__meta_docker_container_name"]
+        regex: "/(.*)"
+        target_label: "container"
+      - replacement: "ml-service"
+        target_label: "service"
+      - replacement: "python"
+        target_label: "language"
+    pipeline_stages:
+      # Parse Python uvicorn/gunicorn logs
+      - regex:
+          expression: '^(?P<timestamp>\S+\s+\S+)\s+\|\s+(?P<level>\w+)\s+\|\s+(?P<logger>\S+)\s+\|\s+(?P<message>.*)$'
+      - labels:
+          level:
+          logger:
+
+  # Rust Core logs
+  - job_name: rust-core
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        filters:
+          - name: name
+            values: ["neurectomy-rust-core"]
+    relabel_configs:
+      - source_labels: ["__meta_docker_container_name"]
+        regex: "/(.*)"
+        target_label: "container"
+      - replacement: "rust-core"
+        target_label: "service"
+      - replacement: "rust"
+        target_label: "language"
+    pipeline_stages:
+      # Parse tracing_subscriber JSON format
+      - json:
+          expressions:
+            level: level
+            target: target
+            message: message
+            timestamp: timestamp
+            span: span
+      - labels:
+          level:
+          target:

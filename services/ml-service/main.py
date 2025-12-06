@@ -29,7 +29,15 @@ from src.services import (
     MLflowTracker,
     AgentIntelligenceService,
 )
-from src.monitoring import get_metrics, get_content_type, PROMETHEUS_AVAILABLE
+from src.monitoring import (
+    get_metrics,
+    get_content_type,
+    PROMETHEUS_AVAILABLE,
+    # OpenTelemetry tracing
+    init_tracer,
+    shutdown_tracer,
+    instrument_fastapi,
+)
 
 logger = structlog.get_logger()
 
@@ -39,6 +47,15 @@ async def lifespan(app: FastAPI):
     """Application lifespan manager."""
     logger.info("🧠 Starting NEURECTOMY ML Service...")
     logger.info(f"Environment: {settings.environment}")
+    
+    # Initialize OpenTelemetry tracing
+    init_tracer(
+        service_name="neurectomy-ml-service",
+        jaeger_host=getattr(settings, "jaeger_host", "jaeger"),
+        jaeger_port=getattr(settings, "jaeger_port", 6831),
+        environment=settings.environment,
+    )
+    logger.info("✅ OpenTelemetry tracing initialized (Jaeger export)")
     
     # Initialize database connections
     await init_db()
@@ -71,6 +88,8 @@ async def lifespan(app: FastAPI):
     
     # Cleanup
     logger.info("Shutting down ML Service...")
+    shutdown_tracer()
+    logger.info("✅ OpenTelemetry tracing shutdown complete")
 
 
 def create_app() -> FastAPI:
@@ -86,14 +105,18 @@ Intelligence Foundry - AI/ML Backend
 - **Training**: PyTorch training orchestration with Optuna HPO
 - **MLflow**: Experiment tracking and model registry
 - **Agent Intelligence**: Memory systems, behavior modeling, learning
+- **Observability**: OpenTelemetry tracing with Jaeger, Prometheus metrics
 
-@TENSOR @FLUX @ARCHITECT - Phase 2: Intelligence Layer & AI Integration
+@TENSOR @FLUX @ARCHITECT @SENTRY - Phase 2: Intelligence Layer & AI Integration
         """,
         version="0.2.0",
         docs_url="/docs",
         redoc_url="/redoc",
         lifespan=lifespan,
     )
+    
+    # Instrument FastAPI with OpenTelemetry
+    instrument_fastapi(app)
     
     # CORS middleware
     app.add_middleware(

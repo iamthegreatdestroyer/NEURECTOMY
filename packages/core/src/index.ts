@@ -78,3 +78,22 @@ export {
 
 // Export constants
 export { DEFAULT_TIMEOUT, MAX_RETRIES, API_VERSION } from "./constants";
+
+// Export logging utilities
+export {
+  // Types
+  type LogLevel,
+  type LogContext,
+  type LogEntry,
+  type LoggerConfig,
+  type HttpRequestLog,
+  // Classes
+  Logger,
+  // Functions
+  createLogger,
+  createLoggerFromEnv,
+  createContextualLogger,
+  runWithLogContext,
+  getLogContext,
+  createHttpRequestLog,
+} from "./logging";
