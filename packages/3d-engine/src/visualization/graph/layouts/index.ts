@@ -14,3 +14,10 @@ export {
   type LayoutType,
   type LayoutManagerConfig,
 } from "./manager";
+export {
+  HybridForceLayout,
+  createHybridForceLayout,
+  type HybridForceLayoutConfig,
+  type HybridSimulationState,
+  type ComputeBackend,
+} from "./hybrid-force-layout";
