@@ -5,10 +5,13 @@ MLflow Experiment Tracker for ML operations.
 """
 
 import os
+from dataclasses import dataclass, field
 from datetime import datetime
+from enum import Enum
 from typing import Any, Optional
 
 import mlflow
+import mlflow.pytorch
 from mlflow.tracking import MlflowClient
 import structlog
 
@@ -23,6 +26,39 @@ from src.models.training import (
 logger = structlog.get_logger()
 
 
+class AutologMode(Enum):
+    """
+    MLflow autolog modes for PyTorch.
+    
+    @TENSOR - Controls granularity of automatic experiment tracking.
+    """
+    DISABLED = "disabled"        # No autologging
+    MINIMAL = "minimal"          # Only metrics and parameters
+    STANDARD = "standard"        # Metrics, params, model checkpoints
+    COMPREHENSIVE = "comprehensive"  # Full logging including gradients
+
+
+@dataclass
+class AutologConfig:
+    """
+    Configuration for MLflow autolog.
+    
+    @TENSOR - Fine-grained control over automatic logging.
+    """
+    mode: AutologMode = AutologMode.STANDARD
+    log_models: bool = True
+    log_input_examples: bool = False
+    log_model_signatures: bool = True
+    log_every_n_epoch: int = 1
+    log_every_n_step: Optional[int] = None
+    registered_model_name: Optional[str] = None
+    checkpoint_save_best_only: bool = True
+    checkpoint_save_weights_only: bool = False
+    checkpoint_monitor: str = "val_loss"
+    checkpoint_mode: str = "min"
+    extra_tags: dict[str, str] = field(default_factory=dict)
+
+
 class MLflowTracker:
     """
     MLflow experiment tracker for NEURECTOMY.
@@ -33,11 +69,14 @@ class MLflowTracker:
     - Metric tracking
     - Artifact storage
     - Model registry
+    - PyTorch autolog integration
     """
     
-    def __init__(self):
+    def __init__(self, autolog_config: Optional[AutologConfig] = None):
         self._client: Optional[MlflowClient] = None
         self._tracking_uri = settings.mlflow_tracking_uri
+        self._autolog_config = autolog_config or AutologConfig()
+        self._autolog_enabled = False
     
     async def initialize(self) -> None:
         """Initialize MLflow connection."""
@@ -54,6 +93,116 @@ class MLflowTracker:
             mlflow.set_tracking_uri("file:./mlruns")
             self._client = MlflowClient()
             logger.info("Using local MLflow tracking")
+        
+        # Initialize autolog if not disabled
+        if self._autolog_config.mode != AutologMode.DISABLED:
+            self.enable_pytorch_autolog()
+    
+    # =========================================================================
+    # PyTorch Autolog - NEW PyTorch 2.5+ Integration
+    # =========================================================================
+    
+    def enable_pytorch_autolog(
+        self,
+        config: Optional[AutologConfig] = None,
+    ) -> None:
+        """
+        Enable MLflow PyTorch autolog for automatic experiment tracking.
+        
+        @TENSOR - PyTorch 2.5+ autolog with comprehensive options.
+        
+        This automatically logs:
+        - Model parameters and hyperparameters
+        - Training/validation metrics per epoch
+        - Model checkpoints (best and/or all)
+        - Model architecture and signatures
+        - GPU utilization metrics (if available)
+        
+        Args:
+            config: Optional AutologConfig to override instance config
+        """
+        cfg = config or self._autolog_config
+        
+        if cfg.mode == AutologMode.DISABLED:
+            logger.info("PyTorch autolog disabled by configuration")
+            return
+        
+        # Determine autolog settings based on mode
+        autolog_kwargs = self._build_autolog_kwargs(cfg)
+        
+        try:
+            mlflow.pytorch.autolog(**autolog_kwargs)
+            self._autolog_enabled = True
+            logger.info(
+                f"✅ PyTorch autolog enabled (mode={cfg.mode.value})",
+                log_models=cfg.log_models,
+                log_every_n_epoch=cfg.log_every_n_epoch,
+            )
+        except Exception as e:
+            logger.warning(f"Failed to enable PyTorch autolog: {e}")
+            self._autolog_enabled = False
+    
+    def disable_pytorch_autolog(self) -> None:
+        """Disable MLflow PyTorch autolog."""
+        try:
+            mlflow.pytorch.autolog(disable=True)
+            self._autolog_enabled = False
+            logger.info("PyTorch autolog disabled")
+        except Exception as e:
+            logger.warning(f"Failed to disable PyTorch autolog: {e}")
+    
+    def _build_autolog_kwargs(self, cfg: AutologConfig) -> dict[str, Any]:
+        """Build kwargs for mlflow.pytorch.autolog based on mode."""
+        base_kwargs = {
+            "log_models": cfg.log_models,
+            "log_input_examples": cfg.log_input_examples,
+            "log_model_signatures": cfg.log_model_signatures,
+            "log_every_n_epoch": cfg.log_every_n_epoch,
+            "checkpoint_save_best_only": cfg.checkpoint_save_best_only,
+            "checkpoint_save_weights_only": cfg.checkpoint_save_weights_only,
+            "checkpoint_monitor": cfg.checkpoint_monitor,
+            "checkpoint_mode": cfg.checkpoint_mode,
+            "extra_tags": cfg.extra_tags,
+            "silent": False,  # Show autolog logs
+        }
+        
+        if cfg.log_every_n_step:
+            base_kwargs["log_every_n_step"] = cfg.log_every_n_step
+        
+        if cfg.registered_model_name:
+            base_kwargs["registered_model_name"] = cfg.registered_model_name
+        
+        # Mode-specific adjustments
+        if cfg.mode == AutologMode.MINIMAL:
+            base_kwargs["log_models"] = False
+            base_kwargs["log_input_examples"] = False
+            base_kwargs["log_model_signatures"] = False
+        elif cfg.mode == AutologMode.COMPREHENSIVE:
+            base_kwargs["log_input_examples"] = True
+            base_kwargs["log_model_signatures"] = True
+            # Log more frequently for comprehensive mode
+            base_kwargs["log_every_n_epoch"] = 1
+        
+        return base_kwargs
+    
+    @property
+    def autolog_enabled(self) -> bool:
+        """Check if autolog is currently enabled."""
+        return self._autolog_enabled
+    
+    def configure_autolog(self, config: AutologConfig) -> None:
+        """
+        Update autolog configuration.
+        
+        Disables current autolog and re-enables with new config.
+        """
+        self._autolog_config = config
+        
+        if self._autolog_enabled:
+            self.disable_pytorch_autolog()
+        
+        if config.mode != AutologMode.DISABLED:
+            self.enable_pytorch_autolog(config)
     
     @property
     def client(self) -> MlflowClient:
@@ -331,3 +480,11 @@ class MLflowTracker:
                 "status": run.info.status,
             })
         return comparisons
+
+
+# Export public API
+__all__ = [
+    "MLflowTracker",
+    "AutologMode",
+    "AutologConfig",
+]

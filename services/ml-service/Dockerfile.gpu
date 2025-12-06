@@ -1,27 +1,25 @@
 # ============================================================================
 # NEURECTOMY ML Service - GPU-enabled Dockerfile
 # For training workloads with CUDA support
+# 
+# @TENSOR - Uses NVIDIA PyTorch Container for optimized PyTorch 2.5+ with:
+# - Pre-compiled torch.compile() support with Triton
+# - CUDA 12.6 with cuDNN 9
+# - TensorRT integration
+# - Optimized NCCL for multi-GPU
 # ============================================================================
 
-# Stage 1: Build dependencies
-FROM nvidia/cuda:12.1-devel-ubuntu22.04 as builder
+# Stage 1: Build dependencies using Poetry
+FROM python:3.11-slim as builder
 
 WORKDIR /app
 
-# Install Python and build dependencies
+# Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3.11 \
-    python3.11-dev \
-    python3.11-venv \
-    python3-pip \
     build-essential \
     curl \
     git \
     && rm -rf /var/lib/apt/lists/*
-
-# Set Python 3.11 as default
-RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.11 1 && \
-    update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 1
 
 # Install Poetry
 RUN pip install poetry==1.7.1
@@ -29,55 +27,66 @@ RUN pip install poetry==1.7.1
 # Copy dependency files
 COPY pyproject.toml poetry.lock* ./
 
-# Export dependencies with CUDA extras
-RUN poetry export -f requirements.txt --output requirements.txt --without-hashes --without dev
+# Export dependencies without PyTorch (handled by base image)
+RUN poetry export -f requirements.txt --output requirements.txt --without-hashes --without dev \
+    && grep -v "^torch" requirements.txt | grep -v "^torchvision" | grep -v "^torchaudio" > requirements-no-torch.txt
 
-# Stage 2: Runtime with CUDA
-FROM nvidia/cuda:12.1-runtime-ubuntu22.04 as runtime
+# Stage 2: Runtime with NVIDIA PyTorch Container
+# @TENSOR - NVIDIA NGC PyTorch 24.09 includes:
+# - PyTorch 2.5.0a0+b465a5843b.nv24.09
+# - CUDA 12.6 with cuDNN 9.4.0
+# - TensorRT 10.4.0
+# - Triton 3.1.0 for torch.compile()
+# - NCCL 2.22.3 for multi-GPU
+FROM nvcr.io/nvidia/pytorch:24.09-py3 as runtime
 
 WORKDIR /app
-
-# Install Python runtime
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3.11 \
-    python3-pip \
-    libpq-dev \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
-# Set Python 3.11 as default
-RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.11 1 && \
-    update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 1
 
 # Create non-root user
 RUN groupadd -r neurectomy && useradd -r -g neurectomy neurectomy
 
-# Copy and install requirements
-COPY --from=builder /app/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install additional system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install PyTorch with CUDA support
-RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+# Copy requirements (excluding torch which is in base image)
+COPY --from=builder /app/requirements-no-torch.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY main.py .
 COPY src/ ./src/
 
-# Create directories for models and data
-RUN mkdir -p /app/models /app/data /app/logs && \
+# Create directories for models, data, and compile cache
+RUN mkdir -p /app/models /app/data /app/logs /app/.cache/torch_compile && \
     chown -R neurectomy:neurectomy /app
 
 # Switch to non-root user
 USER neurectomy
 
 # Environment variables
+# @TENSOR - PyTorch 2.5+ optimization settings
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     ENVIRONMENT=production \
     PORT=8000 \
+    # GPU Configuration
     CUDA_VISIBLE_DEVICES=0 \
     NVIDIA_VISIBLE_DEVICES=all \
-    NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    NVIDIA_DRIVER_CAPABILITIES=compute,utility \
+    # PyTorch 2.5+ torch.compile() settings
+    TORCH_COMPILE_BACKEND=inductor \
+    TORCHINDUCTOR_CACHE_DIR=/app/.cache/torch_compile \
+    TORCHINDUCTOR_MAX_AUTOTUNE=1 \
+    # Memory optimization
+    PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True,max_split_size_mb:512" \
+    # Triton cache for compiled kernels
+    TRITON_CACHE_DIR=/app/.cache/triton \
+    # Disable Dynamo errors for stability
+    TORCH_LOGS="+dynamo" \
+    TORCHDYNAMO_VERBOSE=1
 
 # Expose port
 EXPOSE 8000

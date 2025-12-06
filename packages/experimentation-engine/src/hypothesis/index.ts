@@ -62,3 +62,21 @@ export {
   type ParameterDiff,
   type StructuralChange,
 } from "./versioning";
+
+// MLflow Bridge - TypeScript to Python MLflow sync
+// @TENSOR @SYNAPSE - Enables bidirectional experiment tracking
+export {
+  MLflowBridge,
+  createMLflowBridge,
+  createDefaultBridge,
+  withMLflowRun,
+  mlflowTracked,
+  type MLflowConfig,
+  type MLflowExperiment,
+  type MLflowRun,
+  type MLflowMetric,
+  type MLflowParam,
+  type MLflowArtifact,
+  type MLflowBridgeEvents,
+  type SyncResult,
+} from "./mlflow-bridge";

@@ -34,9 +34,15 @@
       "@neurectomy/legal-fortress": ["packages/legal-fortress/src"],
       "@neurectomy/discovery-engine": ["packages/discovery-engine/src"],
       "@neurectomy/performance-engine": ["packages/performance-engine/src"],
-      "@neurectomy/continuous-intelligence": ["packages/continuous-intelligence/src"],
-      "@neurectomy/experimentation-engine": ["packages/experimentation-engine/src"],
-      "@neurectomy/deployment-orchestrator": ["packages/deployment-orchestrator/src"]
+      "@neurectomy/continuous-intelligence": [
+        "packages/continuous-intelligence/src"
+      ],
+      "@neurectomy/experimentation-engine": [
+        "packages/experimentation-engine/src"
+      ],
+      "@neurectomy/deployment-orchestrator": [
+        "packages/deployment-orchestrator/src"
+      ]
     }
   },
   "include": ["packages/**/*.ts", "packages/**/*.tsx", "services/**/*.ts"],

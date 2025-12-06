@@ -20,7 +20,11 @@ asyncpg = "^0.30.0"
 redis = "^5.0.1"
 pgvector = "^0.2.4"
 
-# ML/AI - PyTorch 2.7+ supports Python 3.13
+# ML/AI - PyTorch 2.5+ required for torch.compile() and modern AMP
+# @TENSOR - Pin to 2.5+ for torch.compile(), torch.amp.autocast(), torch.inference_mode()
+torch = "^2.5.0"
+torchvision = "^0.20.0"
+torchaudio = "^2.5.0"
 transformers = "^4.45.0"
 sentence-transformers = "^3.2.0"
 scikit-learn = "^1.5.0"
@@ -78,10 +82,13 @@ hypothesis = "^6.112.0"
 optional = true
 
 [tool.poetry.group.gpu.dependencies]
-# GPU-specific dependencies
+# GPU-specific dependencies for CUDA-enabled training
+# @TENSOR - Used with nvcr.io/nvidia/pytorch:24.09-py3 base image
 bitsandbytes = "^0.44.0"
 accelerate = "^0.34.0"
 peft = "^0.13.0"
+# Triton for torch.compile() kernel optimization (auto-installed with NGC container)
+triton = {version = "^3.1.0", markers = "sys_platform == 'linux'"}
 
 [build-system]
 requires = ["poetry-core"]

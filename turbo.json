@@ -50,32 +50,18 @@
     },
     "test:coverage": {
       "dependsOn": ["build"],
-      "inputs": [
-        "src/**",
-        "test/**",
-        "vitest.config.*",
-        "jest.config.*"
-      ],
+      "inputs": ["src/**", "test/**", "vitest.config.*", "jest.config.*"],
       "outputs": ["coverage/**"],
       "outputLogs": "new-only"
     },
     "lint": {
-      "inputs": [
-        "src/**",
-        ".eslintrc*",
-        "eslint.config.*",
-        "package.json"
-      ],
+      "inputs": ["src/**", ".eslintrc*", "eslint.config.*", "package.json"],
       "outputs": [],
       "cache": true
     },
     "typecheck": {
       "dependsOn": ["^build"],
-      "inputs": [
-        "src/**",
-        "tsconfig.json",
-        "package.json"
-      ],
+      "inputs": ["src/**", "tsconfig.json", "package.json"],
       "outputs": []
     },
     "clean": {
