@@ -2,9 +2,10 @@
  * IDE View - Professional Code Editor Interface
  *
  * VS Code-inspired IDE with NEURECTOMY design system
+ * Integrating: Agent Execution Graph, GitOps Overlay, Experiment Sidebar, Enhanced Status Bar
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   File,
@@ -23,10 +24,25 @@ import {
   RefreshCw,
   Code2,
   FileText,
+  FlaskConical,
+  Network,
+  PanelBottomClose,
+  PanelBottomOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EditorManager } from "@/components/editors/EditorManager";
 import { useEditorStore } from "@/stores/editor-store";
+import type { EditorFile } from "@neurectomy/types";
+import { useIDEKeyboardShortcuts } from "@/hooks/useIDEKeyboardShortcuts";
+
+// Import new NEURECTOMY components
+import {
+  AgentExecutionGraph,
+  mockExecutionNodes,
+} from "@/components/agent-graph";
+import { GitOpsOverlay } from "@/components/gitops";
+import { ExperimentSidebar } from "@/components/experiments";
+import { EnhancedStatusBar } from "@/components/status-bar";
 
 interface FileNode {
   name: string;
@@ -97,6 +113,7 @@ type ActivityBarItem =
   | "search"
   | "git"
   | "agents"
+  | "experiments"
   | "extensions"
   | "settings";
 
@@ -105,9 +122,43 @@ export default function IDEView() {
     useState<ActivityBarItem>("explorer");
   const [fileTree, setFileTree] = useState<FileNode[]>(mockFileTree);
   const [terminalOpen, setTerminalOpen] = useState(true);
+  const [agentGraphOpen, setAgentGraphOpen] = useState(false);
+
+  // Simulated metrics for EnhancedStatusBar
+  const [metrics] = useState({
+    cpu: 45,
+    gpu: 62,
+    memory: 8.4,
+  });
+  const [activeAgents] = useState(3);
+  const [deploymentStatus] = useState<
+    "idle" | "deploying" | "success" | "failed"
+  >("success");
 
   const { openFiles, activeFileId, openFile, closeFile, setActiveFile } =
     useEditorStore();
+
+  // Keyboard shortcuts handlers - memoized to prevent re-binding
+  const shortcutHandlers = useMemo(
+    () => ({
+      toggleTerminal: () => setTerminalOpen((prev) => !prev),
+      toggleAgentGraph: () => setAgentGraphOpen((prev) => !prev),
+      switchToExplorer: () => setActiveActivity("explorer"),
+      switchToSearch: () => setActiveActivity("search"),
+      switchToGit: () => setActiveActivity("git"),
+      switchToAgents: () => setActiveActivity("agents"),
+      switchToExperiments: () => setActiveActivity("experiments"),
+      switchToExtensions: () => setActiveActivity("extensions"),
+      switchToSettings: () => setActiveActivity("settings"),
+      closeActiveFile: () => {
+        if (activeFileId) closeFile(activeFileId);
+      },
+    }),
+    [activeFileId, closeFile]
+  );
+
+  // Register keyboard shortcuts
+  useIDEKeyboardShortcuts(shortcutHandlers);
 
   const toggleFolder = useCallback(
     (path: string) => {
@@ -130,20 +181,20 @@ export default function IDEView() {
   const handleFileClick = useCallback(
     (file: FileNode) => {
       if (file.type === "file") {
-        openFile({
-          id: file.path,
-          path: file.path,
-          name: file.name,
-          language: getLanguageFromPath(file.path),
-          content: "// File content will be loaded from backend\n",
-          isDirty: false,
-        });
-        setActiveFile(file.path);
+        const fileToOpen: Omit<EditorFile, "id" | "isDirty" | "lastModified"> =
+          {
+            path: file.path,
+            name: file.name,
+            language: getLanguageFromPath(file.path),
+            content: "// File content will be loaded from backend\n",
+          };
+        openFile(fileToOpen);
+        // setActiveFile is handled automatically by openFile
       } else {
         toggleFolder(file.path);
       }
     },
-    [openFile, setActiveFile, toggleFolder]
+    [openFile, toggleFolder]
   );
 
   return (
@@ -175,6 +226,12 @@ export default function IDEView() {
           onClick={() => setActiveActivity("agents")}
         />
         <ActivityBarIcon
+          icon={FlaskConical}
+          label="Experiments"
+          active={activeActivity === "experiments"}
+          onClick={() => setActiveActivity("experiments")}
+        />
+        <ActivityBarIcon
           icon={Box}
           label="Extensions"
           active={activeActivity === "extensions"}
@@ -202,6 +259,7 @@ export default function IDEView() {
           {activeActivity === "search" && <SearchPanel />}
           {activeActivity === "git" && <GitPanel />}
           {activeActivity === "agents" && <AgentPanel />}
+          {activeActivity === "experiments" && <ExperimentsPanel />}
           {activeActivity === "extensions" && <ExtensionsPanel />}
           {activeActivity === "settings" && <SettingsPanel />}
         </AnimatePresence>
@@ -232,6 +290,41 @@ export default function IDEView() {
           {openFiles.length === 0 ? <WelcomeScreen /> : <EditorManager />}
         </div>
 
+        {/* Agent Execution Graph Panel (Collapsible) */}
+        <AnimatePresence>
+          {agentGraphOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 200, opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              style={{
+                overflow: "hidden",
+                borderTop: "1px solid hsl(var(--border))",
+              }}
+            >
+              <div className="h-full bg-card">
+                <div className="h-8 flex items-center justify-between px-3 border-b border-border">
+                  <div className="flex items-center gap-2 text-xs font-medium">
+                    <Network size={14} className="text-neural-blue" />
+                    <span>Agent Execution Graph</span>
+                  </div>
+                  <button
+                    onClick={() => setAgentGraphOpen(false)}
+                    className="p-1 hover:bg-muted rounded transition-colors"
+                    title="Close Agent Graph"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+                <div className="h-[calc(100%-2rem)] overflow-auto">
+                  <AgentExecutionGraph nodes={mockExecutionNodes} compact />
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Terminal Panel */}
         {terminalOpen && (
           <div className="h-64 border-t border-border bg-card">
@@ -240,29 +333,20 @@ export default function IDEView() {
         )}
       </div>
 
-      {/* Status Bar */}
-      <div className="absolute bottom-0 left-0 right-0 h-6 bg-primary flex items-center px-3 text-xs text-primary-foreground space-x-4">
-        <div className="flex items-center gap-1.5">
-          <GitBranch size={12} />
-          <span className="font-medium">main</span>
-        </div>
-        <div className="w-px h-3 bg-primary-foreground/20" />
-        <div>UTF-8</div>
-        <div>Ln 1, Col 1</div>
-        <div className="flex-1" />
-        <div className="flex items-center gap-1.5">
-          <Zap size={12} />
-          <span className="font-medium">12 Agents Active</span>
-        </div>
-        <div className="w-px h-3 bg-primary-foreground/20" />
-        <button
-          onClick={() => setTerminalOpen(!terminalOpen)}
-          className="flex items-center gap-1.5 hover:bg-primary-foreground/10 px-2 py-0.5 rounded transition-colors"
-        >
-          <TerminalIcon size={12} />
-          <span>{terminalOpen ? "Hide" : "Show"} Terminal</span>
-        </button>
-      </div>
+      {/* Enhanced Status Bar */}
+      <EnhancedStatusBar
+        gitBranch="main"
+        gitSynced={true}
+        metrics={metrics}
+        activeAgents={activeAgents}
+        deploymentStatus={deploymentStatus}
+        encoding="UTF-8"
+        lineCol={{ line: 1, col: 1 }}
+        onToggleTerminal={() => setTerminalOpen(!terminalOpen)}
+        onToggleAgentGraph={() => setAgentGraphOpen(!agentGraphOpen)}
+        terminalOpen={terminalOpen}
+        agentGraphOpen={agentGraphOpen}
+      />
     </div>
   );
 }
@@ -317,7 +401,7 @@ function ExplorerPanel({
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
-      className="p-3"
+      style={{ padding: "0.75rem" }}
     >
       <div className="flex items-center justify-between px-2 py-2 mb-2">
         <span className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
@@ -440,6 +524,8 @@ function EditorTab({
           onClose();
         }}
         className="ml-2 hover:bg-muted rounded p-0.5 transition-colors"
+        title={`Close ${file.name}`}
+        aria-label={`Close ${file.name}`}
       >
         <X size={14} />
       </button>
@@ -542,7 +628,7 @@ function SearchPanel() {
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
-      className="p-4"
+      style={{ padding: "1rem" }}
     >
       <h3 className="text-xs font-semibold uppercase text-muted-foreground tracking-wider mb-3">
         Search
@@ -556,22 +642,28 @@ function SearchPanel() {
   );
 }
 
-// Git Panel
+// Git Panel - Enhanced with GitOps Overlay
 function GitPanel() {
   return (
     <motion.div
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
-      className="p-4"
+      style={{ height: "100%", display: "flex", flexDirection: "column" }}
     >
-      <h3 className="text-xs font-semibold uppercase text-muted-foreground tracking-wider mb-3">
-        Source Control
-      </h3>
-      <div className="p-4 bg-muted/50 rounded-lg border border-border">
-        <div className="text-sm text-muted-foreground text-center">
-          No changes
+      <div className="p-4 border-b border-border">
+        <h3 className="text-xs font-semibold uppercase text-muted-foreground tracking-wider mb-3">
+          Source Control
+        </h3>
+        <div className="p-4 bg-muted/50 rounded-lg border border-border">
+          <div className="text-sm text-muted-foreground text-center">
+            No changes
+          </div>
         </div>
+      </div>
+      {/* GitOps Deployment Status */}
+      <div className="flex-1 overflow-auto">
+        <GitOpsOverlay />
       </div>
     </motion.div>
   );
@@ -591,7 +683,7 @@ function AgentPanel() {
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
-      className="p-4"
+      style={{ padding: "1rem" }}
     >
       <h3 className="text-xs font-semibold uppercase text-muted-foreground tracking-wider mb-3">
         Agents
@@ -635,7 +727,7 @@ function ExtensionsPanel() {
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
-      className="p-4"
+      style={{ padding: "1rem" }}
     >
       <h3 className="text-xs font-semibold uppercase text-muted-foreground tracking-wider mb-3">
         Extensions
@@ -649,6 +741,20 @@ function ExtensionsPanel() {
   );
 }
 
+// Experiments Panel - Using ExperimentSidebar
+function ExperimentsPanel() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      style={{ height: "100%" }}
+    >
+      <ExperimentSidebar />
+    </motion.div>
+  );
+}
+
 // Settings Panel
 function SettingsPanel() {
   return (
@@ -656,17 +762,24 @@ function SettingsPanel() {
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
-      className="p-4"
+      style={{ padding: "1rem" }}
     >
       <h3 className="text-xs font-semibold uppercase text-muted-foreground tracking-wider mb-3">
         Settings
       </h3>
       <div className="space-y-3">
         <div>
-          <label className="text-xs font-medium mb-1.5 block text-muted-foreground">
+          <label
+            htmlFor="theme-select"
+            className="text-xs font-medium mb-1.5 block text-muted-foreground"
+          >
             Theme
           </label>
-          <select className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all">
+          <select
+            id="theme-select"
+            title="Select Theme"
+            className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+          >
             <option>Dark (default)</option>
             <option>Light</option>
             <option>High Contrast</option>

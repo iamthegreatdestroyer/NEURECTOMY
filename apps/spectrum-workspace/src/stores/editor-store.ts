@@ -7,12 +7,12 @@ import { create } from "zustand";
 import { persist, devtools } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 import type * as Monaco from "monaco-editor";
-import type {
-  EditorStore,
-  EditorFile,
-  EditorConfig,
+import type { EditorStore, EditorFile, EditorConfig } from "@neurectomy/types";
+import {
+  generateFileId,
+  detectLanguage,
+  DEFAULT_EDITOR_CONFIG,
 } from "@neurectomy/types";
-import { generateFileId, detectLanguage, DEFAULT_EDITOR_CONFIG } from "@neurectomy/types";
 
 /**
  * Editor Zustand Store
