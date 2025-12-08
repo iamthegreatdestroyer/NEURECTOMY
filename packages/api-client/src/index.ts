@@ -125,6 +125,13 @@ export {
 
 // Export REST client
 export { RestClient, createRestClient, type RestClientConfig } from "./rest";
+export {
+  restClient,
+  RESTClient,
+  type RequestConfig,
+  type APIResponse,
+  type APIError,
+} from "./rest-client";
 
 // Export hooks for React integration
 export {
@@ -135,6 +142,30 @@ export {
   type MutationOptions,
   type SubscriptionOptions,
 } from "./hooks";
+
+// Export custom React hooks for GraphQL
+export {
+  useQuery as useGraphQLQuery,
+  useLazyQuery,
+  type UseQueryOptions,
+  type UseQueryResult,
+} from "./hooks/useQuery";
+
+export {
+  useMutation as useGraphQLMutation,
+  useOptimisticMutation,
+  type UseMutationOptions,
+  type UseMutationResult,
+  type UseOptimisticMutationOptions,
+} from "./hooks/useMutation";
+
+export {
+  useSubscription as useGraphQLSubscription,
+  useAutoReconnectSubscription,
+  type UseSubscriptionOptions,
+  type UseSubscriptionResult,
+  type UseAutoReconnectSubscriptionOptions,
+} from "./hooks/useSubscription";
 
 // Export utilities
 export { handleApiError, retryRequest, type ApiError } from "./utils";

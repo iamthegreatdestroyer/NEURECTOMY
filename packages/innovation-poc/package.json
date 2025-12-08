@@ -16,7 +16,7 @@
   "dependencies": {
     "complex.js": "^2.1.1",
     "mathjs": "^12.2.0",
-    "d3-graph": "^1.0.0",
+    "d3-graph": "^0.0.2",
     "lodash": "^4.17.21"
   },
   "devDependencies": {

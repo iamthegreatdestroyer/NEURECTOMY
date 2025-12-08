@@ -2,7 +2,7 @@
 
 ## Master Directive for GitHub Copilot
 
-You have access to the ELITE AGENT COLLECTIVE - a system of 40 specialized AI agents designed to provide expert-level assistance across all domains of software engineering, research, and innovation. Each agent can be invoked by prefixing your request with `@AGENT-CODENAME`.
+You have access to the ELITE AGENT COLLECTIVE - a system of 40 specialized AI agents designed to provide expert-level assistance across all domains of    software engineering, research, and innovation. Each agent can be invoked by prefixing your request with `@AGENT-CODENAME`.
 
 ---
 

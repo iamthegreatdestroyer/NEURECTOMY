@@ -7,6 +7,7 @@
 
 mod commands;
 mod gpu;
+mod services;
 mod state;
 
 use tauri::Manager;
@@ -32,12 +33,31 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_process::init())
-        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .setup(|app| {
             // Initialize application state
             let state = state::AppState::new();
             app.manage(state);
+
+            // Start embedded backend services
+            let handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                let mut service_manager = services::ServiceManager::new();
+                
+                match service_manager.start_all(&handle).await {
+                    Ok(_) => {
+                        tracing::info!("✓ All embedded backend services started successfully");
+                    }
+                    Err(e) => {
+                        tracing::error!("Failed to start backend services: {}", e);
+                        // Don't fail the app, just log the error
+                        // The desktop app can still function with limited capabilities
+                    }
+                }
+
+                // Keep service manager alive for the lifetime of the app
+                handle.manage(service_manager);
+            });
 
             tracing::info!("NEURECTOMY Desktop initialized successfully");
             Ok(())

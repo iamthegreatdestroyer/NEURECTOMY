@@ -20,7 +20,6 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 tauri = { version = "2", features = [
-    "protocol-asset",
     "devtools",
 ] }
 tauri-plugin-shell = "2"
@@ -30,7 +29,6 @@ tauri-plugin-clipboard-manager = "2"
 tauri-plugin-notification = "2"
 tauri-plugin-os = "2"
 tauri-plugin-process = "2"
-tauri-plugin-updater = "2"
 tauri-plugin-window-state = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -43,6 +41,17 @@ os_info = "3"
 hostname = "0.3"
 num_cpus = "1"
 sys-info = "0.9"
+
+# Embedded Backend Services
+axum = { version = "0.7", features = ["ws", "macros"] }
+tower = { version = "0.5", features = ["full"] }
+tower-http = { version = "0.5", features = ["cors", "fs", "trace"] }
+reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
+sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "sqlite", "postgres"] }
+uuid = { version = "1.11", features = ["v4", "serde"] }
+async-trait = "0.1"
+bytes = "1"
+futures = "0.3"
 
 [profile.dev]
 incremental = true

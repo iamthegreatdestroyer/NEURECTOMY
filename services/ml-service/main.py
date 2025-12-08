@@ -26,6 +26,7 @@ import structlog
 
 from src.config import settings
 from src.api import router as api_router
+from src.api.mlflow_router import router as mlflow_router
 from src.db import init_db
 from src.services import (
     LLMService,
@@ -281,6 +282,7 @@ Intelligence Foundry - AI/ML Backend
     
     # Include routers
     app.include_router(api_router, prefix="/api/v1")
+    app.include_router(mlflow_router, prefix="/api/mlflow", tags=["MLflow"])
     
     # Prometheus metrics endpoint
     @app.get("/metrics")

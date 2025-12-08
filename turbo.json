@@ -8,6 +8,8 @@
     "NEO4J_URI",
     "NATS_URL"
   ],
+  "ui": "tui",
+  "concurrency": "20",
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

@@ -250,34 +250,82 @@ services:
   # MLOps Services (Phase 2: Intelligence Layer)
   # =============================================================================
 
+  # MinIO - S3-compatible object storage for MLflow artifacts
+  minio:
+    image: minio/minio:latest
+    container_name: neurectomy-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000" # API
+      - "9001:9001" # Console
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - neurectomy-network
+
+  # MinIO Client - Create buckets on startup
+  minio-client:
+    image: minio/mc:latest
+    container_name: neurectomy-minio-client
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set myminio http://minio:9000 minioadmin minioadmin;
+      mc mb myminio/mlflow-artifacts --ignore-existing;
+      mc mb myminio/optuna-artifacts --ignore-existing;
+      mc anonymous set download myminio/mlflow-artifacts;
+      mc anonymous set download myminio/optuna-artifacts;
+      exit 0;
+      "
+    networks:
+      - neurectomy-network
+
   mlflow:
     build:
       context: ./docker/mlflow
       dockerfile: Dockerfile
+    image: neurectomy-mlflow:latest
     container_name: neurectomy-mlflow
     restart: unless-stopped
     environment:
       MLFLOW_TRACKING_URI: http://0.0.0.0:5000
-      MLFLOW_BACKEND_STORE_URI: postgresql://neurectomy:neurectomy@postgres:5432/mlflow
-      MLFLOW_ARTIFACT_ROOT: /mlflow/artifacts
+      MLFLOW_BACKEND_STORE_URI: postgresql://mlflow:mlflow@postgres:5432/mlflow
+      MLFLOW_ARTIFACT_ROOT: s3://mlflow-artifacts/
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
     command: >
       mlflow server
-      --backend-store-uri postgresql://neurectomy:neurectomy@postgres:5432/mlflow
-      --default-artifact-root /mlflow/artifacts
+      --backend-store-uri postgresql://mlflow:mlflow@postgres:5432/mlflow
+      --default-artifact-root s3://mlflow-artifacts/
       --host 0.0.0.0
       --port 5000
     ports:
       - "5000:5000"
-    volumes:
-      - mlflow_artifacts:/mlflow/artifacts
     depends_on:
       postgres:
         condition: service_healthy
+      minio:
+        condition: service_healthy
+      minio-client:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     networks:
       - neurectomy-network
 
@@ -286,7 +334,7 @@ services:
     container_name: neurectomy-optuna-dashboard
     restart: unless-stopped
     command: >
-      optuna-dashboard postgresql://neurectomy:neurectomy@postgres:5432/optuna
+      optuna-dashboard postgresql://optuna:optuna@postgres:5432/optuna
       --host 0.0.0.0
       --port 8080
     ports:
@@ -314,7 +362,7 @@ services:
       - neurectomy-network
 
   # =============================================================================
-  # NEURECTOMY ML Service
+  # NEURECTOMY ML Service (Intelligence Foundry)
   # =============================================================================
 
   ml-service:
@@ -324,20 +372,61 @@ services:
     container_name: neurectomy-ml-service
     restart: unless-stopped
     environment:
-      ENVIRONMENT: production
+      # Service Configuration
+      SERVICE_NAME: intelligence-foundry-ml
+      SERVICE_VERSION: 1.0.0
+      HOST: 0.0.0.0
       PORT: 8000
+      DEBUG: "false"
+
+      # MLflow Configuration
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      MLFLOW_ARTIFACT_ROOT: s3://mlflow-artifacts/
+      MLFLOW_BACKEND_STORE_URI: postgresql://mlflow:mlflow@postgres:5432/mlflow
+
+      # Optuna Configuration
+      OPTUNA_STORAGE: postgresql://optuna:optuna@postgres:5432/optuna
+      OPTUNA_DEFAULT_SAMPLER: tpe
+      OPTUNA_DEFAULT_PRUNER: median
+
+      # MinIO/S3 Configuration
+      S3_ENDPOINT_URL: http://minio:9000
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      S3_BUCKET: mlflow-artifacts
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+
+      # PostgreSQL Configuration
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: mlflow
+      POSTGRES_PASSWORD: mlflow
+      POSTGRES_DB: mlflow
+
+      # Training Defaults
+      DEFAULT_BATCH_SIZE: 32
+      DEFAULT_EPOCHS: 10
+      DEFAULT_LEARNING_RATE: 0.001
+      MAX_PARALLEL_TRIALS: 4
+      GPU_MEMORY_FRACTION: 0.9
+
+      # WebSocket Configuration
+      WS_HEARTBEAT_INTERVAL: 30
+      WS_MAX_CONNECTIONS: 100
+
+      # CORS Configuration
+      CORS_ORIGINS: http://localhost:5173,http://localhost:3000,http://localhost:8080,tauri://localhost,http://localhost:1420
+
+      # Legacy support
       DATABASE_URL: postgresql://neurectomy:neurectomy@postgres:5432/neurectomy
       REDIS_URL: redis://redis:6379
-      MLFLOW_TRACKING_URI: http://mlflow:5000
-      JWT_SECRET: ${JWT_SECRET:-neurectomy-jwt-secret-change-in-production}
-      JWT_ALGORITHM: HS256
-      JWT_ACCESS_TOKEN_EXPIRE_MINUTES: 30
-      JWT_REFRESH_TOKEN_EXPIRE_DAYS: 7
-      RATE_LIMIT_REQUESTS: 100
-      RATE_LIMIT_WINDOW_SECONDS: 60
     ports:
       - "8002:8000"
     volumes:
+      - ./services/ml-service:/app
+      - ml_service_cache:/root/.cache
       - ml_models:/app/models
       - ml_data:/app/data
     depends_on:
@@ -347,11 +436,14 @@ services:
         condition: service_healthy
       mlflow:
         condition: service_healthy
+      minio:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
       retries: 3
+      start_period: 30s
     networks:
       - neurectomy-network
 
@@ -459,6 +551,8 @@ volumes:
     name: neurectomy-grafana-data
   loki_data:
     name: neurectomy-loki-data
+  minio_data:
+    name: neurectomy-minio-data
   mlflow_artifacts:
     name: neurectomy-mlflow-artifacts
   chromadb_data:
@@ -467,3 +561,5 @@ volumes:
     name: neurectomy-ml-models
   ml_data:
     name: neurectomy-ml-data
+  ml_service_cache:
+    name: neurectomy-ml-service-cache

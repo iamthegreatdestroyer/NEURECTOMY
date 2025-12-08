@@ -1,47 +1,34 @@
 # ============================================================================
-# NEURECTOMY ML Service - Production Dockerfile
+# NEURECTOMY ML Service - Production Dockerfile (Intelligence Foundry)
 # Multi-stage build for optimized container size
 # ============================================================================
 
-# Stage 1: Build dependencies
-FROM python:3.11-slim as builder
+FROM python:3.11-slim as base
 
 WORKDIR /app
 
-# Install build dependencies
+# Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Poetry
-RUN pip install poetry==1.7.1
-
-# Copy dependency files
-COPY pyproject.toml poetry.lock* ./
-
-# Export dependencies to requirements.txt (without dev dependencies)
-RUN poetry export -f requirements.txt --output requirements.txt --without-hashes --without dev
-
-# Stage 2: Runtime
-FROM python:3.11-slim as runtime
-
-WORKDIR /app
-
-# Install runtime dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
     libpq-dev \
-    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user for security
 RUN groupadd -r neurectomy && useradd -r -g neurectomy neurectomy
 
-# Copy requirements and install
-COPY --from=builder /app/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
+COPY config.py .
+COPY mlflow_server.py .
+COPY optuna_service.py .
+COPY training_engine.py .
+COPY intelligence_foundry_main.py .
 COPY main.py .
 COPY src/ ./src/
 
@@ -61,8 +48,8 @@ ENV PYTHONUNBUFFERED=1 \
 EXPOSE 8000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/api/v1/health || exit 1
+HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
 
-# Run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+# Run Intelligence Foundry application
+CMD ["uvicorn", "intelligence_foundry_main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -587,6 +587,102 @@ async def cleanup_after_test():
 
 
 # ==============================================================================
+# Integration Test Fixtures (Task 5 - Intelligence Foundry)
+# ==============================================================================
+
+@pytest_asyncio.fixture
+async def api_client() -> AsyncGenerator[AsyncClient, None]:
+    """
+    HTTP client for Intelligence Foundry API testing.
+    
+    Points to http://localhost:8002 (Intelligence Foundry FastAPI service).
+    """
+    async with AsyncClient(base_url="http://localhost:8002", timeout=30.0) as client:
+        yield client
+
+
+@pytest.fixture
+def mlflow_base_url() -> str:
+    """MLflow Tracking Server base URL."""
+    return "http://localhost:5000"
+
+
+@pytest.fixture
+def minio_base_url() -> str:
+    """MinIO S3 storage base URL."""
+    return "http://localhost:9001"
+
+
+@pytest.fixture
+def optuna_base_url() -> str:
+    """Optuna Dashboard base URL."""
+    return "http://localhost:8085"
+
+
+@pytest_asyncio.fixture
+async def cleanup_experiments(api_client: AsyncClient):
+    """
+    Cleanup MLflow experiments created during tests.
+    
+    Yields test_experiment_ids list that tests can append to.
+    After test completes, deletes all experiments in the list.
+    """
+    test_experiment_ids: List[str] = []
+    
+    yield test_experiment_ids
+    
+    # Cleanup: Delete all test experiments
+    for experiment_id in test_experiment_ids:
+        try:
+            response = await api_client.post(
+                f"/api/mlflow/experiments/{experiment_id}/delete"
+            )
+            if response.status_code not in [200, 404]:
+                print(f"Warning: Failed to cleanup experiment {experiment_id}: {response.status_code}")
+        except Exception as e:
+            print(f"Warning: Cleanup exception for experiment {experiment_id}: {e}")
+
+
+@pytest_asyncio.fixture
+async def cleanup_studies(api_client: AsyncClient):
+    """
+    Cleanup Optuna studies created during tests.
+    
+    Yields test_study_names list that tests can append to.
+    After test completes, deletes all studies in the list.
+    """
+    test_study_names: List[str] = []
+    
+    yield test_study_names
+    
+    # Cleanup: Delete all test studies
+    for study_name in test_study_names:
+        try:
+            response = await api_client.delete(
+                f"/api/optuna/studies/{study_name}"
+            )
+            if response.status_code not in [200, 404]:
+                print(f"Warning: Failed to cleanup study {study_name}: {response.status_code}")
+        except Exception as e:
+            print(f"Warning: Cleanup exception for study {study_name}: {e}")
+
+
+def generate_test_experiment_name() -> str:
+    """Generate unique experiment name for testing."""
+    return f"test_exp_{uuid4().hex[:8]}"
+
+
+def generate_test_study_name() -> str:
+    """Generate unique study name for testing."""
+    return f"test_study_{uuid4().hex[:8]}"
+
+
+def generate_test_run_name() -> str:
+    """Generate unique run name for testing."""
+    return f"test_run_{uuid4().hex[:8]}"
+
+
+# ==============================================================================
 # Markers Configuration
 # ==============================================================================
 
@@ -597,3 +693,6 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "slow: Slow tests (>1s execution)")
     config.addinivalue_line("markers", "gpu: Tests requiring GPU/DirectML")
     config.addinivalue_line("markers", "e2e: End-to-end tests")
+    config.addinivalue_line("markers", "mlflow: Tests for MLflow integration")
+    config.addinivalue_line("markers", "optuna: Tests for Optuna integration")
+    config.addinivalue_line("markers", "websocket: Tests for WebSocket functionality")

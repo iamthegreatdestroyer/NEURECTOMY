@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   Bot,
   Save,
@@ -22,57 +22,224 @@ import {
   ChevronDown,
   Terminal,
   FileCode,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useAgentsStore } from '@/stores/agents.store';
-import type { Agent } from '@/types';
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useAgentsStore } from "@/stores/agents.store";
+import { EditorManager } from "@/components/editors";
+import { useEditorStore } from "@/stores/editor-store";
+import type { Agent } from "@/types";
 
-type EditorTab = 'config' | 'code' | 'chat' | 'metrics';
+type EditorTab = "config" | "code" | "chat" | "metrics";
 
 const agentTemplates = [
-  { id: 'apex', name: 'APEX', description: 'Elite CS Engineering', icon: '🎯' },
-  { id: 'cipher', name: 'CIPHER', description: 'Cryptography & Security', icon: '🔐' },
-  { id: 'architect', name: 'ARCHITECT', description: 'Systems Architecture', icon: '🏛️' },
-  { id: 'tensor', name: 'TENSOR', description: 'ML & Deep Learning', icon: '🧠' },
-  { id: 'flux', name: 'FLUX', description: 'DevOps & Infrastructure', icon: '⚡' },
-  { id: 'fortress', name: 'FORTRESS', description: 'Security & Penetration', icon: '🏰' },
+  { id: "apex", name: "APEX", description: "Elite CS Engineering", icon: "🎯" },
+  {
+    id: "cipher",
+    name: "CIPHER",
+    description: "Cryptography & Security",
+    icon: "🔐",
+  },
+  {
+    id: "architect",
+    name: "ARCHITECT",
+    description: "Systems Architecture",
+    icon: "🏛️",
+  },
+  {
+    id: "tensor",
+    name: "TENSOR",
+    description: "ML & Deep Learning",
+    icon: "🧠",
+  },
+  {
+    id: "flux",
+    name: "FLUX",
+    description: "DevOps & Infrastructure",
+    icon: "⚡",
+  },
+  {
+    id: "fortress",
+    name: "FORTRESS",
+    description: "Security & Penetration",
+    icon: "🏰",
+  },
 ];
 
 const defaultAgentConfig = {
-  name: '',
-  type: 'assistant',
-  model: 'gpt-4-turbo',
+  name: "",
+  type: "assistant",
+  model: "gpt-4-turbo",
   temperature: 0.7,
   maxTokens: 4096,
-  systemPrompt: '',
+  systemPrompt: "",
   capabilities: [] as string[],
   memoryEnabled: true,
   streamingEnabled: true,
 };
 
+/**
+ * Generate agent.py code based on configuration
+ */
+function generateAgentCode(
+  agentName: string,
+  config: typeof defaultAgentConfig
+): string {
+  return `from neurectomy import Agent, Tool
+
+class ${agentName}(Agent):
+    """
+    ${config.name || "Custom"} Agent
+    Type: ${config.type}
+    Model: ${config.model}
+    """
+    
+    def __init__(self):
+        super().__init__(
+            name="${config.name || "My Agent"}",
+            model="${config.model}",
+            temperature=${config.temperature},
+            max_tokens=${config.maxTokens},
+            memory_enabled=${config.memoryEnabled ? "True" : "False"},
+            streaming=${config.streamingEnabled ? "True" : "False"},
+        )
+        
+        self.system_prompt = """
+${config.systemPrompt || "# Define your agent behavior here"}
+        """
+    
+    async def process(self, message: str) -> str:
+        """
+        Process a user message and return a response.
+        
+        Args:
+            message: The user's input message
+            
+        Returns:
+            The agent's response
+        """
+        response = await self.generate(
+            prompt=message,
+            system=self.system_prompt,
+        )
+        
+        return response
+    
+    async def execute_tool(self, tool_name: str, **kwargs) -> dict:
+        """
+        Execute a registered tool with given parameters.
+        
+        Args:
+            tool_name: Name of the tool to execute
+            **kwargs: Tool parameters
+            
+        Returns:
+            Tool execution result
+        """
+        if tool_name not in self.tools:
+            raise ValueError(f"Tool '{tool_name}' not found")
+        
+        return await self.tools[tool_name].execute(**kwargs)
+
+
+if __name__ == "__main__":
+    import asyncio
+    
+    agent = ${agentName}()
+    
+    async def main():
+        response = await agent.process("Hello!")
+        print(response)
+    
+    asyncio.run(main())
+`;
+}
+
+/**
+ * Generate tools.py code
+ */
+function generateToolsCode(agentName: string): string {
+  return `"""
+Tools for ${agentName} Agent
+
+Custom tools that extend agent capabilities.
+"""
+
+from neurectomy import Tool
+from typing import Any, Dict
+
+
+class CustomTool(Tool):
+    """
+    Example custom tool implementation.
+    """
+    
+    def __init__(self):
+        super().__init__(
+            name="custom_tool",
+            description="A custom tool for ${agentName}",
+        )
+    
+    async def execute(self, **kwargs) -> Dict[str, Any]:
+        """
+        Execute the tool logic.
+        
+        Args:
+            **kwargs: Tool parameters
+            
+        Returns:
+            Execution result
+        """
+        # Implement your tool logic here
+        return {
+            "status": "success",
+            "result": "Tool executed successfully",
+            "params": kwargs,
+        }
+    
+    def validate_params(self, **kwargs) -> bool:
+        """
+        Validate tool parameters.
+        
+        Args:
+            **kwargs: Parameters to validate
+            
+        Returns:
+            True if valid, False otherwise
+        """
+        # Add parameter validation logic
+        return True
+
+
+# Add more tools here
+`;
+}
+
 export function AgentEditor() {
   const { agentId } = useParams<{ agentId: string }>();
   const navigate = useNavigate();
   const { agents, updateAgent } = useAgentsStore();
-  
-  const [activeTab, setActiveTab] = useState<EditorTab>('config');
+  const { openFile, openFiles } = useEditorStore();
+
+  const [activeTab, setActiveTab] = useState<EditorTab>("config");
   const [config, setConfig] = useState(defaultAgentConfig);
   const [isSaving, setIsSaving] = useState(false);
-  const [chatMessages, setChatMessages] = useState<Array<{ role: string; content: string }>>([]);
-  const [chatInput, setChatInput] = useState('');
+  const [chatMessages, setChatMessages] = useState<
+    Array<{ role: string; content: string }>
+  >([]);
+  const [chatInput, setChatInput] = useState("");
 
-  const isNewAgent = agentId === 'new';
-  const existingAgent = agents.find(a => a.id === agentId);
+  const isNewAgent = agentId === "new";
+  const existingAgent = agents.find((a) => a.id === agentId);
 
   useEffect(() => {
     if (existingAgent) {
       setConfig({
         name: existingAgent.name,
         type: existingAgent.type,
-        model: existingAgent.model || 'gpt-4-turbo',
+        model: existingAgent.model || "gpt-4-turbo",
         temperature: 0.7,
         maxTokens: 4096,
-        systemPrompt: '',
+        systemPrompt: "",
         capabilities: existingAgent.capabilities || [],
         memoryEnabled: true,
         streamingEnabled: true,
@@ -80,13 +247,36 @@ export function AgentEditor() {
     }
   }, [existingAgent]);
 
+  // Initialize agent code files when switching to code tab
+  useEffect(() => {
+    if (activeTab === "code" && openFiles.length === 0) {
+      const agentName = config.name?.replace(/\s+/g, "") || "MyAgent";
+
+      // Open main agent file
+      openFile({
+        path: `/agents/${agentName}/agent.py`,
+        name: "agent.py",
+        content: generateAgentCode(agentName, config),
+        language: "python",
+      });
+
+      // Open tools file
+      openFile({
+        path: `/agents/${agentName}/tools.py`,
+        name: "tools.py",
+        content: generateToolsCode(agentName),
+        language: "python",
+      });
+    }
+  }, [activeTab, config, openFile, openFiles.length]);
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
       // Simulate save
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       // In real app, call API here
-      console.log('Saving agent config:', config);
+      console.log("Saving agent config:", config);
     } finally {
       setIsSaving(false);
     }
@@ -94,18 +284,18 @@ export function AgentEditor() {
 
   const handleSendMessage = () => {
     if (!chatInput.trim()) return;
-    
-    setChatMessages(prev => [
-      ...prev,
-      { role: 'user', content: chatInput },
-    ]);
-    setChatInput('');
-    
+
+    setChatMessages((prev) => [...prev, { role: "user", content: chatInput }]);
+    setChatInput("");
+
     // Simulate response
     setTimeout(() => {
-      setChatMessages(prev => [
+      setChatMessages((prev) => [
         ...prev,
-        { role: 'assistant', content: `This is a simulated response from the ${config.name || 'Agent'}. In production, this would connect to your configured model.` },
+        {
+          role: "assistant",
+          content: `This is a simulated response from the ${config.name || "Agent"}. In production, this would connect to your configured model.`,
+        },
       ]);
     }, 1000);
   };
@@ -128,15 +318,19 @@ export function AgentEditor() {
               </div>
               <div>
                 <h1 className="text-xl font-bold">
-                  {isNewAgent ? 'Create New Agent' : `Edit ${existingAgent?.name || 'Agent'}`}
+                  {isNewAgent
+                    ? "Create New Agent"
+                    : `Edit ${existingAgent?.name || "Agent"}`}
                 </h1>
                 <p className="text-sm text-muted-foreground">
-                  {isNewAgent ? 'Configure your new AI agent' : 'Modify agent settings and behavior'}
+                  {isNewAgent
+                    ? "Configure your new AI agent"
+                    : "Modify agent settings and behavior"}
                 </p>
               </div>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2">
             {!isNewAgent && (
               <>
@@ -158,7 +352,7 @@ export function AgentEditor() {
               className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
               <Save className="h-4 w-4" />
-              {isSaving ? 'Saving...' : 'Save Agent'}
+              {isSaving ? "Saving..." : "Save Agent"}
             </button>
           </div>
         </div>
@@ -166,19 +360,19 @@ export function AgentEditor() {
         {/* Tabs */}
         <div className="flex gap-1 mt-4 p-1 bg-muted rounded-lg w-fit">
           {[
-            { id: 'config', label: 'Configuration', icon: Settings },
-            { id: 'code', label: 'Code', icon: Code },
-            { id: 'chat', label: 'Test Chat', icon: MessageSquare },
-            { id: 'metrics', label: 'Metrics', icon: Activity },
-          ].map(tab => (
+            { id: "config", label: "Configuration", icon: Settings },
+            { id: "code", label: "Code", icon: Code },
+            { id: "chat", label: "Test Chat", icon: MessageSquare },
+            { id: "metrics", label: "Metrics", icon: Activity },
+          ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as EditorTab)}
               className={cn(
-                'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors',
+                "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors",
                 activeTab === tab.id
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               <tab.icon className="h-4 w-4" />
@@ -190,29 +384,39 @@ export function AgentEditor() {
 
       {/* Content */}
       <div className="flex-1 overflow-hidden">
-        {activeTab === 'config' && (
+        {activeTab === "config" && (
           <div className="h-full overflow-auto p-6">
             <div className="max-w-4xl mx-auto space-y-8">
               {/* Basic Info */}
               <section>
-                <h2 className="text-lg font-semibold mb-4">Basic Information</h2>
+                <h2 className="text-lg font-semibold mb-4">
+                  Basic Information
+                </h2>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2">Agent Name</label>
+                    <label className="block text-sm font-medium mb-2">
+                      Agent Name
+                    </label>
                     <input
                       type="text"
                       value={config.name}
-                      onChange={(e) => setConfig({ ...config, name: e.target.value })}
+                      onChange={(e) =>
+                        setConfig({ ...config, name: e.target.value })
+                      }
                       placeholder="My Agent"
                       className="w-full px-3 py-2 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2">Agent Type</label>
+                    <label className="block text-sm font-medium mb-2">
+                      Agent Type
+                    </label>
                     <div className="relative">
                       <select
                         value={config.type}
-                        onChange={(e) => setConfig({ ...config, type: e.target.value })}
+                        onChange={(e) =>
+                          setConfig({ ...config, type: e.target.value })
+                        }
                         className="w-full px-3 py-2 bg-card border border-border rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-primary"
                       >
                         <option value="assistant">Assistant</option>
@@ -230,21 +434,27 @@ export function AgentEditor() {
               {/* Template Selection */}
               {isNewAgent && (
                 <section>
-                  <h2 className="text-lg font-semibold mb-4">Start from Template</h2>
+                  <h2 className="text-lg font-semibold mb-4">
+                    Start from Template
+                  </h2>
                   <div className="grid grid-cols-3 gap-4">
-                    {agentTemplates.map(template => (
+                    {agentTemplates.map((template) => (
                       <button
                         key={template.id}
-                        onClick={() => setConfig({ 
-                          ...config, 
-                          name: template.name,
-                          systemPrompt: `You are ${template.name}, an elite ${template.description} agent.`
-                        })}
+                        onClick={() =>
+                          setConfig({
+                            ...config,
+                            name: template.name,
+                            systemPrompt: `You are ${template.name}, an elite ${template.description} agent.`,
+                          })
+                        }
                         className="p-4 bg-card border border-border rounded-xl hover:border-primary/50 transition-colors text-left"
                       >
                         <span className="text-2xl">{template.icon}</span>
                         <h3 className="font-semibold mt-2">{template.name}</h3>
-                        <p className="text-sm text-muted-foreground">{template.description}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {template.description}
+                        </p>
                       </button>
                     ))}
                   </div>
@@ -253,14 +463,20 @@ export function AgentEditor() {
 
               {/* Model Configuration */}
               <section>
-                <h2 className="text-lg font-semibold mb-4">Model Configuration</h2>
+                <h2 className="text-lg font-semibold mb-4">
+                  Model Configuration
+                </h2>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2">Model</label>
+                    <label className="block text-sm font-medium mb-2">
+                      Model
+                    </label>
                     <div className="relative">
                       <select
                         value={config.model}
-                        onChange={(e) => setConfig({ ...config, model: e.target.value })}
+                        onChange={(e) =>
+                          setConfig({ ...config, model: e.target.value })
+                        }
                         className="w-full px-3 py-2 bg-card border border-border rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-primary"
                       >
                         <option value="gpt-4-turbo">GPT-4 Turbo</option>
@@ -274,11 +490,18 @@ export function AgentEditor() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2">Max Tokens</label>
+                    <label className="block text-sm font-medium mb-2">
+                      Max Tokens
+                    </label>
                     <input
                       type="number"
                       value={config.maxTokens}
-                      onChange={(e) => setConfig({ ...config, maxTokens: parseInt(e.target.value) })}
+                      onChange={(e) =>
+                        setConfig({
+                          ...config,
+                          maxTokens: parseInt(e.target.value),
+                        })
+                      }
                       className="w-full px-3 py-2 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
@@ -292,7 +515,12 @@ export function AgentEditor() {
                       max="2"
                       step="0.1"
                       value={config.temperature}
-                      onChange={(e) => setConfig({ ...config, temperature: parseFloat(e.target.value) })}
+                      onChange={(e) =>
+                        setConfig({
+                          ...config,
+                          temperature: parseFloat(e.target.value),
+                        })
+                      }
                       className="w-full"
                     />
                     <div className="flex justify-between text-xs text-muted-foreground mt-1">
@@ -309,7 +537,9 @@ export function AgentEditor() {
                 <h2 className="text-lg font-semibold mb-4">System Prompt</h2>
                 <textarea
                   value={config.systemPrompt}
-                  onChange={(e) => setConfig({ ...config, systemPrompt: e.target.value })}
+                  onChange={(e) =>
+                    setConfig({ ...config, systemPrompt: e.target.value })
+                  }
                   placeholder="Define the agent's personality, capabilities, and behavior..."
                   rows={6}
                   className="w-full px-3 py-2 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none"
@@ -325,13 +555,20 @@ export function AgentEditor() {
                       <Brain className="h-5 w-5 text-primary" />
                       <div>
                         <p className="font-medium">Memory</p>
-                        <p className="text-sm text-muted-foreground">Remember context across conversations</p>
+                        <p className="text-sm text-muted-foreground">
+                          Remember context across conversations
+                        </p>
                       </div>
                     </div>
                     <input
                       type="checkbox"
                       checked={config.memoryEnabled}
-                      onChange={(e) => setConfig({ ...config, memoryEnabled: e.target.checked })}
+                      onChange={(e) =>
+                        setConfig({
+                          ...config,
+                          memoryEnabled: e.target.checked,
+                        })
+                      }
                       className="h-5 w-5 rounded border-border"
                     />
                   </label>
@@ -340,13 +577,20 @@ export function AgentEditor() {
                       <Zap className="h-5 w-5 text-yellow-500" />
                       <div>
                         <p className="font-medium">Streaming</p>
-                        <p className="text-sm text-muted-foreground">Stream responses in real-time</p>
+                        <p className="text-sm text-muted-foreground">
+                          Stream responses in real-time
+                        </p>
                       </div>
                     </div>
                     <input
                       type="checkbox"
                       checked={config.streamingEnabled}
-                      onChange={(e) => setConfig({ ...config, streamingEnabled: e.target.checked })}
+                      onChange={(e) =>
+                        setConfig({
+                          ...config,
+                          streamingEnabled: e.target.checked,
+                        })
+                      }
                       className="h-5 w-5 rounded border-border"
                     />
                   </label>
@@ -356,60 +600,9 @@ export function AgentEditor() {
           </div>
         )}
 
-        {activeTab === 'code' && (
-          <div className="h-full flex flex-col">
-            <div className="flex-none p-4 border-b border-border flex items-center gap-4">
-              <button className="flex items-center gap-2 px-3 py-1.5 bg-muted rounded-lg text-sm">
-                <FileCode className="h-4 w-4" />
-                agent.py
-              </button>
-              <button className="flex items-center gap-2 px-3 py-1.5 hover:bg-muted rounded-lg text-sm text-muted-foreground">
-                <FileCode className="h-4 w-4" />
-                tools.py
-              </button>
-            </div>
-            <div className="flex-1 p-4 bg-muted/50 font-mono text-sm overflow-auto">
-              <pre className="text-muted-foreground">
-{`from neurectomy import Agent, Tool
+        {activeTab === "code" && <EditorManager className="flex-1" />}
 
-class ${config.name?.replace(/\s+/g, '') || 'MyAgent'}(Agent):
-    """
-    ${config.name || 'Custom'} Agent
-    Type: ${config.type}
-    Model: ${config.model}
-    """
-    
-    def __init__(self):
-        super().__init__(
-            name="${config.name || 'My Agent'}",
-            model="${config.model}",
-            temperature=${config.temperature},
-            max_tokens=${config.maxTokens},
-            memory_enabled=${config.memoryEnabled ? 'True' : 'False'},
-            streaming=${config.streamingEnabled ? 'True' : 'False'},
-        )
-        
-        self.system_prompt = """
-${config.systemPrompt || '# Define your agent behavior here'}
-        """
-    
-    async def process(self, message: str) -> str:
-        # Agent processing logic
-        response = await self.generate(
-            prompt=message,
-            system=self.system_prompt,
-        )
-        return response.content
-
-# Initialize agent
-agent = ${config.name?.replace(/\s+/g, '') || 'MyAgent'}()
-`}
-              </pre>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'chat' && (
+        {activeTab === "chat" && (
           <div className="h-full flex flex-col">
             <div className="flex-1 overflow-auto p-4 space-y-4">
               {chatMessages.length === 0 ? (
@@ -427,10 +620,10 @@ agent = ${config.name?.replace(/\s+/g, '') || 'MyAgent'}()
                   <div
                     key={i}
                     className={cn(
-                      'max-w-[80%] p-4 rounded-xl',
-                      msg.role === 'user'
-                        ? 'ml-auto bg-primary text-primary-foreground'
-                        : 'bg-card border border-border'
+                      "max-w-[80%] p-4 rounded-xl",
+                      msg.role === "user"
+                        ? "ml-auto bg-primary text-primary-foreground"
+                        : "bg-card border border-border"
                     )}
                   >
                     {msg.content}
@@ -444,7 +637,7 @@ agent = ${config.name?.replace(/\s+/g, '') || 'MyAgent'}()
                   type="text"
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                  onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
                   placeholder="Type a message to test..."
                   className="flex-1 px-4 py-2 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                 />
@@ -459,7 +652,7 @@ agent = ${config.name?.replace(/\s+/g, '') || 'MyAgent'}()
           </div>
         )}
 
-        {activeTab === 'metrics' && (
+        {activeTab === "metrics" && (
           <div className="h-full overflow-auto p-6">
             <div className="max-w-4xl mx-auto">
               {isNewAgent ? (
@@ -478,7 +671,9 @@ agent = ${config.name?.replace(/\s+/g, '') || 'MyAgent'}()
                       <span className="font-medium">CPU Usage</span>
                     </div>
                     <p className="text-3xl font-bold">23%</p>
-                    <p className="text-sm text-muted-foreground">Average over last hour</p>
+                    <p className="text-sm text-muted-foreground">
+                      Average over last hour
+                    </p>
                   </div>
                   <div className="p-4 bg-card border border-border rounded-xl">
                     <div className="flex items-center gap-3 mb-4">
@@ -486,7 +681,9 @@ agent = ${config.name?.replace(/\s+/g, '') || 'MyAgent'}()
                       <span className="font-medium">Memory</span>
                     </div>
                     <p className="text-3xl font-bold">512 MB</p>
-                    <p className="text-sm text-muted-foreground">Current allocation</p>
+                    <p className="text-sm text-muted-foreground">
+                      Current allocation
+                    </p>
                   </div>
                   <div className="p-4 bg-card border border-border rounded-xl">
                     <div className="flex items-center gap-3 mb-4">
@@ -494,7 +691,9 @@ agent = ${config.name?.replace(/\s+/g, '') || 'MyAgent'}()
                       <span className="font-medium">Messages</span>
                     </div>
                     <p className="text-3xl font-bold">1,247</p>
-                    <p className="text-sm text-muted-foreground">Total processed</p>
+                    <p className="text-sm text-muted-foreground">
+                      Total processed
+                    </p>
                   </div>
                   <div className="p-4 bg-card border border-border rounded-xl">
                     <div className="flex items-center gap-3 mb-4">
@@ -502,7 +701,9 @@ agent = ${config.name?.replace(/\s+/g, '') || 'MyAgent'}()
                       <span className="font-medium">Avg Response</span>
                     </div>
                     <p className="text-3xl font-bold">1.2s</p>
-                    <p className="text-sm text-muted-foreground">Response time</p>
+                    <p className="text-sm text-muted-foreground">
+                      Response time
+                    </p>
                   </div>
                 </div>
               )}

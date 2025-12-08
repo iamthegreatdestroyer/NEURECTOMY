@@ -6,7 +6,7 @@
   "build": {
     "beforeBuildCommand": "pnpm build",
     "beforeDevCommand": "pnpm dev",
-    "devUrl": "http://localhost:5173",
+    "devUrl": "http://localhost:16000",
     "frontendDist": "../dist"
   },
   "app": {
@@ -35,36 +35,7 @@
   },
   "plugins": {
     "shell": {
-      "open": true,
-      "scope": []
-    },
-    "fs": {
-      "scope": [
-        "$APPDATA",
-        "$APPDATA/**",
-        "$DOCUMENT",
-        "$DOCUMENT/**",
-        "$DOWNLOAD",
-        "$DOWNLOAD/**"
-      ]
-    },
-    "dialog": {
-      "open": true,
-      "save": true
-    },
-    "notification": {
-      "all": true
-    },
-    "clipboard-manager": {
-      "all": true
-    },
-    "window-state": {
-      "all": true
-    },
-    "updater": {
-      "active": true,
-      "pubkey": "",
-      "endpoints": []
+      "open": true
     }
   },
   "bundle": {

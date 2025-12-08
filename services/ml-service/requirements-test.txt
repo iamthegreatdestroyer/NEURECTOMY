@@ -1,0 +1,27 @@
+# Intelligence Foundry ML Service - Test Requirements
+
+# Core testing framework
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+pytest-timeout==2.2.0
+pytest-xdist==3.5.0  # Parallel test execution
+
+# HTTP client for API testing
+httpx==0.25.2
+
+# Mocking and fixtures
+pytest-mock==3.12.0
+responses==0.24.1
+
+# Test data generation
+faker==20.1.0
+
+# WebSocket testing
+websockets==12.0
+
+# Performance testing
+pytest-benchmark==4.0.0
+
+# Reporting
+pytest-html==4.1.1
