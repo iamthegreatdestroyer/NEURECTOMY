@@ -89,6 +89,16 @@
     @apply border-border;
   }
 
+  html,
+  body,
+  #root {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
@@ -215,5 +225,26 @@
 
   .animate-pulse-slow {
     animation: pulse 3s ease-in-out infinite;
+  }
+
+  /* Shell-specific backgrounds for IDE layout */
+  .bg-shell-activityBar {
+    background-color: hsl(222 47% 8%);
+  }
+
+  .bg-shell-sidebar {
+    background-color: hsl(222 47% 10%);
+  }
+
+  .bg-shell-editor {
+    background-color: hsl(222 47% 6%);
+  }
+
+  .bg-shell-panel {
+    background-color: hsl(222 47% 8%);
+  }
+
+  .bg-shell-statusBar {
+    background-color: hsl(217 91% 60%);
   }
 }

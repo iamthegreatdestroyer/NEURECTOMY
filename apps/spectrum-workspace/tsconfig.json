@@ -5,7 +5,7 @@
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
-    "types": ["vite/client"],
+    "types": ["vite/client", "@react-three/fiber"],
 
     /* Bundler mode */
     "moduleResolution": "bundler",
@@ -37,6 +37,6 @@
       "@/layouts/*": ["src/layouts/*"]
     }
   },
-  "include": ["src"],
+  "include": ["src", "src/**/*.d.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

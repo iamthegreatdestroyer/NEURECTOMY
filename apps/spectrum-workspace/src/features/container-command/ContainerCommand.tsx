@@ -28,7 +28,7 @@ type TabType = "docker" | "kubernetes" | "monitor" | "settings";
  * <ContainerCommand />
  * ```
  */
-export function ContainerCommand() {
+export default function ContainerCommand() {
   const [activeTab, setActiveTab] = useState<TabType>("docker");
   const { containers, clusters, activeClusterId } = useContainerStore();
 

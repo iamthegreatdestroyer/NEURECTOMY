@@ -5,8 +5,7 @@
  * with integrated 3D visualization and real-time monitoring.
  */
 
-export { ContainerCommand } from "./ContainerCommand";
-export { default } from "./ContainerCommand";
+export { default as ContainerCommand, default } from "./ContainerCommand";
 
 // Re-export shared components
 export {

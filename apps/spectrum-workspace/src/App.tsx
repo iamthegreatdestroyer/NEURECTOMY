@@ -1,4 +1,11 @@
-import { Routes, Route } from "react-router-dom";
+/**
+ * App Component - Legacy Routes Support
+ *
+ * Note: Primary routing is now handled by routes.tsx with createMemoryRouter.
+ * This component is kept for backwards compatibility and development mode.
+ */
+
+import { Routes, Route, Outlet } from "react-router-dom";
 import { Suspense, lazy } from "react";
 
 import { MainLayout } from "./layouts/MainLayout";
