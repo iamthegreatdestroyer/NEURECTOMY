@@ -75,7 +75,7 @@ export type {
 export { CommandPalette, useCommandPalette } from "./CommandPalette";
 export type {
   CommandPaletteProps,
-  Command,
+  CommandItem as Command,
   CommandCategory,
 } from "./CommandPalette";
 

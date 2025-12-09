@@ -211,7 +211,7 @@ function calculateLODLevel(distance: number): LODConfig {
       return config;
     }
   }
-  return LOD_CONFIGS[LOD_CONFIGS.length - 1];
+  return LOD_CONFIGS[LOD_CONFIGS.length - 1]!;
 }
 
 // ============================================================================
@@ -278,7 +278,7 @@ export const InstancedNodeGeometry: React.FC<InstancedNodeGeometryProps> = ({
 
   // Determine current LOD geometry
   const currentLOD = useMemo((): LODConfig => {
-    if (!enableLOD) return LOD_CONFIGS[0];
+    if (!enableLOD) return LOD_CONFIGS[0]!;
     return calculateLODLevel(effectiveDistance);
   }, [effectiveDistance, enableLOD]);
 
@@ -454,14 +454,16 @@ export const InstancedNodeGeometry: React.FC<InstancedNodeGeometryProps> = ({
     handlePointerMove();
   });
 
-  return (
-    <instancedMesh
-      ref={meshRef}
-      args={[currentLOD.geometry, material, maxInstanceCount]}
-      frustumCulled
-      onClick={handleClick}
-    />
-  );
+  return React.createElement("primitive", {
+    ref: meshRef,
+    object: new THREE.InstancedMesh(
+      currentLOD.geometry,
+      material,
+      maxInstanceCount
+    ),
+    frustumCulled: true,
+    onClick: handleClick,
+  });
 };
 
 export default InstancedNodeGeometry;

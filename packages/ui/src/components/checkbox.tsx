@@ -2,13 +2,9 @@ import * as React from "react";
 import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
 import { cn } from "../utils/cn";
 
-/**
- * Enhanced ARIA props for Checkbox accessibility
- * Radix UI Checkbox already provides:
- * - role="checkbox"
- * - aria-checked state management
- */
-export interface CheckboxAriaProps {
+export interface CheckboxProps extends React.ComponentPropsWithoutRef<
+  typeof CheckboxPrimitive.Root
+> {
   /** Accessible label for the checkbox */
   "aria-label"?: string;
   /** ID of element that labels this checkbox */
@@ -18,11 +14,6 @@ export interface CheckboxAriaProps {
   /** Indicates checkbox has an error */
   "aria-invalid"?: boolean;
 }
-
-export interface CheckboxProps
-  extends
-    React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>,
-    CheckboxAriaProps {}
 
 const Checkbox = React.forwardRef<
   React.ElementRef<typeof CheckboxPrimitive.Root>,

@@ -34,22 +34,4 @@ export type {
   PodStatus,
 } from "./container-store";
 
-// Utility hook for accessing all stores
-export function useStores() {
-  const workspace = useWorkspaceStore();
-  const agent = useAgentStore();
-  const container = useContainerStore();
-
-  return {
-    workspace,
-    agent,
-    container,
-  };
-}
-
-// Utility function to reset all stores (useful for testing or logout)
-export function resetAllStores() {
-  useWorkspaceStore.getState().reset();
-  useAgentStore.getState().reset();
-  useContainerStore.getState().reset();
-}
+export { useStores, resetAllStores } from "./utils";

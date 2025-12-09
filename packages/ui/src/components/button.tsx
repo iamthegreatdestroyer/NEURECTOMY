@@ -40,10 +40,13 @@ export type ButtonVariant =
   | "link";
 export type ButtonSize = "default" | "sm" | "lg" | "icon";
 
-/**
- * Enhanced ARIA props for better accessibility documentation
- */
-export interface ButtonAriaProps {
+export interface ButtonProps
+  extends
+    React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {
+  asChild?: boolean;
+  /** Shows loading state with aria-busy */
+  isLoading?: boolean;
   /** Accessible label for the button (use when button has no visible text) */
   "aria-label"?: string;
   /** ID of element that describes this button */
@@ -62,16 +65,6 @@ export interface ButtonAriaProps {
   "aria-busy"?: boolean;
   /** Indicates the button is disabled */
   "aria-disabled"?: boolean;
-}
-
-export interface ButtonProps
-  extends
-    React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants>,
-    ButtonAriaProps {
-  asChild?: boolean;
-  /** Shows loading state with aria-busy */
-  isLoading?: boolean;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(

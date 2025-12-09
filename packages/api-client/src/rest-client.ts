@@ -344,5 +344,5 @@ if (import.meta.env.DEV) {
 }
 
 // Export client and types
-export { restClient, RESTClient };
+export { RESTClient };
 export type { RequestConfig, APIResponse, APIError };

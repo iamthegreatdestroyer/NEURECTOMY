@@ -200,11 +200,6 @@ export function ServiceOverlay({
                         {port.protocol}
                       </span>
                     )}
-                    {port.nodePort && (
-                      <span className="text-xs text-muted-foreground">
-                        Node Port: {port.nodePort}
-                      </span>
-                    )}
                   </div>
                 ))}
               </div>

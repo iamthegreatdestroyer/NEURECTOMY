@@ -28,6 +28,8 @@ import {
   Network,
   PanelBottomClose,
   PanelBottomOpen,
+  Github,
+  HardDrive,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EditorManager } from "@/components/editors/EditorManager";
@@ -43,6 +45,11 @@ import {
 import { GitOpsOverlay } from "@/components/gitops";
 import { ExperimentSidebar } from "@/components/experiments";
 import { EnhancedStatusBar } from "@/components/status-bar";
+import { GitHubImportDialog } from "@/components/shell/GitHubImportDialog";
+import { LocalImportDialog } from "@/components/shell/LocalImportDialog";
+import { useNotifications } from "@/components/shell/NotificationToast";
+import { LocalImportPanel } from "@/components/shell/LocalImportPanel";
+import { invoke } from "@tauri-apps/api/core";
 
 interface FileNode {
   name: string;
@@ -115,6 +122,8 @@ type ActivityBarItem =
   | "agents"
   | "experiments"
   | "extensions"
+  | "github-import"
+  | "local-import"
   | "settings";
 
 export default function IDEView() {
@@ -123,6 +132,8 @@ export default function IDEView() {
   const [fileTree, setFileTree] = useState<FileNode[]>(mockFileTree);
   const [terminalOpen, setTerminalOpen] = useState(true);
   const [agentGraphOpen, setAgentGraphOpen] = useState(false);
+  const [githubImportOpen, setGithubImportOpen] = useState(false);
+  const [localImportOpen, setLocalImportOpen] = useState(false);
 
   // Simulated metrics for EnhancedStatusBar
   const [metrics] = useState({
@@ -138,6 +149,9 @@ export default function IDEView() {
   const { openFiles, activeFileId, openFile, closeFile, setActiveFile } =
     useEditorStore();
 
+  const { add: addNotification, update: updateNotification } =
+    useNotifications();
+
   // Keyboard shortcuts handlers - memoized to prevent re-binding
   const shortcutHandlers = useMemo(
     () => ({
@@ -149,6 +163,8 @@ export default function IDEView() {
       switchToAgents: () => setActiveActivity("agents"),
       switchToExperiments: () => setActiveActivity("experiments"),
       switchToExtensions: () => setActiveActivity("extensions"),
+      switchToGitHubImport: () => setActiveActivity("github-import"),
+      switchToLocalImport: () => setActiveActivity("local-import"),
       switchToSettings: () => setActiveActivity("settings"),
       closeActiveFile: () => {
         if (activeFileId) closeFile(activeFileId);
@@ -159,6 +175,43 @@ export default function IDEView() {
 
   // Register keyboard shortcuts
   useIDEKeyboardShortcuts(shortcutHandlers);
+
+  // Import handlers
+  const handleGitHubDialogImport = useCallback(
+    async (repository: any, localPath: string) => {
+      try {
+        await invoke("clone_github_repo", {
+          url: repository.clone_url,
+          target_path: localPath,
+          auth_token: null, // TODO: Add authentication handling
+        });
+        // TODO: Refresh file tree and show success notification
+        console.log("GitHub repository cloned successfully:", repository.name);
+      } catch (error) {
+        console.error("Failed to clone GitHub repository:", error);
+        // TODO: Show error notification
+      }
+    },
+    []
+  );
+
+  const handleLocalDialogImport = useCallback(
+    async (items: any[], destinationPath: string) => {
+      try {
+        const sourcePaths = items.map((item) => item.path);
+        await invoke("copy_local_files", {
+          sourcePaths,
+          targetPath: destinationPath,
+        });
+        // TODO: Refresh file tree and show success notification
+        console.log("Local files copied successfully:", items.length, "items");
+      } catch (error) {
+        console.error("Failed to copy local files:", error);
+        // TODO: Show error notification
+      }
+    },
+    []
+  );
 
   const toggleFolder = useCallback(
     (path: string) => {
@@ -195,6 +248,196 @@ export default function IDEView() {
       }
     },
     [openFile, toggleFolder]
+  );
+
+  // Import handlers for panels
+  const handleGitHubPanelImport = useCallback(
+    async (repoUrl: string, targetPath: string) => {
+      const repoName =
+        repoUrl.split("/").pop()?.replace(".git", "") || "repository";
+      const notificationId = addNotification({
+        type: "progress",
+        title: `Cloning ${repoName}`,
+        message: "Initializing repository clone...",
+        progress: 0,
+      });
+
+      try {
+        console.log(`Starting GitHub import: ${repoUrl} -> ${targetPath}`);
+
+        updateNotification(notificationId, {
+          message: "Connecting to GitHub...",
+          progress: 25,
+        });
+
+        const result = await invoke("clone_github_repo", {
+          url: repoUrl,
+          target_path: targetPath,
+        });
+
+        updateNotification(notificationId, {
+          message: "Repository cloned successfully",
+          progress: 100,
+        });
+
+        console.log("GitHub import completed:", result);
+
+        // Refresh file tree to show imported repository
+        // TODO: Implement file tree refresh from backend
+        // For now, we'll simulate by updating the mock tree
+        const newRepoNode: FileNode = {
+          name: repoName,
+          type: "folder",
+          path: `/${repoName}`,
+          expanded: false,
+          children: [], // TODO: Populate with actual directory structure
+        };
+
+        setFileTree((prev) => [...prev, newRepoNode]);
+
+        // Try to open common entry files
+        const commonFiles = [
+          "README.md",
+          "package.json",
+          "index.js",
+          "main.py",
+          "src/App.tsx",
+        ];
+        for (const file of commonFiles) {
+          const filePath = `/${repoName}/${file}`;
+          try {
+            // TODO: Check if file exists via backend
+            const fileToOpen: Omit<
+              EditorFile,
+              "id" | "isDirty" | "lastModified"
+            > = {
+              path: filePath,
+              name: file,
+              language: getLanguageFromPath(filePath),
+              content:
+                "// File imported from GitHub repository\n// Content will be loaded from backend\n",
+            };
+            openFile(fileToOpen);
+            break; // Open only the first available file
+          } catch {
+            // File doesn't exist, continue
+          }
+        }
+
+        // Show success notification
+        setTimeout(() => {
+          addNotification({
+            type: "success",
+            title: "Import Complete",
+            message: `${repoName} has been successfully imported`,
+            duration: 3000,
+          });
+        }, 1000);
+      } catch (error) {
+        console.error("GitHub import failed:", error);
+
+        updateNotification(notificationId, {
+          type: "error",
+          title: "Import Failed",
+          message: `Failed to clone ${repoName}: ${error instanceof Error ? error.message : "Unknown error"}`,
+          duration: 5000,
+        });
+      }
+    },
+    [openFile, addNotification, updateNotification]
+  );
+
+  const handleLocalPanelImport = useCallback(
+    async (sourcePaths: string[], targetPath: string) => {
+      const itemCount = sourcePaths.length;
+      const itemText = itemCount === 1 ? "item" : "items";
+
+      const notificationId = addNotification({
+        type: "progress",
+        title: `Importing ${itemCount} ${itemText}`,
+        message: "Preparing to copy files...",
+        progress: 0,
+      });
+
+      try {
+        console.log(
+          `Starting local import: ${sourcePaths.join(", ")} -> ${targetPath}`
+        );
+
+        updateNotification(notificationId, {
+          message: "Copying files...",
+          progress: 50,
+        });
+
+        const result = await invoke("copy_local_files", {
+          source_paths: sourcePaths,
+          target_path: targetPath,
+        });
+
+        updateNotification(notificationId, {
+          message: "Files copied successfully",
+          progress: 100,
+        });
+
+        console.log("Local import completed:", result);
+
+        // Refresh file tree to show imported files/directories
+        // TODO: Implement file tree refresh from backend
+        // For now, we'll simulate by updating the mock tree
+        const importedNodes: FileNode[] = sourcePaths.map((sourcePath) => {
+          const fileName = sourcePath.split(/[/\\]/).pop() || "imported-item";
+          return {
+            name: fileName,
+            type: "folder", // Assume folder for now, TODO: detect file vs folder
+            path: `/${fileName}`,
+            expanded: false,
+            children: [], // TODO: Populate with actual directory structure
+          };
+        });
+
+        setFileTree((prev) => [...prev, ...importedNodes]);
+
+        // Try to open imported files if they are single files
+        for (const sourcePath of sourcePaths) {
+          const fileName = sourcePath.split(/[/\\]/).pop() || "";
+          if (fileName.includes(".")) {
+            // Likely a file
+            const filePath = `/${fileName}`;
+            const fileToOpen: Omit<
+              EditorFile,
+              "id" | "isDirty" | "lastModified"
+            > = {
+              path: filePath,
+              name: fileName,
+              language: getLanguageFromPath(filePath),
+              content:
+                "// File imported from local system\n// Content will be loaded from backend\n",
+            };
+            openFile(fileToOpen);
+          }
+        }
+
+        // Show success notification
+        setTimeout(() => {
+          addNotification({
+            type: "success",
+            title: "Import Complete",
+            message: `${itemCount} ${itemText} successfully imported`,
+            duration: 3000,
+          });
+        }, 1000);
+      } catch (error) {
+        console.error("Local import failed:", error);
+
+        updateNotification(notificationId, {
+          type: "error",
+          title: "Import Failed",
+          message: `Failed to import ${itemCount} ${itemText}: ${error instanceof Error ? error.message : "Unknown error"}`,
+          duration: 5000,
+        });
+      }
+    },
+    [openFile, addNotification, updateNotification]
   );
 
   return (
@@ -237,6 +480,18 @@ export default function IDEView() {
           active={activeActivity === "extensions"}
           onClick={() => setActiveActivity("extensions")}
         />
+        <ActivityBarIcon
+          icon={Github}
+          label="GitHub Import"
+          active={activeActivity === "github-import"}
+          onClick={() => setActiveActivity("github-import")}
+        />
+        <ActivityBarIcon
+          icon={HardDrive}
+          label="Local Import"
+          active={activeActivity === "local-import"}
+          onClick={() => setActiveActivity("local-import")}
+        />
         <div className="flex-1" />
         <ActivityBarIcon
           icon={Settings}
@@ -261,6 +516,12 @@ export default function IDEView() {
           {activeActivity === "agents" && <AgentPanel />}
           {activeActivity === "experiments" && <ExperimentsPanel />}
           {activeActivity === "extensions" && <ExtensionsPanel />}
+          {activeActivity === "github-import" && (
+            <GitHubImportPanel onImport={handleGitHubPanelImport} />
+          )}
+          {activeActivity === "local-import" && (
+            <LocalImportPanel onImport={handleLocalPanelImport} />
+          )}
           {activeActivity === "settings" && <SettingsPanel />}
         </AnimatePresence>
       </div>
@@ -332,6 +593,18 @@ export default function IDEView() {
           </div>
         )}
       </div>
+
+      {/* Import Dialogs */}
+      <GitHubImportDialog
+        isOpen={githubImportOpen}
+        onClose={() => setGithubImportOpen(false)}
+        onImport={handleGitHubDialogImport}
+      />
+      <LocalImportDialog
+        isOpen={localImportOpen}
+        onClose={() => setLocalImportOpen(false)}
+        onImport={handleLocalDialogImport}
+      />
 
       {/* Enhanced Status Bar */}
       <EnhancedStatusBar
@@ -755,7 +1028,6 @@ function ExperimentsPanel() {
   );
 }
 
-// Settings Panel
 function SettingsPanel() {
   return (
     <motion.div
@@ -767,29 +1039,14 @@ function SettingsPanel() {
       <h3 className="text-xs font-semibold uppercase text-muted-foreground tracking-wider mb-3">
         Settings
       </h3>
-      <div className="space-y-3">
-        <div>
-          <label
-            htmlFor="theme-select"
-            className="text-xs font-medium mb-1.5 block text-muted-foreground"
-          >
-            Theme
-          </label>
-          <select
-            id="theme-select"
-            title="Select Theme"
-            className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-          >
-            <option>Dark (default)</option>
-            <option>Light</option>
-            <option>High Contrast</option>
-          </select>
-        </div>
+      <div className="text-sm text-muted-foreground">
+        Settings panel coming soon...
       </div>
     </motion.div>
   );
 }
 
+// Utility function to get language from file path
 function getLanguageFromPath(path: string): string {
   const ext = path.split(".").pop()?.toLowerCase();
   const map: Record<string, string> = {

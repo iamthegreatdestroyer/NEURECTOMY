@@ -290,24 +290,27 @@ function ContextMenuList({
           return <MenuSeparator key={index} />;
         }
 
-        navigableIndex++;
+        // At this point, item must be ContextMenuItem
+        const menuItem = item as ContextMenuItem;
         const currentIndex = navigableIndex;
 
         return (
           <MenuItem
-            key={item.id}
-            item={item}
+            key={menuItem.id}
+            item={menuItem}
             selected={currentIndex === selectedIndex}
             onSelect={() => setSelectedIndex(currentIndex)}
             onClick={() => {
-              if (item.submenu) {
-                setOpenSubmenu(openSubmenu === item.id ? null : item.id);
-              } else if (!item.disabled && item.onClick) {
-                item.onClick();
+              if (menuItem.submenu) {
+                setOpenSubmenu(
+                  openSubmenu === menuItem.id ? null : menuItem.id
+                );
+              } else if (!menuItem.disabled && menuItem.onClick) {
+                menuItem.onClick();
                 onClose();
               }
             }}
-            showSubmenu={openSubmenu === item.id}
+            showSubmenu={openSubmenu === menuItem.id}
             onCloseSubmenu={() => setOpenSubmenu(null)}
             onClose={onClose}
           />

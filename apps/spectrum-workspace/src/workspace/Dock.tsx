@@ -264,7 +264,7 @@ function DockHeader({
         {panels.map(({ id, panel }) => {
           if (!panel) return null;
           const isActive = id === activePanelId;
-          const Icon = panel.icon();
+          const Icon = panel.config.icon;
 
           return (
             <button
@@ -277,12 +277,10 @@ function DockHeader({
                   ? "bg-background text-foreground"
                   : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
               )}
-              title={panel.persistentName()}
+              title={panel.name}
             >
               {Icon && <Icon size={14} />}
-              <span className="whitespace-nowrap">
-                {panel.persistentName()}
-              </span>
+              <span className="whitespace-nowrap">{panel.name}</span>
             </button>
           );
         })}
@@ -324,9 +322,7 @@ function DefaultPanelRenderer({ panel }: DefaultPanelRendererProps) {
   // This is a placeholder - real panels implement their own render method
   return (
     <div className="h-full p-4">
-      <div className="text-sm text-muted-foreground">
-        Panel: {panel.persistentName()}
-      </div>
+      <div className="text-sm text-muted-foreground">Panel: {panel.name}</div>
     </div>
   );
 }

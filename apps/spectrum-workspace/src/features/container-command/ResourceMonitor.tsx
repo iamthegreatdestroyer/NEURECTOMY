@@ -213,7 +213,7 @@ export function ResourceMonitor() {
           title="CPU Usage"
           value={currentMetrics.cpu.value}
           unit="%"
-          trend={currentMetrics.cpu.trend}
+          trend={currentMetrics.cpu.trend as "up" | "down" | "stable"}
           icon={Cpu}
           color="cyan"
         />
@@ -221,7 +221,7 @@ export function ResourceMonitor() {
           title="Memory Usage"
           value={currentMetrics.memory.value}
           unit="%"
-          trend={currentMetrics.memory.trend}
+          trend={currentMetrics.memory.trend as "up" | "down" | "stable"}
           icon={HardDrive}
           color="violet"
         />
@@ -229,7 +229,7 @@ export function ResourceMonitor() {
           title="Network RX"
           value={currentMetrics.network.rx}
           unit="KB/s"
-          trend={currentMetrics.network.trend}
+          trend={currentMetrics.network.trend as "up" | "down" | "stable"}
           icon={Network}
           color="blue"
         />
@@ -237,7 +237,7 @@ export function ResourceMonitor() {
           title="Disk I/O"
           value={currentMetrics.disk.read + currentMetrics.disk.write}
           unit="KB/s"
-          trend={currentMetrics.disk.trend}
+          trend={currentMetrics.disk.trend as "up" | "down" | "stable"}
           icon={HardDrive}
           color="green"
         />
@@ -327,7 +327,6 @@ export function ResourceMonitor() {
                 stroke="#9ca3af"
                 fontSize={12}
                 tickLine={false}
-                data={metrics.network.rx}
               />
               <YAxis stroke="#9ca3af" fontSize={12} tickLine={false} />
               <Tooltip
@@ -370,7 +369,6 @@ export function ResourceMonitor() {
                 stroke="#9ca3af"
                 fontSize={12}
                 tickLine={false}
-                data={metrics.disk.read}
               />
               <YAxis stroke="#9ca3af" fontSize={12} tickLine={false} />
               <Tooltip

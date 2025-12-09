@@ -514,12 +514,17 @@ export default function DimensionalForge() {
                           </div>
                           <div className="flex justify-between">
                             <span>Cost:</span>
-                            <span>${node.metrics.cost.toFixed(4)}</span>
+                            <span>
+                              ${node.metrics?.cost?.toFixed(4) ?? "0.0000"}
+                            </span>
                           </div>
                           <div className="flex justify-between">
                             <span>Success Rate:</span>
                             <span>
-                              {(node.metrics.successRate * 100).toFixed(1)}%
+                              {((node.metrics?.successRate ?? 0) * 100).toFixed(
+                                1
+                              )}
+                              %
                             </span>
                           </div>
                         </div>

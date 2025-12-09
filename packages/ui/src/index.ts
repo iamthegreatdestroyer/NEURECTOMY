@@ -15,13 +15,16 @@ export type {
   ButtonSize,
 } from "./components/button";
 export type { InputProps } from "./components/input";
+export type { TextareaProps } from "./components/textarea";
 export type { CardProps } from "./components/card";
 export type { DialogProps } from "./components/dialog";
 export type { ToastProps } from "./components/toast";
+export type { AlertProps } from "./components/alert";
 
 // Export components
 export { Button } from "./components/button";
 export { Input } from "./components/input";
+export { Textarea } from "./components/textarea";
 export {
   Card,
   CardHeader,
@@ -61,6 +64,7 @@ export { Checkbox } from "./components/checkbox";
 export { Switch } from "./components/switch";
 export { Slider } from "./components/slider";
 export { Progress } from "./components/progress";
+export { Alert, AlertTitle, AlertDescription } from "./components/alert";
 export { Avatar, AvatarImage, AvatarFallback } from "./components/avatar";
 export { Badge } from "./components/badge";
 export {

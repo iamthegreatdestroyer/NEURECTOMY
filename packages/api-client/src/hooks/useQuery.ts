@@ -5,7 +5,7 @@
  * Wraps URQL's useQuery with enhanced error handling and loading states.
  */
 
-import { useQuery as useUrqlQuery, UseQueryArgs, UseQueryState } from "urql";
+// import { useQuery as useUrqlQuery, UseQueryArgs, UseQueryState } from "urql";
 import { useEffect, useRef } from "react";
 
 export interface UseQueryOptions<TData = any, TVariables = object> {

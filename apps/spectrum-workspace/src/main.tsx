@@ -6,8 +6,8 @@ import { RouterProvider, createMemoryRouter } from "react-router-dom";
 import { ErrorBoundary } from "react-error-boundary";
 import { Toaster } from "react-hot-toast";
 
-import { ErrorFallback } from "./components/error-boundary";
-import "./styles/globals.css";
+import { NotificationProvider } from "./components/shell/NotificationToast";
+import { ErrorFallback } from "./components/shell/ErrorFallback";
 
 // Import routes configuration
 import { routes } from "./routes";
@@ -52,14 +52,16 @@ if (!container) {
           }}
         >
           <QueryClientProvider client={queryClient}>
-            <RouterProvider router={router} />
-            <Toaster
-              position="bottom-right"
-              toastOptions={{
-                className: "bg-card text-foreground border border-border",
-                duration: 4000,
-              }}
-            />
+            <NotificationProvider>
+              <RouterProvider router={router} />
+              <Toaster
+                position="bottom-right"
+                toastOptions={{
+                  className: "bg-card text-foreground border border-border",
+                  duration: 4000,
+                }}
+              />
+            </NotificationProvider>
             {import.meta.env.DEV && (
               <ReactQueryDevtools initialIsOpen={false} />
             )}

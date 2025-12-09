@@ -7,9 +7,10 @@
 
 import { lazy, Suspense } from "react";
 import type { RouteObject } from "react-router-dom";
+import { useRouteError } from "react-router-dom";
 import { MainLayout } from "./layouts/MainLayout";
 import { LoadingScreen } from "./components/loading-screen";
-import { ErrorFallback } from "./components/error-boundary";
+import { ErrorFallback } from "./components/shell/ErrorFallback";
 
 // Lazy load major routes for code splitting
 // Using V2 IDE with new professional shell components
@@ -72,9 +73,12 @@ function LazyRoute({
 
 // Error element for route errors
 function RouteError() {
+  // In React Router v6, errorElement components receive error via useRouteError hook
+  const error = useRouteError() as Error;
+
   return (
     <ErrorFallback
-      error={new Error("Failed to load this page")}
+      error={error || new Error("Failed to load this page")}
       resetErrorBoundary={() => window.location.reload()}
     />
   );
@@ -88,7 +92,10 @@ export const routes: RouteObject[] = [
   {
     path: "/",
     element: (
-      <LazyRoute component={IDEView} loadingMessage="Initializing IDE..." />
+      <LazyRoute
+        component={IDEViewLegacy}
+        loadingMessage="Initializing IDE..."
+      />
     ),
     errorElement: <RouteError />,
   },

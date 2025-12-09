@@ -35,15 +35,36 @@ import {
   Dock,
   OpenItemOptions,
 } from "./WorkspaceContext";
-import { GlobalStore, globalStore } from "@/state/Store";
+import { GlobalStore } from "@/state/Store";
 import { Entity } from "@/state/Entity";
+import type { Panel, PanelState } from "@/interfaces/Panel";
+import type { Item } from "@/interfaces/Item";
 import type {
-  Panel,
-  PanelState,
-  createDefaultPanelState,
-} from "@/interfaces/Panel";
-import type { Item, ItemState } from "@/interfaces/Item";
-import type { EntityId, DockPosition, Action } from "@/interfaces/types";
+  EntityId,
+  DockPosition,
+  Action,
+  ActionContext,
+} from "@/interfaces/types";
+
+// ============================================================================
+// Local Interfaces
+// ============================================================================
+
+interface ItemState {
+  isDirty: boolean;
+  isPreview: boolean;
+  isPinned: boolean;
+  navigationHistory: any[];
+  historyIndex: number;
+  lastSavedVersion: number;
+  lastModified: Date;
+}
+
+// ============================================================================
+// Global Store Instance
+// ============================================================================
+
+const globalStore = new GlobalStore();
 
 // ============================================================================
 // Constants
@@ -226,7 +247,7 @@ export function WorkspaceProvider({
             dock.size = initialLayout.bottomDockSize;
           }
         }
-        const entity = new Entity(dock, generateId(`dock-${position}`));
+        const entity = new Entity(dock);
         entity.subscribe(() => forceUpdate());
         docksRef.current.set(position, entity);
       }
@@ -235,14 +256,14 @@ export function WorkspaceProvider({
     // Initialize root pane group with one pane if not exists
     if (!rootPaneGroupId) {
       const pane = createDefaultPane();
-      const paneEntity = new Entity(pane, pane.id);
+      const paneEntity = new Entity(pane);
       paneEntity.subscribe(() => forceUpdate());
       panesRef.current.set(pane.id, paneEntity);
 
       const group = createDefaultPaneGroup("horizontal");
       group.children = [pane.id];
       group.flexes = [1];
-      const groupEntity = new Entity(group, group.id);
+      const groupEntity = new Entity(group);
       groupEntity.subscribe(() => forceUpdate());
       paneGroupsRef.current.set(group.id, groupEntity);
 
@@ -277,26 +298,26 @@ export function WorkspaceProvider({
   // === Build Snapshot ===
   const snapshot = useMemo<WorkspaceSnapshot>(() => {
     const panes = new Map<EntityId, Pane>();
-    panesRef.current.forEach((entity, id) => panes.set(id, entity.current));
+    panesRef.current.forEach((entity, id) => panes.set(id, entity.get()));
 
     const paneGroups = new Map<EntityId, PaneGroup>();
     paneGroupsRef.current.forEach((entity, id) =>
-      paneGroups.set(id, entity.current)
+      paneGroups.set(id, entity.get())
     );
 
     const docks = new Map<DockPosition, Dock>();
     docksRef.current.forEach((entity, position) =>
-      docks.set(position, entity.current)
+      docks.set(position, entity.get())
     );
 
     const panelStates = new Map<EntityId, PanelState>();
     panelStatesRef.current.forEach((entity, id) =>
-      panelStates.set(id, entity.current)
+      panelStates.set(id, entity.get())
     );
 
     const itemStates = new Map<EntityId, ItemState>();
     itemStatesRef.current.forEach((entity, id) =>
-      itemStates.set(id, entity.current)
+      itemStates.set(id, entity.get())
     );
 
     return {
@@ -318,7 +339,7 @@ export function WorkspaceProvider({
     // === Pane Operations ===
     const createPane = (): EntityId => {
       const pane = createDefaultPane();
-      const entity = new Entity(pane, pane.id);
+      const entity = new Entity(pane);
       entity.subscribe(() => forceUpdate());
       panesRef.current.set(pane.id, entity);
       forceUpdate();
@@ -336,23 +357,23 @@ export function WorkspaceProvider({
 
       // Create new pane
       const newPane = createDefaultPane();
-      const newPaneEntity = new Entity(newPane, newPane.id);
+      const newPaneEntity = new Entity(newPane);
       newPaneEntity.subscribe(() => forceUpdate());
       panesRef.current.set(newPane.id, newPaneEntity);
 
       // Find parent group
-      const pane = paneEntity.current;
+      const pane = paneEntity.get();
       let parentGroupId = pane.parent;
 
       if (parentGroupId) {
         const parentGroup = paneGroupsRef.current.get(parentGroupId);
-        if (parentGroup && parentGroup.current.axis === direction) {
+        if (parentGroup && parentGroup.get().axis === direction) {
           // Same direction - add to existing group
-          const idx = parentGroup.current.children.indexOf(paneId);
-          const newChildren = [...parentGroup.current.children];
+          const idx = parentGroup.get().children.indexOf(paneId);
+          const newChildren = [...parentGroup.get().children];
           newChildren.splice(idx + 1, 0, newPane.id);
-          const newFlexes = [...parentGroup.current.flexes];
-          newFlexes.splice(idx + 1, 0, parentGroup.current.flexes[idx] / 2);
+          const newFlexes = [...parentGroup.get().flexes];
+          newFlexes.splice(idx + 1, 0, parentGroup.get().flexes[idx] / 2);
           newFlexes[idx] = newFlexes[idx] / 2;
           parentGroup.update({ children: newChildren, flexes: newFlexes });
           newPaneEntity.update({ parent: parentGroupId });
@@ -363,14 +384,14 @@ export function WorkspaceProvider({
           newGroup.flexes = [0.5, 0.5];
           newGroup.parent = parentGroupId;
 
-          const groupEntity = new Entity(newGroup, newGroup.id);
+          const groupEntity = new Entity(newGroup);
           groupEntity.subscribe(() => forceUpdate());
           paneGroupsRef.current.set(newGroup.id, groupEntity);
 
           // Update parent to replace pane with group
           if (parentGroup) {
-            const idx = parentGroup.current.children.indexOf(paneId);
-            const newChildren = [...parentGroup.current.children];
+            const idx = parentGroup.get().children.indexOf(paneId);
+            const newChildren = [...parentGroup.get().children];
             newChildren[idx] = newGroup.id;
             parentGroup.update({ children: newChildren });
           }
@@ -384,7 +405,7 @@ export function WorkspaceProvider({
         newGroup.children = [paneId, newPane.id];
         newGroup.flexes = [0.5, 0.5];
 
-        const groupEntity = new Entity(newGroup, newGroup.id);
+        const groupEntity = new Entity(newGroup);
         groupEntity.subscribe(() => forceUpdate());
         paneGroupsRef.current.set(newGroup.id, groupEntity);
 
@@ -396,9 +417,9 @@ export function WorkspaceProvider({
           ? paneGroupsRef.current.get(rootPaneGroupId)
           : null;
         if (rootGroup) {
-          const idx = rootGroup.current.children.indexOf(paneId);
+          const idx = rootGroup.get().children.indexOf(paneId);
           if (idx >= 0) {
-            const newChildren = [...rootGroup.current.children];
+            const newChildren = [...rootGroup.get().children];
             newChildren[idx] = newGroup.id;
             rootGroup.update({ children: newChildren });
             groupEntity.update({ parent: rootPaneGroupId });
@@ -414,7 +435,7 @@ export function WorkspaceProvider({
       const paneEntity = panesRef.current.get(paneId);
       if (!paneEntity) return;
 
-      const pane = paneEntity.current;
+      const pane = paneEntity.get();
 
       // Close all items in pane
       pane.items.forEach((itemId) => {
@@ -430,26 +451,26 @@ export function WorkspaceProvider({
       if (pane.parent) {
         const parentGroup = paneGroupsRef.current.get(pane.parent);
         if (parentGroup) {
-          const idx = parentGroup.current.children.indexOf(paneId);
+          const idx = parentGroup.get().children.indexOf(paneId);
           if (idx >= 0) {
-            const newChildren = [...parentGroup.current.children];
+            const newChildren = [...parentGroup.get().children];
             newChildren.splice(idx, 1);
-            const newFlexes = [...parentGroup.current.flexes];
+            const newFlexes = [...parentGroup.get().flexes];
             newFlexes.splice(idx, 1);
             parentGroup.update({ children: newChildren, flexes: newFlexes });
 
             // If only one child left, flatten
             if (newChildren.length === 1) {
               const childId = newChildren[0];
-              const grandparent = parentGroup.current.parent;
+              const grandparent = parentGroup.get().parent;
               if (grandparent) {
                 const grandparentGroup = paneGroupsRef.current.get(grandparent);
                 if (grandparentGroup) {
-                  const gpIdx = grandparentGroup.current.children.indexOf(
-                    parentGroup.current.id
-                  );
+                  const gpIdx = grandparentGroup
+                    .get()
+                    .children.indexOf(parentGroup.get().id);
                   if (gpIdx >= 0) {
-                    const gpChildren = [...grandparentGroup.current.children];
+                    const gpChildren = [...grandparentGroup.get().children];
                     gpChildren[gpIdx] = childId;
                     grandparentGroup.update({ children: gpChildren });
 
@@ -461,7 +482,7 @@ export function WorkspaceProvider({
                     if (childPane) childPane.update({ parent: grandparent });
                     if (childGroup) childGroup.update({ parent: grandparent });
 
-                    paneGroupsRef.current.delete(parentGroup.current.id);
+                    paneGroupsRef.current.delete(parentGroup.get().id);
                   }
                 }
               }
@@ -514,7 +535,7 @@ export function WorkspaceProvider({
       if (existingItemId) {
         // Item already open - activate it
         const currentPane = Array.from(panesRef.current.entries()).find(
-          ([_, p]) => p.current.items.includes(existingItemId)
+          ([_, p]) => p.get().items.includes(existingItemId)
         );
         if (currentPane) {
           activateItem(existingItemId, currentPane[0]);
@@ -525,10 +546,10 @@ export function WorkspaceProvider({
       // Handle preview mode
       if (options.preview) {
         // Find and replace existing preview tab
-        const pane = paneEntity.current;
+        const pane = paneEntity.get();
         const previewItemId = pane.items.find((id) => {
           const state = itemStatesRef.current.get(id);
-          return state?.current.isPreview;
+          return state?.get().isPreview;
         });
         if (previewItemId) {
           closeItem(previewItemId, targetPaneId);
@@ -543,12 +564,12 @@ export function WorkspaceProvider({
       const itemState = createDefaultItemState();
       itemState.isPreview = options.preview ?? false;
       itemState.isPinned = options.pinned ?? false;
-      const stateEntity = new Entity(itemState, itemId);
+      const stateEntity = new Entity(itemState);
       stateEntity.subscribe(() => forceUpdate());
       itemStatesRef.current.set(itemId, stateEntity);
 
       // Add to pane
-      const pane = paneEntity.current;
+      const pane = paneEntity.get();
       const newItems = [...pane.items];
       const insertIndex = options.index ?? newItems.length;
       newItems.splice(insertIndex, 0, itemId);
@@ -568,7 +589,7 @@ export function WorkspaceProvider({
       const paneEntity = panesRef.current.get(paneId);
       if (!paneEntity) return;
 
-      const pane = paneEntity.current;
+      const pane = paneEntity.get();
       const idx = pane.items.indexOf(itemId);
       if (idx < 0) return;
 
@@ -576,7 +597,7 @@ export function WorkspaceProvider({
       const item = itemsRef.current.get(itemId);
       const itemState = itemStatesRef.current.get(itemId);
 
-      if (item && itemState?.current.isDirty) {
+      if (item && itemState?.get().isDirty) {
         // TODO: Show save dialog
         console.warn("Closing dirty item - unsaved changes will be lost");
       }
@@ -614,7 +635,7 @@ export function WorkspaceProvider({
 
       // Convert preview to permanent on interaction
       const itemState = itemStatesRef.current.get(itemId);
-      if (itemState?.current.isPreview) {
+      if (itemState?.get().isPreview) {
         itemState.update({ isPreview: false });
       }
 
@@ -634,7 +655,7 @@ export function WorkspaceProvider({
       const toPane = panesRef.current.get(toPaneId);
       if (!fromPane || !toPane) return;
 
-      const fromItems = [...fromPane.current.items];
+      const fromItems = [...fromPane.get().items];
       const fromIdx = fromItems.indexOf(itemId);
       if (fromIdx < 0) return;
 
@@ -643,7 +664,7 @@ export function WorkspaceProvider({
       fromPane.update({ items: fromItems });
 
       // Add to destination
-      const toItems = [...toPane.current.items];
+      const toItems = [...toPane.get().items];
       const insertIdx = index ?? toItems.length;
       toItems.splice(insertIdx, 0, itemId);
       toPane.update({ items: toItems, activeItemId: itemId });
@@ -655,7 +676,7 @@ export function WorkspaceProvider({
     const toggleItemPin = (itemId: EntityId, _paneId: EntityId): void => {
       const itemState = itemStatesRef.current.get(itemId);
       if (itemState) {
-        itemState.update({ isPinned: !itemState.current.isPinned });
+        itemState.update({ isPinned: !itemState.get().isPinned });
         forceUpdate();
       }
     };
@@ -679,7 +700,7 @@ export function WorkspaceProvider({
 
     const saveAllItems = async (): Promise<void> => {
       const dirtyItems = Array.from(itemStatesRef.current.entries())
-        .filter(([_, state]) => state.current.isDirty)
+        .filter(([_, state]) => state.get().isDirty)
         .map(([id]) => id);
 
       await Promise.all(dirtyItems.map((id) => saveItem(id)));
@@ -692,20 +713,21 @@ export function WorkspaceProvider({
 
       // Create panel state
       const state = createDefaultPaneState();
+      state.id = panelId;
       state.position = panel.position();
       state.size = panel.size?.() ?? DEFAULT_DOCK_SIZES[panel.position()];
-      const stateEntity = new Entity(state, panelId);
+      const stateEntity = new Entity(state);
       stateEntity.subscribe(() => forceUpdate());
       panelStatesRef.current.set(panelId, stateEntity);
 
       // Add to dock
       const dock = docksRef.current.get(panel.position());
       if (dock) {
-        const panels = [...dock.current.panels, panelId];
+        const panels = [...dock.get().panels, panelId];
         dock.update({ panels });
 
         // Auto-activate if first panel
-        if (!dock.current.activePanelId) {
+        if (!dock.get().activePanelId) {
           dock.update({ activePanelId: panelId });
         }
       }
@@ -720,11 +742,11 @@ export function WorkspaceProvider({
       // Remove from dock
       const dock = docksRef.current.get(panel.position());
       if (dock) {
-        const panels = dock.current.panels.filter((id) => id !== panelId);
+        const panels = dock.get().panels.filter((id) => id !== panelId);
         const newActiveId =
-          dock.current.activePanelId === panelId
+          dock.get().activePanelId === panelId
             ? (panels[0] ?? null)
-            : dock.current.activePanelId;
+            : dock.get().activePanelId;
         dock.update({ panels, activePanelId: newActiveId });
       }
 
@@ -738,16 +760,16 @@ export function WorkspaceProvider({
       const panel = panelsRef.current.get(panelId);
       if (!panelState || !panel) return;
 
-      panelState.update({ isVisible: !panelState.current.isVisible });
+      panelState.update({ isVisible: !panelState.get().isVisible });
 
       // Also toggle dock visibility
       const dock = docksRef.current.get(panel.position());
       if (dock) {
-        if (panelState.current.isVisible) {
+        if (panelState.get().isVisible) {
           // Was visible, now hidden - check if any panels still visible
-          const anyVisible = dock.current.panels.some((id) => {
+          const anyVisible = dock.get().panels.some((id) => {
             const state = panelStatesRef.current.get(id);
-            return id !== panelId && state?.current.isVisible;
+            return id !== panelId && state?.get().isVisible;
           });
           if (!anyVisible) {
             dock.update({ isVisible: false });
@@ -786,16 +808,16 @@ export function WorkspaceProvider({
       const newDock = docksRef.current.get(newPosition);
 
       if (oldDock) {
-        const panels = oldDock.current.panels.filter((id) => id !== panelId);
+        const panels = oldDock.get().panels.filter((id) => id !== panelId);
         const newActiveId =
-          oldDock.current.activePanelId === panelId
+          oldDock.get().activePanelId === panelId
             ? (panels[0] ?? null)
-            : oldDock.current.activePanelId;
+            : oldDock.get().activePanelId;
         oldDock.update({ panels, activePanelId: newActiveId });
       }
 
       if (newDock) {
-        const panels = [...newDock.current.panels, panelId];
+        const panels = [...newDock.get().panels, panelId];
         newDock.update({ panels, activePanelId: panelId });
       }
 
@@ -810,7 +832,7 @@ export function WorkspaceProvider({
     const focusPanel = (panelId: EntityId): void => {
       // Unfocus all other panels
       panelStatesRef.current.forEach((state, id) => {
-        if (id !== panelId && state.current.isFocused) {
+        if (id !== panelId && state.get().isFocused) {
           state.update({ isFocused: false });
         }
       });
@@ -827,7 +849,7 @@ export function WorkspaceProvider({
     const toggleDock = (position: DockPosition): void => {
       const dock = docksRef.current.get(position);
       if (dock) {
-        dock.update({ isVisible: !dock.current.isVisible });
+        dock.update({ isVisible: !dock.get().isVisible });
         forceUpdate();
       }
     };
@@ -864,21 +886,21 @@ export function WorkspaceProvider({
       docksRef.current.forEach((dock, position) => {
         dock.update({
           ...createDefaultDock(position),
-          panels: dock.current.panels,
-          activePanelId: dock.current.activePanelId,
+          panels: dock.get().panels,
+          activePanelId: dock.get().activePanelId,
         });
       });
 
       // Create fresh pane
       const pane = createDefaultPane();
-      const paneEntity = new Entity(pane, pane.id);
+      const paneEntity = new Entity(pane);
       paneEntity.subscribe(() => forceUpdate());
       panesRef.current.set(pane.id, paneEntity);
 
       const group = createDefaultPaneGroup("horizontal");
       group.children = [pane.id];
       group.flexes = [1];
-      const groupEntity = new Entity(group, group.id);
+      const groupEntity = new Entity(group);
       groupEntity.subscribe(() => forceUpdate());
       paneGroupsRef.current.set(group.id, groupEntity);
 
@@ -902,9 +924,9 @@ export function WorkspaceProvider({
 
       docksRef.current.forEach((dock, position) => {
         (layout.docks as Record<DockPosition, unknown>)[position] = {
-          size: dock.current.size,
-          isVisible: dock.current.isVisible,
-          isCollapsed: dock.current.isCollapsed,
+          size: dock.get().size,
+          isVisible: dock.get().isVisible,
+          isCollapsed: dock.get().isCollapsed,
         };
       });
 
@@ -947,8 +969,8 @@ export function WorkspaceProvider({
     const focusCenter = (): void => {
       if (activePaneId) {
         const pane = panesRef.current.get(activePaneId);
-        if (pane && pane.current.activeItemId) {
-          const item = itemsRef.current.get(pane.current.activeItemId);
+        if (pane && pane.get().activeItemId) {
+          const item = itemsRef.current.get(pane.get().activeItemId);
           item?.focus?.();
         }
       }
@@ -956,11 +978,10 @@ export function WorkspaceProvider({
 
     const focusDock = (position: DockPosition): void => {
       const dock = docksRef.current.get(position);
-      if (dock && dock.current.activePanelId) {
-        focusPanel(dock.current.activePanelId);
+      if (dock && dock.get().activePanelId) {
+        focusPanel(dock.get().activePanelId);
       }
     };
-
     return {
       createPane,
       splitPane,
@@ -994,10 +1015,26 @@ export function WorkspaceProvider({
   // === Action Dispatcher ===
   const dispatch = useCallback(
     (action: Action): void => {
-      action.run();
+      const context: ActionContext = {
+        workspace: {
+          projectPath: null,
+          activePaneId,
+          activeItemId,
+          hasOpenFile: false,
+        },
+        focus: {
+          stack: [],
+          requestFocus: () => {},
+          releaseFocus: () => {},
+          current: () => null,
+        },
+        selection: [],
+        data: {},
+      };
+      action.execute(context);
       forceUpdate();
     },
-    [forceUpdate]
+    [forceUpdate, activePaneId, activeItemId]
   );
 
   // === Auto-save layout on changes ===

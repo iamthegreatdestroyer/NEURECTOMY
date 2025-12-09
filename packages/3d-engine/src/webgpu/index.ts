@@ -17,5 +17,5 @@ export * from "./render-passes";
 export * from "./compute";
 export * from "./graph";
 export * from "./culling";
-export * from "./shared-materials";
+// export * from "./shared-materials";
 export * from "./instancing";

@@ -1,10 +1,9 @@
 import * as React from "react";
 import { cn } from "../utils/cn";
 
-/**
- * Enhanced ARIA props for Input accessibility
- */
-export interface InputAriaProps {
+export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  /** Visual indicator for error state */
+  hasError?: boolean;
   /** Accessible label for the input */
   "aria-label"?: string;
   /** ID of element that labels this input */
@@ -12,19 +11,13 @@ export interface InputAriaProps {
   /** ID of element that describes this input */
   "aria-describedby"?: string;
   /** Indicates input has an error */
-  "aria-invalid"?: boolean;
+  "aria-invalid"?: boolean | "false" | "true" | "grammar" | "spelling";
   /** ID of error message element */
   "aria-errormessage"?: string;
   /** Indicates input is required */
-  "aria-required"?: boolean;
+  "aria-required"?: boolean | "false" | "true";
   /** Indicates the input is read-only */
-  "aria-readonly"?: boolean;
-}
-
-export interface InputProps
-  extends React.InputHTMLAttributes<HTMLInputElement>, InputAriaProps {
-  /** Visual indicator for error state */
-  hasError?: boolean;
+  "aria-readonly"?: boolean | "false" | "true";
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(

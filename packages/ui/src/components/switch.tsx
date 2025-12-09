@@ -2,13 +2,9 @@ import * as React from "react";
 import * as SwitchPrimitives from "@radix-ui/react-switch";
 import { cn } from "../utils/cn";
 
-/**
- * Enhanced ARIA props for Switch accessibility
- * Radix UI Switch already provides:
- * - role="switch"
- * - aria-checked state management
- */
-export interface SwitchAriaProps {
+export interface SwitchProps extends React.ComponentPropsWithoutRef<
+  typeof SwitchPrimitives.Root
+> {
   /** Accessible label for the switch */
   "aria-label"?: string;
   /** ID of element that labels this switch */
@@ -16,11 +12,6 @@ export interface SwitchAriaProps {
   /** ID of element that describes this switch */
   "aria-describedby"?: string;
 }
-
-export interface SwitchProps
-  extends
-    React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root>,
-    SwitchAriaProps {}
 
 const Switch = React.forwardRef<
   React.ElementRef<typeof SwitchPrimitives.Root>,

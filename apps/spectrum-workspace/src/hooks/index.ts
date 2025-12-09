@@ -13,5 +13,5 @@ export {
   getShortcutsByCategory,
   type IDEShortcutHandlers,
 } from "./useIDEKeyboardShortcuts";
-export { useApi } from "./useApi";
+// export { useApi } from "./useApi"; // TODO: Implement or remove
 export { useWebSocket } from "./useWebSocket";

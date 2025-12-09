@@ -80,6 +80,10 @@ pub fn run() {
             commands::write_project_file,
             commands::get_app_data_dir,
             commands::show_notification,
+            commands::clone_github_repo,
+            commands::copy_local_files,
+            commands::read_directory,
+            commands::get_drives,
             gpu::check_webgpu_support,
             gpu::get_gpu_memory_info,
         ])

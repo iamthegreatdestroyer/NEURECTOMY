@@ -5,17 +5,17 @@
  * Includes request interceptors, error handling, and retry logic.
  */
 
-import {
-  Client,
-  cacheExchange,
-  fetchExchange,
-  subscriptionExchange,
-  CombinedError,
-} from "urql";
-import { createClient as createWSClient } from "graphql-ws";
-import { retryExchange } from "@urql/exchange-retry";
-import { authExchange } from "@urql/exchange-auth";
-import { devtoolsExchange } from "@urql/devtools";
+// import {
+//   Client,
+//   cacheExchange,
+//   fetchExchange,
+//   subscriptionExchange,
+//   CombinedError,
+// } from "urql";
+// import { createClient as createWSClient } from "graphql-ws";
+// import { retryExchange } from "@urql/exchange-retry";
+// import { authExchange } from "@urql/exchange-auth";
+// import { devtoolsExchange } from "@urql/devtools";
 
 // Environment configuration
 const GRAPHQL_ENDPOINT =

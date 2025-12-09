@@ -5,10 +5,10 @@
  * Wraps URQL's useSubscription with enhanced connection management and error handling.
  */
 
-import {
-  useSubscription as useUrqlSubscription,
-  UseSubscriptionArgs,
-} from "urql";
+// import {
+//   useSubscription as useUrqlSubscription,
+//   UseSubscriptionArgs,
+// } from "urql";
 import { useEffect, useRef, useState } from "react";
 
 export interface UseSubscriptionOptions<TData = any, TVariables = object> {
