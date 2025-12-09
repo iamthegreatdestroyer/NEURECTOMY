@@ -445,6 +445,8 @@ export default function IDEViewV2() {
   // --------------------------------
   // Render
   // --------------------------------
+  console.log("[IDEViewV2] Rendering with layout:", layout);
+
   return (
     <ApplicationShell
       activityBar={

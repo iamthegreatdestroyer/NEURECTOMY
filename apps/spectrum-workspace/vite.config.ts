@@ -5,8 +5,9 @@ import path from "path";
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  // Use relative paths for Tauri file:// protocol compatibility
-  base: "./",
+  // Use absolute paths for Tauri's tauri://localhost protocol
+  // Tauri 2.0 serves bundled assets from tauri://localhost/ which requires absolute paths
+  base: "/",
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

@@ -38,6 +38,15 @@ pub fn run() {
             // Initialize application state
             let state = state::AppState::new();
             app.manage(state);
+            
+            // Open devtools in debug builds
+            #[cfg(debug_assertions)]
+            {
+                if let Some(window) = app.get_webview_window("main") {
+                    window.open_devtools();
+                    tracing::info!("DevTools opened for debugging");
+                }
+            }
 
             // Start embedded backend services
             let handle = app.handle().clone();

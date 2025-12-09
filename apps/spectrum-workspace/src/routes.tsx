@@ -42,8 +42,29 @@ function LazyRoute({
   component: React.LazyExoticComponent<React.ComponentType<any>>;
   loadingMessage?: string;
 }) {
+  console.log(
+    "[LazyRoute] Rendering with Suspense, loadingMessage:",
+    loadingMessage
+  );
   return (
-    <Suspense fallback={<LoadingScreen message={loadingMessage} />}>
+    <Suspense
+      fallback={
+        <div
+          style={{
+            color: "white",
+            background: "red",
+            padding: "20px",
+            fontSize: "24px",
+            height: "100vh",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          DEBUG: Loading - {loadingMessage}
+        </div>
+      }
+    >
       <Component />
     </Suspense>
   );
