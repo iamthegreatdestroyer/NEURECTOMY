@@ -6,53 +6,95 @@
 import React, { useRef, useEffect, useCallback } from "react";
 import * as monaco from "monaco-editor";
 import { useEditorStore } from "../../stores/editor-store";
-import type { EditorFile } from "@neurectomy/types/editor";
 
-// Configure Monaco environment
+// Configure Monaco environment with bundler-friendly workers
+const workerFactory: Record<string, () => Worker> = {
+  json: () =>
+    new Worker(
+      new URL(
+        "monaco-editor/esm/vs/language/json/json.worker?worker",
+        import.meta.url
+      ),
+      { type: "module", name: "json" }
+    ),
+  css: () =>
+    new Worker(
+      new URL(
+        "monaco-editor/esm/vs/language/css/css.worker?worker",
+        import.meta.url
+      ),
+      { type: "module", name: "css" }
+    ),
+  scss: () =>
+    new Worker(
+      new URL(
+        "monaco-editor/esm/vs/language/css/css.worker?worker",
+        import.meta.url
+      ),
+      { type: "module", name: "scss" }
+    ),
+  less: () =>
+    new Worker(
+      new URL(
+        "monaco-editor/esm/vs/language/css/css.worker?worker",
+        import.meta.url
+      ),
+      { type: "module", name: "less" }
+    ),
+  html: () =>
+    new Worker(
+      new URL(
+        "monaco-editor/esm/vs/language/html/html.worker?worker",
+        import.meta.url
+      ),
+      { type: "module", name: "html" }
+    ),
+  handlebars: () =>
+    new Worker(
+      new URL(
+        "monaco-editor/esm/vs/language/html/html.worker?worker",
+        import.meta.url
+      ),
+      { type: "module", name: "handlebars" }
+    ),
+  razor: () =>
+    new Worker(
+      new URL(
+        "monaco-editor/esm/vs/language/html/html.worker?worker",
+        import.meta.url
+      ),
+      { type: "module", name: "razor" }
+    ),
+  typescript: () =>
+    new Worker(
+      new URL(
+        "monaco-editor/esm/vs/language/typescript/ts.worker?worker",
+        import.meta.url
+      ),
+      { type: "module", name: "typescript" }
+    ),
+  javascript: () =>
+    new Worker(
+      new URL(
+        "monaco-editor/esm/vs/language/typescript/ts.worker?worker",
+        import.meta.url
+      ),
+      { type: "module", name: "javascript" }
+    ),
+  default: () =>
+    new Worker(
+      new URL(
+        "monaco-editor/esm/vs/editor/editor.worker?worker",
+        import.meta.url
+      ),
+      { type: "module", name: "editor" }
+    ),
+};
+
 self.MonacoEnvironment = {
-  getWorker(_, label) {
-    const getWorkerModule = (moduleUrl: string, label: string) => {
-      return new Worker(
-        self.MonacoEnvironment!.getWorkerUrl!(moduleUrl, label),
-        {
-          name: label,
-          type: "module",
-        }
-      );
-    };
-
-    switch (label) {
-      case "json":
-        return getWorkerModule(
-          "/monaco-editor/esm/vs/language/json/json.worker",
-          label
-        );
-      case "css":
-      case "scss":
-      case "less":
-        return getWorkerModule(
-          "/monaco-editor/esm/vs/language/css/css.worker",
-          label
-        );
-      case "html":
-      case "handlebars":
-      case "razor":
-        return getWorkerModule(
-          "/monaco-editor/esm/vs/language/html/html.worker",
-          label
-        );
-      case "typescript":
-      case "javascript":
-        return getWorkerModule(
-          "/monaco-editor/esm/vs/language/typescript/ts.worker",
-          label
-        );
-      default:
-        return getWorkerModule(
-          "/monaco-editor/esm/vs/editor/editor.worker",
-          label
-        );
-    }
+  getWorker(_moduleId, label) {
+    const factory = workerFactory[label] || workerFactory.default;
+    return factory();
   },
 };
 
@@ -73,7 +115,7 @@ export interface MonacoEditorProps {
  */
 export const MonacoEditor: React.FC<MonacoEditorProps> = ({
   className = "",
-  style = {},
+  style,
   onReady,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -88,7 +130,7 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
     markFileDirty,
     updateViewState,
     getActiveFile,
-    openFiles,
+    setFileModel,
   } = useEditorStore();
 
   /**
@@ -227,10 +269,7 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
           );
 
         // Store model reference
-        const fileIndex = openFiles.findIndex((f) => f.id === activeFile.id);
-        if (fileIndex !== -1) {
-          openFiles[fileIndex].model = model;
-        }
+        setFileModel(activeFile.id, model);
       }
 
       // Set model
@@ -252,18 +291,13 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
       editor.setModel(null);
       currentFileIdRef.current = null;
     }
-  }, [activeFileId, getActiveFile, openFiles]);
+  }, [activeFileId, getActiveFile, setFileModel]);
 
   return (
     <div
       ref={containerRef}
-      className={`monaco-editor-container ${className}`}
-      style={{
-        width: "100%",
-        height: "100%",
-        overflow: "hidden",
-        ...style,
-      }}
+      className={`monaco-editor-container w-full h-full overflow-hidden ${className}`}
+      style={style}
     />
   );
 };

@@ -101,6 +101,8 @@ export interface EditorActions {
   updateConfig: (config: Partial<EditorConfig>) => void;
   /** Set Monaco editor instance */
   setEditor: (editor: Monaco.editor.IStandaloneCodeEditor | null) => void;
+  /** Attach a Monaco model to a file */
+  setFileModel: (fileId: string, model: Monaco.editor.ITextModel) => void;
   /** Update file view state */
   updateViewState: (
     fileId: string,

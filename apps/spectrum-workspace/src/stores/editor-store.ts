@@ -133,10 +133,10 @@ export const useEditorStore = create<EditorStore>()(
           set((state) => {
             const file = state.openFiles.find((f) => f.id === fileId);
             if (file) {
-              file.content = content;
-              file.lastModified = Date.now();
-              // Mark as dirty if content changed
-              if (file.content !== content) {
+              const hasChanged = file.content !== content;
+              if (hasChanged) {
+                file.content = content;
+                file.lastModified = Date.now();
                 file.isDirty = true;
               }
             }
@@ -210,6 +210,18 @@ export const useEditorStore = create<EditorStore>()(
         setEditor: (editor) => {
           set((state) => {
             state.editor = editor;
+          });
+        },
+
+        /**
+         * Attach Monaco model to a file (immutable safe)
+         */
+        setFileModel: (fileId: string, model: Monaco.editor.ITextModel) => {
+          set((state) => {
+            const file = state.openFiles.find((f) => f.id === fileId);
+            if (file) {
+              file.model = model;
+            }
           });
         },
 

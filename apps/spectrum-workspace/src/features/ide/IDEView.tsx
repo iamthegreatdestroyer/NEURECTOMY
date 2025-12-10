@@ -49,6 +49,7 @@ import { GitHubImportDialog } from "@/components/shell/GitHubImportDialog";
 import { LocalImportDialog } from "@/components/shell/LocalImportDialog";
 import { useNotifications } from "@/components/shell/NotificationToast";
 import { LocalImportPanel } from "@/components/shell/LocalImportPanel";
+import { GitHubImportPanel } from "@/components/shell/GitHubImportPanel";
 import { invoke } from "@tauri-apps/api/core";
 
 interface FileNode {

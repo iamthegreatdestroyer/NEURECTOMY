@@ -187,39 +187,50 @@ export const EditorManager: React.FC<EditorManagerProps> = ({
             const isActive = file.id === activeFileId;
 
             return (
-              <button
+              <div
                 key={file.id}
-                onClick={() => handleTabClick(file.id)}
-                className={`
-                  group flex items-center gap-2 px-4 py-2 border-r border-neutral-800
-                  hover:bg-neutral-800 transition-colors min-w-0 flex-shrink-0
-                  ${isActive ? "bg-neutral-950 text-neutral-100" : "text-neutral-400"}
-                `}
+                className="group flex items-center border-r border-neutral-800 min-w-0 flex-shrink-0"
               >
-                {/* Language indicator */}
-                <FileText
-                  className={`w-4 h-4 flex-shrink-0 ${getLanguageColor(file.language)}`}
-                />
+                <button
+                  type="button"
+                  onClick={() => handleTabClick(file.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      handleTabClick(file.id);
+                    }
+                  }}
+                  className={`
+                    flex items-center gap-2 px-4 py-2 hover:bg-neutral-800 transition-colors min-w-0 flex-shrink-0 text-left
+                    ${isActive ? "bg-neutral-950 text-neutral-100" : "text-neutral-400"}
+                  `}
+                >
+                  {/* Language indicator */}
+                  <FileText
+                    className={`w-4 h-4 flex-shrink-0 ${getLanguageColor(file.language)}`}
+                  />
 
-                {/* File name */}
-                <span className="text-sm truncate max-w-[150px]">
-                  {file.name}
-                </span>
+                  {/* File name */}
+                  <span className="text-sm truncate max-w-[150px]">
+                    {file.name}
+                  </span>
 
-                {/* Dirty indicator */}
-                {file.isDirty && (
-                  <Circle className="w-2 h-2 fill-cyan-400 text-cyan-400 flex-shrink-0" />
-                )}
+                  {/* Dirty indicator */}
+                  {file.isDirty && (
+                    <Circle className="w-2 h-2 fill-cyan-400 text-cyan-400 flex-shrink-0" />
+                  )}
+                </button>
 
                 {/* Close button */}
                 <button
+                  type="button"
                   onClick={(e) => handleCloseTab(e, file.id)}
-                  className="flex-shrink-0 p-0.5 rounded hover:bg-neutral-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="flex-shrink-0 p-0.5 mr-2 rounded hover:bg-neutral-700 opacity-0 group-hover:opacity-100 transition-opacity"
                   title="Close"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
-              </button>
+              </div>
             );
           })}
         </div>

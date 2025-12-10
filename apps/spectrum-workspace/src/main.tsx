@@ -8,6 +8,7 @@ import { Toaster } from "react-hot-toast";
 
 import { NotificationProvider } from "./components/shell/NotificationToast";
 import { ErrorFallback } from "./components/shell/ErrorFallback";
+import "./styles/globals.css";
 
 // Import routes configuration
 import { routes } from "./routes";
