@@ -76,12 +76,29 @@ In your package's `tsconfig.json`:
 
 ## Configuration Details
 
-| Config        | Target | Module   | JSX       | Use Case         |
-| ------------- | ------ | -------- | --------- | ---------------- |
-| base          | ES2022 | ESNext   | -         | Foundation       |
-| library       | ES2022 | ESNext   | -         | TS libraries     |
-| react-library | ES2022 | ESNext   | react-jsx | React components |
-| node          | ES2022 | NodeNext | -         | Node.js services |
+| Config        | Target | Module   | JSX       | Use Case           |
+| ------------- | ------ | -------- | --------- | ------------------ |
+| base          | ES2022 | ESNext   | -         | Foundation         |
+| library       | ES2022 | ESNext   | -         | TS libraries       |
+| react-library | ES2022 | ESNext   | react-jsx | React components   |
+| node          | ES2022 | NodeNext | -         | Node.js services   |
+| vite-app      | ES2020 | ESNext   | react-jsx | Vite frontend apps |
+| tauri-app     | ES2020 | ESNext   | react-jsx | Tauri desktop apps |
+| test          | ES2022 | ESNext   | react-jsx | Vitest test files  |
+
+## Strict Settings
+
+All configurations inherit these strict settings from `base.json`:
+
+- `strict: true` - Enable all strict type-checking options
+- `noUnusedLocals: true` - Report errors on unused locals
+- `noUnusedParameters: true` - Report errors on unused parameters
+- `noFallthroughCasesInSwitch: true` - Report errors for fallthrough cases
+- `noUncheckedIndexedAccess: true` - Add undefined to indexed access types
+- `noImplicitReturns: true` - Report error when not all code paths return
+- `noImplicitOverride: true` - Require override keyword
+- `noPropertyAccessFromIndexSignature: true` - Require indexed access
+- `forceConsistentCasingInFileNames: true` - Consistent casing in file names
 
 ## License
 

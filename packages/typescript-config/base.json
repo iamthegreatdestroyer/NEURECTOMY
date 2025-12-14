@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
-  "display": "NEURECTOMY Base",
+  "display": "NEURECTOMY Base - Strict TypeScript Configuration",
   "compilerOptions": {
     "target": "ES2022",
     "lib": ["ES2022"],
@@ -8,20 +8,32 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
+
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
+    "noImplicitReturns": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "exactOptionalPropertyTypes": false,
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+    "allowSyntheticDefaultImports": true,
+    "verbatimModuleSyntax": false,
+
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "verbatimModuleSyntax": true,
-    "noImplicitReturns": true,
-    "noImplicitOverride": true,
-    "allowSyntheticDefaultImports": true
+
+    "newLine": "lf",
+    "preserveConstEnums": true,
+    "removeComments": false,
+    "useDefineForClassFields": true
   }
 }

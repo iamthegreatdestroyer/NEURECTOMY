@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "NEURECTOMY Tauri Application - Desktop App Configuration",
+  "extends": "./vite-app.json",
+  "compilerOptions": {
+    "types": ["vite/client", "@tauri-apps/api"]
+  }
+}

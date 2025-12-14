@@ -1,0 +1,150 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "env": {
+    "browser": true,
+    "es2022": true,
+    "node": true
+  },
+  "globals": {
+    "NodeJS": "readonly",
+    "JSX": "readonly"
+  },
+  "settings": {
+    "react": {
+      "version": "19.0"
+    },
+    "jsx-runtime": {
+      "importSource": "react"
+    }
+  },
+  "rules": {
+    "no-unused-vars": "warn",
+    "no-undef": "error",
+    "no-const-assign": "error",
+    "no-dupe-keys": "error",
+    "no-duplicate-case": "error",
+    "no-empty-pattern": "error",
+    "no-ex-assign": "error",
+    "no-extra-boolean-cast": "error",
+    "no-func-assign": "error",
+    "no-import-assign": "error",
+    "no-invalid-regexp": "error",
+    "no-irregular-whitespace": "error",
+    "no-loss-of-precision": "error",
+    "no-new-symbol": "error",
+    "no-obj-calls": "error",
+    "no-prototype-builtins": "error",
+    "no-self-assign": "error",
+    "no-setter-return": "error",
+    "no-sparse-arrays": "error",
+    "no-this-before-super": "error",
+    "no-unexpected-multiline": "error",
+    "no-unreachable": "error",
+    "no-unsafe-finally": "error",
+    "no-unsafe-negation": "error",
+    "no-unsafe-optional-chaining": "error",
+    "use-isnan": "error",
+    "valid-typeof": "error",
+    "no-debugger": "warn",
+    "no-console": "off",
+    "no-constant-condition": "warn",
+    "no-empty": "warn",
+    "no-extra-semi": "warn",
+    "no-fallthrough": "error",
+    "no-redeclare": "error",
+    "no-shadow-restricted-names": "error",
+    "no-useless-catch": "warn",
+    "no-useless-escape": "warn",
+    "no-with": "error",
+    "require-yield": "error",
+    "eqeqeq": "warn",
+    "no-var": "error",
+    "prefer-const": "warn",
+    "no-array-constructor": "error",
+    "no-new-wrappers": "error",
+    "@typescript-eslint/no-unused-vars": "warn",
+    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/no-non-null-assertion": "warn",
+    "@typescript-eslint/no-empty-interface": "warn",
+    "@typescript-eslint/prefer-as-const": "error",
+    "@typescript-eslint/ban-ts-comment": "warn",
+    "@typescript-eslint/no-array-constructor": "error",
+    "@typescript-eslint/no-duplicate-enum-values": "error",
+    "@typescript-eslint/no-extra-non-null-assertion": "error",
+    "@typescript-eslint/no-misused-new": "error",
+    "@typescript-eslint/no-namespace": "warn",
+    "@typescript-eslint/no-this-alias": "warn",
+    "@typescript-eslint/no-unnecessary-type-constraint": "warn",
+    "@typescript-eslint/no-unsafe-declaration-merging": "error",
+    "@typescript-eslint/prefer-ts-expect-error": "warn",
+    "@typescript-eslint/triple-slash-reference": "warn",
+    "react/jsx-key": "error",
+    "react/jsx-no-duplicate-props": "error",
+    "react/jsx-no-undef": "error",
+    "react/no-children-prop": "warn",
+    "react/no-danger-with-children": "error",
+    "react/no-direct-mutation-state": "error",
+    "react/no-find-dom-node": "warn",
+    "react/no-is-mounted": "error",
+    "react/no-render-return-value": "error",
+    "react/no-string-refs": "error",
+    "react/no-unescaped-entities": "warn",
+    "react/no-unknown-property": "off",
+    "react/require-render-return": "error",
+    "react/void-dom-elements-no-children": "error",
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn",
+    "import/no-duplicates": "warn",
+    "import/no-self-import": "error",
+    "import/no-cycle": "off",
+    "unicorn/no-instanceof-array": "error",
+    "unicorn/no-new-array": "warn",
+    "unicorn/no-new-buffer": "error",
+    "unicorn/no-typeof-undefined": "warn",
+    "unicorn/prefer-array-flat-map": "warn",
+    "unicorn/prefer-includes": "warn",
+    "unicorn/prefer-number-properties": "warn",
+    "unicorn/prefer-string-slice": "warn",
+    "unicorn/prefer-type-error": "warn",
+    "unicorn/throw-new-error": "error"
+  },
+  "ignorePatterns": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/.turbo/**",
+    "**/coverage/**",
+    "**/*.min.js",
+    "**/generated/**",
+    "**/src-tauri/**",
+    "**/.next/**",
+    "**/terraform/**"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "**/*.spec.ts",
+        "**/*.spec.tsx"
+      ],
+      "rules": {
+        "no-unused-vars": "off",
+        "@typescript-eslint/no-unused-vars": "off",
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/no-non-null-assertion": "off"
+      }
+    },
+    {
+      "files": [
+        "**/scripts/**",
+        "**/tools/**",
+        "**/*.config.ts",
+        "**/*.config.js"
+      ],
+      "rules": {
+        "no-console": "off"
+      }
+    }
+  ]
+}

@@ -11,7 +11,7 @@ import {
   useOpenFiles,
   useActiveFile,
 } from "../../stores/editor-store";
-import type { EditorFile } from "@neurectomy/types/editor";
+import type { EditorFile } from "@neurectomy/types";
 
 export interface EditorManagerProps {
   /** Optional className for styling */

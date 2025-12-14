@@ -14,6 +14,8 @@
     "test": "turbo run test",
     "test:coverage": "turbo run test:coverage",
     "lint": "turbo run lint",
+    "lint:ox": "oxlint --config oxlint.json .",
+    "lint:ox:fix": "oxlint --config oxlint.json --fix .",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "clean": "turbo run clean && rimraf node_modules",
     "typecheck": "turbo run typecheck",
@@ -38,6 +40,7 @@
     "@webgpu/types": "^0.1.67",
     "husky": "^8.0.0",
     "lint-staged": "^15.2.0",
+    "oxlint": "1.32.0",
     "prettier": "^3.1.0",
     "rimraf": "^5.0.5",
     "tsup": "^8.0.1",
@@ -52,7 +55,7 @@
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [
-      "eslint --fix",
+      "oxlint --fix",
       "prettier --write"
     ],
     "*.{json,md,yml,yaml}": [

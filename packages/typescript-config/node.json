@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
-  "display": "NEURECTOMY Node.js",
+  "display": "NEURECTOMY Node.js - Server-side TypeScript Configuration",
   "extends": "./base.json",
   "compilerOptions": {
     "lib": ["ES2022"],
@@ -8,6 +8,13 @@
     "moduleResolution": "NodeNext",
     "outDir": "./dist",
     "rootDir": "./src",
-    "types": ["node"]
-  }
+    "types": ["node"],
+    "noEmit": false,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "incremental": true,
+    "tsBuildInfoFile": "./dist/.tsbuildinfo"
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
 }

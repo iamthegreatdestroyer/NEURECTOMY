@@ -3,9 +3,16 @@
  * Copyright (c) 2025 NEURECTOMY. All Rights Reserved.
  */
 
-import React, { useRef, useEffect, useCallback } from "react";
+import React, { useRef, useEffect, useCallback, useState } from "react";
 import * as monaco from "monaco-editor";
 import { useEditorStore } from "../../stores/editor-store";
+import {
+  initializeMonaco,
+  isMonacoInitialized,
+  registerNeurectomyKeybindings,
+  THEME_NAMES,
+  type KeybindingCallbacks,
+} from "../../lib/monaco";
 
 // Configure Monaco environment with bundler-friendly workers
 const workerFactory: Record<string, () => Worker> = {
@@ -121,6 +128,7 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const currentFileIdRef = useRef<string | null>(null);
+  const [isReady, setIsReady] = useState(false);
 
   const {
     activeFileId,
@@ -131,21 +139,48 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
     updateViewState,
     getActiveFile,
     setFileModel,
+    saveFile,
+    saveAllFiles,
   } = useEditorStore();
+
+  /**
+   * Initialize Monaco with NEURECTOMY configuration
+   */
+  useEffect(() => {
+    let mounted = true;
+
+    const init = async () => {
+      if (!isMonacoInitialized()) {
+        await initializeMonaco();
+      }
+      if (mounted) {
+        setIsReady(true);
+      }
+    };
+
+    init();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   /**
    * Initialize Monaco editor instance
    */
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || !isReady) return;
 
-    // Create editor
+    // Create editor with NEURECTOMY theme
     const editor = monaco.editor.create(containerRef.current, {
       value: "",
       language: "typescript",
-      theme: config.theme,
+      theme: THEME_NAMES.NEURECTOMY_DARK,
       fontSize: config.fontSize,
-      fontFamily: config.fontFamily,
+      fontFamily:
+        config.fontFamily ||
+        "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
+      fontLigatures: true,
       tabSize: config.tabSize,
       insertSpaces: config.insertSpaces,
       lineNumbers: config.lineNumbers,
@@ -165,10 +200,18 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
       bracketPairColorization: {
         enabled: true,
       },
+      guides: {
+        bracketPairs: true,
+        indentation: true,
+        highlightActiveIndentation: true,
+      },
       suggest: {
         preview: true,
         showKeywords: true,
         showSnippets: true,
+        showClasses: true,
+        showFunctions: true,
+        showVariables: true,
       },
       folding: true,
       foldingStrategy: "indentation",
@@ -177,10 +220,32 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
       lightbulb: {
         enabled: monaco.editor.ShowLightbulbIconMode.On,
       },
+      stickyScroll: {
+        enabled: true,
+      },
+      inlineSuggest: {
+        enabled: true,
+      },
     });
 
     editorRef.current = editor;
     setEditor(editor);
+
+    // Register NEURECTOMY keybindings
+    const keybindingCallbacks: KeybindingCallbacks = {
+      onSave: async () => {
+        if (currentFileIdRef.current) {
+          await saveFile(currentFileIdRef.current);
+        }
+      },
+      onSaveAll: async () => {
+        await saveAllFiles();
+      },
+    };
+    const keybindingDisposable = registerNeurectomyKeybindings(
+      editor,
+      keybindingCallbacks
+    );
 
     // Listen to content changes
     const contentChangeDisposable = editor.onDidChangeModelContent(() => {
@@ -207,12 +272,13 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
 
     // Cleanup
     return () => {
+      keybindingDisposable.dispose();
       contentChangeDisposable.dispose();
       viewStateChangeDisposable.dispose();
       editor.dispose();
       setEditor(null);
     };
-  }, []); // Only run once on mount
+  }, [isReady]); // Run when Monaco is ready
 
   /**
    * Update editor configuration when config changes
@@ -292,6 +358,22 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
       currentFileIdRef.current = null;
     }
   }, [activeFileId, getActiveFile, setFileModel]);
+
+  // Show loading state while Monaco initializes
+  if (!isReady) {
+    return (
+      <div
+        className={`monaco-editor-container w-full h-full overflow-hidden flex items-center justify-center bg-neutral-950 ${className}`}
+      >
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+          <span className="text-sm text-neutral-400">
+            Initializing editor...
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
