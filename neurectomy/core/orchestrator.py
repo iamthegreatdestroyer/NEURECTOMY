@@ -51,6 +51,7 @@ class NeurectomyOrchestrator:
     - ΣLANG compression
     - ΣVAULT RSU storage
     - Agent management
+    - Elite Agent Collective
     """
     
     def __init__(self, config: Optional[OrchestratorConfig] = None):
@@ -70,8 +71,14 @@ class NeurectomyOrchestrator:
         self._agents: Dict[str, AgentState] = {}
         self._registry = AgentRegistry()
         
+        # Elite Collective (initialized lazily)
+        self._collective = None
+        
         # Register default agents
         self._register_default_agents()
+        
+        # Initialize Elite Collective
+        self._init_elite_collective()
         
         # Statistics
         self._start_time = time.time()
@@ -196,14 +203,22 @@ class NeurectomyOrchestrator:
             uptime_seconds=time.time() - self._start_time,
         )
     
-    def health_check(self) -> Dict[str, bool]:
+    def health_check(self) -> Dict[str, Any]:
         """Check health of all components."""
-        return {
+        health = {
             "orchestrator": True,
             "inference": self._inference.is_ready(),
             "compression": self._compression.is_ready(),
             "storage": self._storage.is_ready(),
         }
+        
+        # Add Elite Collective health if available
+        if hasattr(self, '_collective') and self._collective is not None:
+            collective_health = self._collective.health_check()
+            health["elite_collective"] = collective_health["status"] == "healthy"
+            health["elite_agents"] = collective_health["total_agents"]
+        
+        return health
     
     def _register_default_agents(self) -> None:
         """Register default specialized agents."""
@@ -223,6 +238,30 @@ class NeurectomyOrchestrator:
         for agent_class, agent_id in agents:
             config = AgentConfig(agent_id=agent_id)
             self._registry.register(agent_class, config)
+    
+    def _init_elite_collective(self) -> None:
+        """Initialize the Elite Agent Collective."""
+        try:
+            from ..elite import EliteCollective, CollectiveConfig
+            
+            collective_config = CollectiveConfig(
+                enable_cross_team_collaboration=True,
+            )
+            self._collective = EliteCollective(collective_config)
+        except Exception:
+            # Elite collective is optional
+            self._collective = None
+    
+    def execute_with_collective(self, request: TaskRequest) -> TaskResult:
+        """Execute task using Elite Collective."""
+        if self._collective is None:
+            return self.execute_task(request)
+        
+        return self._collective.execute(request)
+    
+    def get_collective(self):
+        """Get Elite Collective instance."""
+        return self._collective
     
     def execute_with_agent(self, request: TaskRequest) -> TaskResult:
         """Execute task using registered agents."""
