@@ -1,10 +1,13 @@
-# Workflow Engine
+# Orchestration Module
 
-DAG-based workflow orchestration engine for Neurectomy.
+DAG-based workflow orchestration engine and pub/sub event system for Neurectomy.
 
 ## Overview
 
-The Workflow Engine orchestrates complex multi-step workflows using directed acyclic graphs (DAGs). It handles task scheduling, dependency resolution, error handling, and execution tracking.
+The Orchestration Module provides two core components:
+
+1. **Workflow Engine**: DAG-based task orchestration with dependency resolution
+2. **Event Bus**: Pub/Sub event system for asynchronous communication
 
 ## Features
 
@@ -148,19 +151,23 @@ result = await engine.execute_workflow(workflow)
 #### Methods
 
 **`__init__(max_concurrent=1)`**
+
 - Initialize engine
 - `max_concurrent`: Maximum concurrent tasks (default: 1 for sequential)
 
 **`register_handler(task_type, handler)`**
+
 - Register handler for task type
 - `task_type`: String identifier for task type
 - `handler`: Async callable(config, workflow) → result
 
 **`async execute_workflow(workflow) → WorkflowResult`**
+
 - Execute workflow
 - Returns WorkflowResult with execution details
 
 **`get_task_metrics(result) → dict`**
+
 - Calculate execution metrics
 - Returns dict with timing and status statistics
 
@@ -169,14 +176,17 @@ result = await engine.execute_workflow(workflow)
 #### Methods
 
 **`validate() → (bool, Optional[str])`**
+
 - Validate workflow DAG
 - Returns (is_valid, error_message)
 
 **`get_execution_order() → List[str]`**
+
 - Get tasks in topological order
 - Returns list of task IDs
 
 **`get_task_levels() → Dict[str, int]`**
+
 - Get depth level for each task
 - Returns mapping of task_id → level
 
@@ -198,6 +208,7 @@ result = await engine.execute_workflow(workflow)
 #### Methods
 
 **`get_duration() → Optional[float]`**
+
 - Get execution duration in seconds
 
 ### WorkflowResult
@@ -205,6 +216,7 @@ result = await engine.execute_workflow(workflow)
 #### Methods
 
 **`to_dict() → dict`**
+
 - Convert result to dictionary
 - Includes all task results and metrics
 
@@ -213,6 +225,7 @@ result = await engine.execute_workflow(workflow)
 ### Task Failures
 
 When a task fails:
+
 1. Task status set to FAILED
 2. Error message captured
 3. Dependent tasks are SKIPPED
@@ -323,10 +336,10 @@ import pytest
 async def test_workflow():
     engine = WorkflowEngine()
     engine.register_handler("test", test_handler)
-    
+
     workflow = Workflow(...)
     result = await engine.execute_workflow(workflow)
-    
+
     assert result.status == "completed"
 ```
 
