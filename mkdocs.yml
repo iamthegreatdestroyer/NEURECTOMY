@@ -1,0 +1,81 @@
+site_name: Neurectomy Documentation
+site_description: Neurectomy Unified Architecture Documentation
+site_author: Neurectomy Team
+repo_url: https://github.com/neurectomy/neurectomy
+repo_name: GitHub
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - search.highlight
+    - search.share
+    - content.tabs.link
+  font:
+    text: Roboto
+    code: Roboto Mono
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Architecture: architecture.md
+  - API Reference:
+      - REST API: api/rest-api.md
+      - Python SDK: api/python-sdk.md
+  - Tutorials:
+      - Basic Generation: tutorials/basic-generation.md
+      - Agent Tasks: tutorials/agent-tasks.md
+  - Deployment:
+      - Docker: deployment/docker.md
+      - Kubernetes: deployment/kubernetes.md
+
+markdown_extensions:
+  - pymdownx.highlight:
+      use_pygments: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tabbed:
+      alternate_style: true
+  - admonition
+  - toc:
+      permalink: true
+      title: Table of Contents
+  - tables
+  - attr_list
+
+plugins:
+  - search:
+      lang: en
+  - minify:
+      minify_html: true
+
+extra:
+  version:
+    provider: mike
+  analytics:
+    provider: google
+    property: G-XXXXXXXXXX
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/neurectomy/neurectomy
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/neurectomy
+
+watch:
+  - docs
+  - examples
