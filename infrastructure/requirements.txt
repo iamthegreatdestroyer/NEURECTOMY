@@ -1,0 +1,13 @@
+# Backup and restore
+boto3>=1.28.0
+
+# Security scanning
+pip-audit>=2.6.0
+bandit>=1.7.5
+
+# Kubernetes
+kubernetes>=28.1.0
+
+# Cloud providers
+google-cloud-storage>=2.10.0
+azure-storage-blob>=12.19.0

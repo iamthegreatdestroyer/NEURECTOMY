@@ -144,6 +144,22 @@ temp/
 *.bak
 
 # =============================================================================
+# Infrastructure artifacts
+# =============================================================================
+infrastructure/terraform/.terraform/
+infrastructure/terraform/*.tfstate
+infrastructure/terraform/*.tfstate.backup
+infrastructure/terraform/.terraform.lock.hcl
+
+# Backup files
+*.backup
+*.bak
+
+# Security scan results
+security_scan_*.html
+security_scan_*.json
+
+# =============================================================================
 # History (VS Code Local History extension)
 # =============================================================================
 .history/
