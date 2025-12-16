@@ -1,0 +1,28 @@
+[package]
+name = "neurectomy-sdk"
+version = "1.0.0"
+edition = "2021"
+authors = ["Neurectomy Team"]
+license = "MIT"
+description = "Production-ready Rust SDK for Neurectomy API"
+repository = "https://github.com/iamthegreatdestroyer/NEURECTOMY"
+keywords = ["neurectomy", "ai", "llm", "compression", "sdk"]
+
+[dependencies]
+reqwest = { version = "0.11", features = ["json"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1.0", features = ["full"] }
+thiserror = "1.0"
+log = "0.4"
+
+[dev-dependencies]
+tokio-test = "0.4"
+
+[[example]]
+name = "basic_usage"
+path = "examples/basic_usage.rs"
+
+[lib]
+name = "neurectomy_sdk"
+path = "src/lib.rs"
