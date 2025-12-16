@@ -9,7 +9,7 @@ The Event Bus provides a decoupled, event-driven communication layer for the Neu
 ## Features
 
 - **Pub/Sub Pattern**: Decouple event producers from consumers
-- **Pattern Matching**: Subscribe to events using patterns (e.g., "task.*", "agent.*")
+- **Pattern Matching**: Subscribe to events using patterns (e.g., "task._", "agent._")
 - **Custom Filters**: Add filter functions for fine-grained control
 - **Async Handlers**: Full async/await support for event processing
 - **Event History**: Track all events with configurable history size
@@ -118,42 +118,52 @@ bus.subscribe("*", my_handler)
 #### Methods
 
 **`subscribe(pattern, handler, filter_fn=None) -> str`**
+
 - Subscribe to events matching pattern
 - Returns subscription ID
 
 **`unsubscribe(subscription_id) -> bool`**
+
 - Unsubscribe from events
 - Returns True if found and removed
 
 **`async emit(event)`**
+
 - Emit single event to subscribers
 - Calls all matching handlers
 
 **`async emit_many(events)`**
+
 - Emit multiple events
 - Iterates and emits each event
 
 **`get_history(pattern=None, source=None, limit=None) -> List[Event]`**
+
 - Get event history with optional filters
 - Returns matching events
 
 **`get_subscription_count(pattern=None) -> int`**
+
 - Get number of active subscriptions
 - Optional pattern filter
 
 **`get_stats() -> Dict`**
+
 - Get event bus statistics
 - Includes event counts and subscription info
 
 **`clear_history()`**
+
 - Clear all event history
 
 **`reset_stats()`**
+
 - Reset statistics counters
 
 ### Event
 
 #### Attributes
+
 - `event_type`: EventType enum value
 - `source`: String identifier for event source
 - `data`: Dictionary with event data
@@ -163,10 +173,12 @@ bus.subscribe("*", my_handler)
 #### Methods
 
 **`matches(pattern) -> bool`**
+
 - Check if event matches pattern
-- Supports exact, prefix wildcard, and "*"
+- Supports exact, prefix wildcard, and "\*"
 
 **`to_dict() -> Dict`**
+
 - Convert event to dictionary
 - Includes all fields in serializable format
 
@@ -225,7 +237,7 @@ async def on_agent_failed(event):
     """Alert when agent fails"""
     agent_id = event.data["agent_id"]
     print(f"ALERT: Agent {agent_id} failed!")
-    
+
     # Trigger recovery
     await trigger_agent_recovery(agent_id)
 
@@ -323,7 +335,7 @@ async def monitor_agents():
                     "last_heartbeat": health.last_heartbeat.isoformat()
                 }
             ))
-            
+
             # Emit failure alerts
             if health.status.value == "failed":
                 await bus.emit(Event(
@@ -331,13 +343,14 @@ async def monitor_agents():
                     "supervisor",
                     {"agent_id": agent_id, "error": health.last_error}
                 ))
-        
+
         await asyncio.sleep(10)  # Check every 10 seconds
 ```
 
 ## Best Practices
 
 ### 1. Use Specific Event Types
+
 ```python
 # Good - specific
 await bus.emit(Event(EventType.TASK_COMPLETED, ...))
@@ -347,6 +360,7 @@ await bus.emit(Event("custom.event", ...))
 ```
 
 ### 2. Include Relevant Data
+
 ```python
 # Good - complete information
 data = {
@@ -362,6 +376,7 @@ data = {"done": True}
 ```
 
 ### 3. Use Pattern Subscriptions
+
 ```python
 # Good - pattern
 bus.subscribe("task.*", handler)
@@ -375,6 +390,7 @@ bus.subscribe("task.skipped", handler4)
 ```
 
 ### 4. Filter at Handler Level
+
 ```python
 # Good - filter in handler
 async def handler(event):
@@ -398,15 +414,15 @@ import pytest
 async def test_task_completion():
     bus = EventBus()
     events = []
-    
+
     async def handler(event):
         events.append(event)
-    
+
     bus.subscribe("task.completed", handler)
-    
+
     event = Event(EventType.TASK_COMPLETED, "test")
     await bus.emit(event)
-    
+
     assert len(events) == 1
     assert events[0].event_type == EventType.TASK_COMPLETED
 ```
