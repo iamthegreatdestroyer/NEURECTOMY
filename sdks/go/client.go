@@ -65,18 +65,18 @@ type TokenUsage struct {
 
 // CompletionResponse is the response from text completion
 type CompletionResponse struct {
-	Text              string     `json:"text"`
-	TokensGenerated   int        `json:"tokens_generated"`
-	FinishReason      string     `json:"finish_reason"`
-	Usage             *TokenUsage `json:"usage,omitempty"`
+	Text            string      `json:"text"`
+	TokensGenerated int         `json:"tokens_generated"`
+	FinishReason    string      `json:"finish_reason"`
+	Usage           *TokenUsage `json:"usage,omitempty"`
 }
 
 // CompressionRequest is a request for text compression
 type CompressionRequest struct {
-	Text               string `json:"text"`
-	TargetRatio        float32 `json:"target_ratio,omitempty"`
-	CompressionLevel   int     `json:"compression_level,omitempty"`
-	Algorithm          string  `json:"algorithm,omitempty"`
+	Text             string  `json:"text"`
+	TargetRatio      float32 `json:"target_ratio,omitempty"`
+	CompressionLevel int     `json:"compression_level,omitempty"`
+	Algorithm        string  `json:"algorithm,omitempty"`
 }
 
 // CompressionResponse is the response from text compression
@@ -120,8 +120,8 @@ type StatusResponse struct {
 
 // ErrorResponse is an error response from the API
 type ErrorResponse struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
+	Code    string      `json:"code"`
+	Message string      `json:"message"`
 	Details interface{} `json:"details,omitempty"`
 }
 

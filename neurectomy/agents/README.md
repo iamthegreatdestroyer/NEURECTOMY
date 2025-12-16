@@ -40,10 +40,10 @@ async def agent_loop(agent_id):
     while True:
         # Do agent work
         await perform_agent_tasks()
-        
+
         # Report heartbeat
         await supervisor.report_heartbeat(agent_id)
-        
+
         await asyncio.sleep(10)  # Report every 10 seconds
 
 # Get health status
@@ -61,20 +61,24 @@ for agent_id, health in failed.items():
 ## Health States
 
 ### HEALTHY
+
 - Agent is reporting heartbeats regularly
 - No failures detected
 
 ### DEGRADED
+
 - Agent missed a heartbeat
 - Waiting for recovery or next heartbeat
 - Will transition to FAILED if timeout occurs again
 
 ### FAILED
+
 - Agent has missed multiple heartbeats
 - Automatic recovery in progress
 - After max_failures attempts, requires manual intervention
 
 ### RECOVERING
+
 - Automatic recovery attempt in progress
 - Temporary state during restart
 
@@ -92,30 +96,39 @@ supervisor = AgentSupervisor(
 ## Methods
 
 ### `register_agent(agent_id: str) -> AgentHealth`
+
 Register an agent for monitoring.
 
 ### `async report_heartbeat(agent_id: str)`
+
 Report a heartbeat from an agent. Auto-registers if not registered.
 
 ### `async start_monitoring()`
+
 Start the monitoring loop.
 
 ### `async stop_monitoring()`
+
 Stop the monitoring loop.
 
 ### `get_agent_health(agent_id: str) -> AgentHealth`
+
 Get health status for a specific agent.
 
 ### `get_all_health() -> Dict[str, AgentHealth]`
+
 Get health status for all agents.
 
 ### `get_health_summary() -> Dict[str, int]`
+
 Get summary counts by status.
 
 ### `get_failed_agents() -> Dict[str, AgentHealth]`
+
 Get all failed agents.
 
 ### `get_degraded_agents() -> Dict[str, AgentHealth]`
+
 Get all degraded agents.
 
 ## Integration with Elite Agent Collective
@@ -137,10 +150,10 @@ async def agent_heartbeat(agent_id):
     while running:
         # Do work
         result = await agent_execute_task()
-        
+
         # Report health
         await supervisor.report_heartbeat(agent_id)
-        
+
         await asyncio.sleep(heartbeat_interval)
 ```
 
@@ -177,13 +190,13 @@ import pytest
 async def test_agent_recovery():
     supervisor = AgentSupervisor(heartbeat_timeout=2)
     supervisor.register_agent("test_agent")
-    
+
     await supervisor.start_monitoring()
     await asyncio.sleep(3)  # Wait for detection
-    
+
     health = supervisor.get_agent_health("test_agent")
     assert health.status in [AgentStatus.DEGRADED, AgentStatus.FAILED]
-    
+
     await supervisor.stop_monitoring()
 ```
 
