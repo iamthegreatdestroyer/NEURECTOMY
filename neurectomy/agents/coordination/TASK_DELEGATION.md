@@ -5,6 +5,7 @@ Dynamic task delegation across the Elite Agent Collective based on capabilities 
 ## Overview
 
 The Task Delegation System intelligently assigns tasks to agents based on:
+
 - **Capability Matching**: Tasks only assigned to capable agents
 - **Load Balancing**: Prefers agents with lower utilization
 - **Specialization**: Tracks and uses agent specialization scores
@@ -194,39 +195,47 @@ print(f"Pending tasks: {len(delegator.pending_tasks)}")
 #### Methods
 
 **`register_agent(agent: AgentCapability)`**
+
 - Register an agent with capabilities
 - Tracks max concurrent tasks and specialization
 
 **`async delegate_task(task: Task) -> DelegationResult`**
+
 - Delegate task to best available agent
 - Returns DelegationResult with assignment details
 - Queues task if no agents available
 
 **`async mark_task_complete(task_id, agent_id, success, task_type)`**
+
 - Mark task as complete
 - Frees agent capacity
 - Updates success rates
 - Processes pending tasks
 
 **`get_agent_status(agent_id: str) -> Dict`**
+
 - Get detailed status of single agent
 - Includes load, capabilities, specialization
 
 **`get_collective_status() -> Dict`**
+
 - Get aggregated status of all agents
 - Includes total capacity, utilization, pending
 
 **`get_delegation_history(limit, agent_id, success_only) -> List`**
+
 - Get historical delegation decisions
 - Optional filtering by agent, success status
 
 **`get_stats() -> Dict`**
+
 - Get comprehensive statistics
 - Success rates, average scores
 
 ### AgentCapability
 
 #### Attributes
+
 - `agent_id`: Unique agent identifier
 - `capabilities`: Set of task types agent can handle
 - `max_concurrent_tasks`: Maximum tasks simultaneously
@@ -235,6 +244,7 @@ print(f"Pending tasks: {len(delegator.pending_tasks)}")
 - `success_rate`: Per-task-type success rate (0.0-1.0)
 
 #### Methods
+
 - `get_utilization()`: Current capacity usage
 - `has_capacity()`: Check if can accept more tasks
 - `can_handle(required_capabilities)`: Check capability match
@@ -242,6 +252,7 @@ print(f"Pending tasks: {len(delegator.pending_tasks)}")
 ### Task
 
 #### Attributes
+
 - `task_id`: Unique task identifier
 - `task_type`: Task classification (e.g., "inference")
 - `priority`: TaskPriority level
@@ -253,6 +264,7 @@ print(f"Pending tasks: {len(delegator.pending_tasks)}")
 ### DelegationResult
 
 #### Attributes
+
 - `task_id`: Task that was delegated
 - `agent_id`: Agent assigned (None if failed)
 - `success`: Whether delegation succeeded
@@ -267,7 +279,7 @@ print(f"Pending tasks: {len(delegator.pending_tasks)}")
 ```python
 async def handle_document_processing():
     """Route document tasks to specialized agents"""
-    
+
     # Register document processing specialists
     ocr_agent = AgentCapability(
         agent_id="OCR_SPECIALIST",
@@ -276,7 +288,7 @@ async def handle_document_processing():
         specialization_score={"ocr": 1.0, "text_extraction": 0.95},
     )
     delegator.register_agent(ocr_agent)
-    
+
     compression_agent = AgentCapability(
         agent_id="COMPRESSION_SPECIALIST",
         capabilities={"compression", "decompression"},
@@ -284,7 +296,7 @@ async def handle_document_processing():
         specialization_score={"compression": 1.0},
     )
     delegator.register_agent(compression_agent)
-    
+
     # Delegate OCR task
     ocr_task = Task(
         task_id="ocr_001",
@@ -295,7 +307,7 @@ async def handle_document_processing():
     )
     result = await delegator.delegate_task(ocr_task)
     print(f"OCR task: {result.agent_id}")
-    
+
     # Delegate compression task
     compress_task = Task(
         task_id="compress_001",
@@ -313,7 +325,7 @@ async def handle_document_processing():
 ```python
 async def handle_inference_workload():
     """Distribute inference tasks across multiple agents"""
-    
+
     # Register multiple inference agents
     for i in range(1, 4):
         agent = AgentCapability(
@@ -322,7 +334,7 @@ async def handle_inference_workload():
             max_concurrent_tasks=5,
         )
         delegator.register_agent(agent)
-    
+
     # Create multiple tasks
     tasks = [
         Task(
@@ -334,12 +346,12 @@ async def handle_inference_workload():
         )
         for i in range(1, 6)
     ]
-    
+
     # Delegate all tasks
     for task in tasks:
         result = await delegator.delegate_task(task)
         print(f"Task {task.task_id} → {result.agent_id}")
-    
+
     # Check distribution
     status = delegator.get_collective_status()
     print(f"Utilization: {status['utilization']:.1%}")
@@ -350,14 +362,14 @@ async def handle_inference_workload():
 ```python
 async def handle_critical_task():
     """Route critical tasks preferentially"""
-    
+
     agent = AgentCapability(
         agent_id="GENERAL_AGENT",
         capabilities={"processing"},
         max_concurrent_tasks=2,
     )
     delegator.register_agent(agent)
-    
+
     # Low priority task (goes to pending)
     low_task = Task(
         task_id="low_001",
@@ -366,7 +378,7 @@ async def handle_critical_task():
         payload={},
         required_capabilities={"processing"},
     )
-    
+
     # Critical task (gets better score)
     critical_task = Task(
         task_id="critical_001",
@@ -375,10 +387,10 @@ async def handle_critical_task():
         payload={},
         required_capabilities={"processing"},
     )
-    
+
     # First low task takes slot
     result1 = await delegator.delegate_task(low_task)
-    
+
     # Critical task still processed (score helps if slot opens)
     result2 = await delegator.delegate_task(critical_task)
 ```
@@ -409,7 +421,7 @@ import pytest
 @pytest.mark.asyncio
 async def test_specialized_delegation():
     delegator = TaskDelegator()
-    
+
     # Setup
     agent = AgentCapability(
         agent_id="specialist",
@@ -417,7 +429,7 @@ async def test_specialized_delegation():
         specialization_score={"inference": 1.0},
     )
     delegator.register_agent(agent)
-    
+
     # Test
     task = Task(
         task_id="task_1",
@@ -427,7 +439,7 @@ async def test_specialized_delegation():
         required_capabilities={"inference"},
     )
     result = await delegator.delegate_task(task)
-    
+
     assert result.success
     assert result.agent_id == "specialist"
 ```
@@ -439,7 +451,7 @@ from neurectomy.orchestration import WorkflowEngine, Event, EventType
 
 async def delegate_workflow_tasks(workflow, delegator):
     """Delegate workflow tasks to agents"""
-    
+
     for task in workflow.tasks.values():
         # Convert workflow task to delegation task
         delegation_task = Task(
@@ -449,10 +461,10 @@ async def delegate_workflow_tasks(workflow, delegator):
             payload=task.config,
             required_capabilities={task.task_type},
         )
-        
+
         # Delegate
         result = await delegator.delegate_task(delegation_task)
-        
+
         # Emit event
         await bus.emit(Event(
             EventType.TASK_STARTED,

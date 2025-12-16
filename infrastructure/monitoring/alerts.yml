@@ -1,0 +1,172 @@
+# Prometheus Alert Rules for Neurectomy System
+
+groups:
+  - name: neurectomy_alerts
+    interval: 30s
+    rules:
+      # HTTP Request Alerts
+      - alert: HighErrorRate
+        expr: |
+          (sum(rate(neurectomy_http_requests_total{status=~"5.."}[5m])) by (endpoint)) /
+          (sum(rate(neurectomy_http_requests_total[5m])) by (endpoint)) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          component: api
+        annotations:
+          summary: "High error rate on {{ $labels.endpoint }}"
+          description: "Error rate is {{ $value | humanizePercentage }} for the last 5 minutes"
+
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.95, 
+            sum(rate(neurectomy_http_request_duration_seconds_bucket[5m])) by (endpoint, le)
+          ) > 5
+        for: 10m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "High latency on {{ $labels.endpoint }}"
+          description: "p95 latency is {{ $value }}s"
+
+      # Service Integration Alerts
+      - alert: RyotLLMHighErrorRate
+        expr: |
+          (sum(rate(neurectomy_ryot_requests_total{status="error"}[5m]))) /
+          (sum(rate(neurectomy_ryot_requests_total[5m]))) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: ryot
+        annotations:
+          summary: "High error rate in Ryot LLM"
+          description: "Ryot LLM error rate is {{ $value | humanizePercentage }}"
+
+      - alert: RyotLLMHighLatency
+        expr: |
+          histogram_quantile(0.95, 
+            sum(rate(neurectomy_ryot_request_duration_seconds_bucket[5m])) by (le)
+          ) > 30
+        for: 10m
+        labels:
+          severity: warning
+          component: ryot
+        annotations:
+          summary: "High latency in Ryot LLM requests"
+          description: "p95 latency is {{ $value }}s"
+
+      # Storage Alerts
+      - alert: SigmaVaultHighErrorRate
+        expr: |
+          (sum(rate(neurectomy_sigmavault_operations_total{status="error"}[5m])) by (operation)) /
+          (sum(rate(neurectomy_sigmavault_operations_total[5m])) by (operation)) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          component: sigmavault
+        annotations:
+          summary: "High error rate in ΣVAULT {{ $labels.operation }}"
+          description: "Error rate is {{ $value | humanizePercentage }}"
+
+      # Circuit Breaker Alerts
+      - alert: CircuitBreakerOpen
+        expr: neurectomy_circuit_breaker_state{state="open"} == 1
+        for: 1m
+        labels:
+          severity: critical
+          component: resilience
+        annotations:
+          summary: "Circuit breaker OPEN for {{ $labels.service }}"
+          description: "Circuit breaker is open, service {{ $labels.service }} is not accepting requests"
+
+      - alert: CircuitBreakerHalfOpen
+        expr: neurectomy_circuit_breaker_state{state="half_open"} == 1
+        for: 2m
+        labels:
+          severity: warning
+          component: resilience
+        annotations:
+          summary: "Circuit breaker HALF-OPEN for {{ $labels.service }}"
+          description: "Circuit breaker is half-open, testing {{ $labels.service }}"
+
+      - alert: HighCircuitBreakerFailures
+        expr: |
+          rate(neurectomy_circuit_breaker_failures_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: resilience
+        annotations:
+          summary: "High failure rate in circuit breaker for {{ $labels.service }}"
+          description: "Failure rate is {{ $value | humanizePercentage }}/s"
+
+      # Agent Alerts
+      - alert: AgentDown
+        expr: neurectomy_agent_health_status == 2
+        for: 2m
+        labels:
+          severity: critical
+          component: agents
+        annotations:
+          summary: "Agent {{ $labels.agent_id }} is DOWN"
+          description: "Agent has been unhealthy for 2 minutes"
+
+      - alert: HighAgentFailureRate
+        expr: |
+          (sum(rate(neurectomy_agents_failures_total[5m])) by (agent_id)) /
+          (sum(rate(neurectomy_agents_tasks_assigned_total[5m])) by (agent_id)) > 0.2
+        for: 5m
+        labels:
+          severity: warning
+          component: agents
+        annotations:
+          summary: "High failure rate for agent {{ $labels.agent_id }}"
+          description: "Failure rate is {{ $value | humanizePercentage }}"
+
+      - alert: AgentHighUtilization
+        expr: neurectomy_agents_utilization_ratio > 0.9
+        for: 10m
+        labels:
+          severity: warning
+          component: agents
+        annotations:
+          summary: "Agent {{ $labels.agent_id }} has high utilization"
+          description: "Utilization is {{ $value | humanizePercentage }}"
+
+      # Resource Alerts
+      - alert: PodCPUUsageHigh
+        expr: |
+          sum(rate(container_cpu_usage_seconds_total{pod_name=~"neurectomy.*"}[5m])) by (pod_name)
+          * 100 > 80
+        for: 10m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "Pod {{ $labels.pod_name }} has high CPU usage"
+          description: "CPU usage is {{ $value }}%"
+
+      - alert: PodMemoryUsageHigh
+        expr: |
+          (sum(container_memory_usage_bytes{pod_name=~"neurectomy.*"}) by (pod_name) /
+           sum(container_spec_memory_limit_bytes{pod_name=~"neurectomy.*"} > 0) by (pod_name))
+          * 100 > 85
+        for: 10m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "Pod {{ $labels.pod_name }} has high memory usage"
+          description: "Memory usage is {{ $value }}%"
+
+      - alert: DiskSpaceLow
+        expr: |
+          (node_filesystem_avail_bytes{fstype=~"ext4|xfs"} / node_filesystem_size_bytes) * 100 < 10
+        for: 5m
+        labels:
+          severity: critical
+          component: infrastructure
+        annotations:
+          summary: "Low disk space on {{ $labels.device }}"
+          description: "Only {{ $value }}% disk space remaining"
