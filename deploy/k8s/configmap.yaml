@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: neurectomy-config
+  namespace: neurectomy
+data:
+  LOG_LEVEL: "INFO"
+  PYTHONUNBUFFERED: "1"
+  API_PORT: "8000"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: neurectomy-secrets
+  namespace: neurectomy
+type: Opaque
+stringData:
+  # Add secrets here (base64 encoded in production)
+  API_KEY: "changeme"
