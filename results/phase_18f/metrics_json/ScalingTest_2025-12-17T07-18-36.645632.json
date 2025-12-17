@@ -1,0 +1,22 @@
+{
+  "benchmark_name": "ScalingTest",
+  "component": "all",
+  "timestamp": "2025-12-17T07:18:36.645632",
+  "duration_seconds": 900,
+  "iterations": 3,
+  "profiler_used": "py-spy",
+  "min_ms": null,
+  "max_ms": null,
+  "mean_ms": null,
+  "median_ms": null,
+  "p95_ms": null,
+  "p99_ms": null,
+  "stddev_ms": null,
+  "throughput": null,
+  "throughput_unit": null,
+  "peak_memory_mb": null,
+  "avg_memory_mb": null,
+  "cpu_utilization_pct": null,
+  "success": true,
+  "error_message": null
+}

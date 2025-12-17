@@ -1,0 +1,22 @@
+{
+  "benchmark_name": "FullLLMInference",
+  "component": "ryot",
+  "timestamp": "2025-12-17T07:18:34.638469",
+  "duration_seconds": 600,
+  "iterations": 5,
+  "profiler_used": "py-spy",
+  "min_ms": 45.3,
+  "max_ms": 53.699999999999996,
+  "mean_ms": 49.5,
+  "median_ms": 49.5,
+  "p95_ms": 53.699999999999996,
+  "p99_ms": 53.699999999999996,
+  "stddev_ms": 2.9698484809834986,
+  "throughput": 1010.10101010101,
+  "throughput_unit": "tokens/sec",
+  "peak_memory_mb": 2048.0,
+  "avg_memory_mb": null,
+  "cpu_utilization_pct": 85.0,
+  "success": true,
+  "error_message": null
+}
