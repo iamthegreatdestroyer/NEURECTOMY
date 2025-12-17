@@ -1,0 +1,48 @@
+---
+# Prometheus PersistentVolumeClaim (200GB SSD)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-storage
+  namespace: monitoring
+  labels:
+    app: prometheus
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: monitoring-ssd
+  resources:
+    requests:
+      storage: 200Gi
+---
+# Grafana PersistentVolumeClaim (10GB)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana-storage
+  namespace: monitoring
+  labels:
+    app: grafana
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: monitoring-standard
+  resources:
+    requests:
+      storage: 10Gi
+---
+# AlertManager PersistentVolumeClaim (5GB for cluster data)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: alertmanager-storage
+  namespace: monitoring
+  labels:
+    app: alertmanager
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: monitoring-standard
+  resources:
+    requests:
+      storage: 5Gi

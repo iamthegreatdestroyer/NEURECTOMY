@@ -1,0 +1,348 @@
+---
+# Promtail DaemonSet ConfigMap for log collection
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: promtail-config
+  namespace: monitoring
+  labels:
+    app: promtail
+    tier: observability
+data:
+  promtail-config.yaml: |
+    # ============================================================================
+    # NEURECTOMY Promtail Configuration - Phase 18E
+    # Log collector for 4 services: Ryot, ΣLANG, ΣVAULT, Agents
+    # ============================================================================
+
+    server:
+      http_listen_port: 9080
+      grpc_listen_port: 0
+      log_level: info
+
+    # Positions file for tracking file offsets
+    positions:
+      filename: /tmp/positions.yaml
+      sync_period: 10s
+      sync_on_shutdown: true
+
+    # Loki client configuration
+    clients:
+      - url: http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push
+        tenant_id: neurectomy
+        batchwait: 1s
+        batchsize: 1048576  # 1MB
+        timeout: 10s
+        
+        # Retry configuration
+        backoff_config:
+          min_period: 500ms
+          max_period: 5m
+          max_retries: 10
+        
+        # Client authentication (if needed)
+        bearer_token_file: /run/secrets/loki_token
+
+        # Custom headers
+        external_labels:
+          cluster: neurectomy
+          environment: production
+
+    # Service discovery configuration
+    scrape_configs:
+      
+      # ========================================================================
+      # 1. RYOT SERVICE (Main Application)
+      # ========================================================================
+      - job_name: ryot
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - neurectomy
+                - default
+        relabel_configs:
+          # Match pods with app=ryot label
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            regex: ryot
+            action: keep
+          
+          # Extract pod name
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+          
+          # Extract namespace
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
+          
+          # Extract pod container port
+          - source_labels: [__meta_kubernetes_pod_container_port_number]
+            target_label: container_port
+          
+          # Add service label
+          - replacement: ryot
+            target_label: service
+          
+          # Extract version from pod labels
+          - source_labels: [__meta_kubernetes_pod_label_version]
+            target_label: version
+        
+        # Parse JSON logs from Ryot
+        pipeline_stages:
+          - json:
+              expressions:
+                timestamp: timestamp
+                level: level
+                message: message
+                module: module
+                trace_id: trace_id
+                span_id: span_id
+          
+          - labels:
+              level:
+              module:
+              service:
+              trace_id:
+              span_id:
+          
+          - metrics:
+              log_lines_total:
+                type: Counter
+                description: "Total number of log lines"
+                prefix: promtail_
+                max_idle_duration: 30s
+                value: "1"
+              
+              log_errors_total:
+                type: Counter
+                description: "Total error logs"
+                prefix: promtail_
+                max_idle_duration: 30s
+                match: 'level="error"'
+                value: "1"
+              
+              log_durations:
+                type: Histogram
+                description: "Log processing duration"
+                prefix: promtail_
+                max_idle_duration: 30s
+                buckets: [0.001, 0.01, 0.1, 1]
+                value_name: duration
+
+      # ========================================================================
+      # 2. ΣLANG SERVICE (Sigma Language)
+      # ========================================================================
+      - job_name: sigmalang
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - neurectomy
+                - default
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            regex: sigmalang|sigma-lang|sigmalang-.*
+            action: keep
+          
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+          
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
+          
+          - replacement: sigmalang
+            target_label: service
+          
+          - source_labels: [__meta_kubernetes_pod_label_version]
+            target_label: version
+        
+        pipeline_stages:
+          - json:
+              expressions:
+                timestamp: ts
+                level: lvl
+                message: msg
+                component: component
+                request_id: req_id
+          
+          - labels:
+              level:
+              component:
+              request_id:
+              service:
+          
+          - timestamp:
+              source: timestamp
+              format: "2006-01-02T15:04:05.000Z07:00"
+          
+          - output:
+              source: message
+
+      # ========================================================================
+      # 3. ΣVAULT SERVICE (Secure Vault)
+      # ========================================================================
+      - job_name: sigmavault
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - neurectomy
+                - default
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            regex: sigmavault|sigma-vault|sigmavault-.*
+            action: keep
+          
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+          
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
+          
+          - replacement: sigmavault
+            target_label: service
+          
+          - source_labels: [__meta_kubernetes_pod_label_version]
+            target_label: version
+        
+        pipeline_stages:
+          - multiline:
+              line_start_pattern: '^\d{4}-\d{2}-\d{2}'
+          
+          - json:
+              expressions:
+                timestamp: timestamp
+                level: level
+                message: message
+                operation: operation
+                user: user_id
+                status: status
+          
+          - labels:
+              level:
+              operation:
+              status:
+              service:
+          
+          - metrics:
+              vault_operations_total:
+                type: Counter
+                description: "Vault operations"
+                prefix: promtail_
+                max_idle_duration: 30s
+                value: "1"
+
+      # ========================================================================
+      # 4. AGENTS SERVICE (Agent Collective)
+      # ========================================================================
+      - job_name: agents
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - neurectomy
+                - default
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            regex: agents|agent-.*|elite-agent.*
+            action: keep
+          
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+          
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
+          
+          - replacement: agents
+            target_label: service
+          
+          - source_labels: [__meta_kubernetes_pod_label_tier]
+            target_label: agent_tier
+          
+          - source_labels: [__meta_kubernetes_pod_label_agent]
+            target_label: agent_name
+        
+        pipeline_stages:
+          - json:
+              expressions:
+                timestamp: timestamp
+                level: level
+                message: msg
+                agent: agent_id
+                tier: tier
+                task: task_id
+                memory_ops: memory_ops
+          
+          - labels:
+              level:
+              agent:
+              tier:
+              task:
+              service:
+          
+          - metrics:
+              agent_tasks_total:
+                type: Counter
+                description: "Total agent tasks"
+                prefix: promtail_
+                max_idle_duration: 30s
+                value: "1"
+              
+              agent_memory_operations:
+                type: Gauge
+                description: "Agent memory operations"
+                prefix: promtail_
+                max_idle_duration: 30s
+                value_name: memory_ops
+
+      # ========================================================================
+      # 5. KUBERNETES SYSTEM LOGS
+      # ========================================================================
+      - job_name: kubernetes
+        kubernetes_sd_configs:
+          - role: pod
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+          
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
+          
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            target_label: app
+        
+        pipeline_stages:
+          - labels:
+              namespace:
+              pod:
+              app:
+
+      # ========================================================================
+      # 6. SYSLOG LOGS
+      # ========================================================================
+      - job_name: syslog
+        syslog_sd_configs:
+          - listen_address: 0.0.0.0:1514
+            use_incoming_timestamp: true
+            labels:
+              job: syslog
+              service: system
+        relabel_configs:
+          - source_labels: [__syslog_message_hostname]
+            target_label: hostname
+          
+          - source_labels: [__syslog_message_severity]
+            target_label: severity
+          
+          - source_labels: [__syslog_message_facility]
+            target_label: facility
+
+    # Limits for Promtail
+    limits_config:
+      readline_rate_enabled: true
+      readline_rate: 100000  # Lines per second
+      readline_rate_drop: true
+
+    # Metrics configuration
+    metrics:
+      prometheus_wal_directory: /tmp/wal

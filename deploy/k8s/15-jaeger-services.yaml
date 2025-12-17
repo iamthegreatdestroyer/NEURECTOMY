@@ -1,0 +1,189 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger-agent
+  namespace: monitoring
+  labels:
+    app: jaeger
+    component: agent
+spec:
+  type: ClusterIP
+  selector:
+    app: jaeger
+    component: agent
+  ports:
+    - name: thrift-compact-udp
+      port: 6831
+      targetPort: 6831
+      protocol: UDP
+    - name: thrift-binary-udp
+      port: 6832
+      targetPort: 6832
+      protocol: UDP
+    - name: zipkin-thrift-udp
+      port: 5775
+      targetPort: 5775
+      protocol: UDP
+    - name: serve-configs
+      port: 5778
+      targetPort: 5778
+      protocol: TCP
+    - name: metrics
+      port: 14269
+      targetPort: 14269
+      protocol: TCP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger-agent-headless
+  namespace: monitoring
+  labels:
+    app: jaeger
+    component: agent
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    app: jaeger
+    component: agent
+  ports:
+    - name: thrift-compact-udp
+      port: 6831
+      targetPort: 6831
+      protocol: UDP
+    - name: thrift-binary-udp
+      port: 6832
+      targetPort: 6832
+      protocol: UDP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger-collector
+  namespace: monitoring
+  labels:
+    app: jaeger
+    component: collector
+spec:
+  type: ClusterIP
+  selector:
+    app: jaeger
+    component: collector
+  ports:
+    - name: zipkin-compact
+      port: 9411
+      targetPort: 9411
+      protocol: TCP
+    - name: grpc
+      port: 14250
+      targetPort: 14250
+      protocol: TCP
+    - name: thrift-compact
+      port: 6831
+      targetPort: 6831
+      protocol: UDP
+    - name: thrift-binary
+      port: 6832
+      targetPort: 6832
+      protocol: UDP
+    - name: serve-configs
+      port: 5778
+      targetPort: 5778
+      protocol: TCP
+    - name: metrics
+      port: 14269
+      targetPort: 14269
+      protocol: TCP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger-collector-headless
+  namespace: monitoring
+  labels:
+    app: jaeger
+    component: collector
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    app: jaeger
+    component: collector
+  ports:
+    - name: grpc
+      port: 14250
+      targetPort: 14250
+      protocol: TCP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger-query
+  namespace: monitoring
+  labels:
+    app: jaeger
+    component: query
+spec:
+  type: ClusterIP
+  selector:
+    app: jaeger
+    component: query
+  ports:
+    - name: query
+      port: 16686
+      targetPort: 16686
+      protocol: TCP
+    - name: metrics
+      port: 16687
+      targetPort: 16687
+      protocol: TCP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger
+  namespace: monitoring
+  labels:
+    app: jaeger
+spec:
+  type: ClusterIP
+  selector:
+    app: jaeger
+    component: query
+  ports:
+    - name: query
+      port: 16686
+      targetPort: 16686
+      protocol: TCP
+
+---
+# ServiceMonitor for Prometheus scraping Jaeger metrics
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: jaeger
+  namespace: monitoring
+  labels:
+    app: jaeger
+    prometheus: kube-prometheus
+spec:
+  selector:
+    matchLabels:
+      app: jaeger
+  endpoints:
+    - port: metrics
+      interval: 30s
+      path: /metrics
+    - port: metrics
+      interval: 30s
+      path: /metrics
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_label_app]
+          action: replace
+          targetLabel: app

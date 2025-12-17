@@ -1,0 +1,289 @@
+---
+# StorageClass for Loki persistent volumes (fast SSD)
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: fast-ssd
+  labels:
+    tier: observability
+provisioner: ebs.csi.aws.amazon.com
+parameters:
+  type: gp3
+  iops: "3000"
+  throughput: "125"
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+allowedTopologies:
+  - matchLabelExpressions:
+      - key: topology.ebs.csi.aws.amazon.com/zone
+        values:
+          - us-east-1a
+          - us-east-1b
+          - us-east-1c
+
+---
+# PersistentVolumeClaim for Memcached cache
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: memcached-cache
+  namespace: monitoring
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: fast-ssd
+  resources:
+    requests:
+      storage: 50Gi
+
+---
+# Memcached Deployment for query caching
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: memcached
+  namespace: monitoring
+  labels:
+    app: memcached
+    tier: observability
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: memcached
+  template:
+    metadata:
+      labels:
+        app: memcached
+        tier: observability
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9150"
+        prometheus.io/path: "/metrics"
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - memcached
+                topologyKey: kubernetes.io/hostname
+
+      containers:
+        - name: memcached
+          image: memcached:1.6-alpine
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: memcached
+              containerPort: 11211
+              protocol: TCP
+
+          args:
+            - -m 512
+            - -I 10m
+            - -c 2048
+            - -v
+
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+
+          livenessProbe:
+            tcpSocket:
+              port: memcached
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          readinessProbe:
+            tcpSocket:
+              port: memcached
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
+
+        - name: memcached-exporter
+          image: prom/memcached-exporter:v0.14.2
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: metrics
+              containerPort: 9150
+              protocol: TCP
+
+          args:
+            - --memcached.address=localhost:11211
+
+---
+# Memcached Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: memcached
+  namespace: monitoring
+  labels:
+    app: memcached
+    tier: observability
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - name: memcached
+      port: 11211
+      targetPort: 11211
+      protocol: TCP
+    - name: metrics
+      port: 9150
+      targetPort: 9150
+      protocol: TCP
+  selector:
+    app: memcached
+
+---
+# NetworkPolicy for Loki access control
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: loki-network-policy
+  namespace: monitoring
+spec:
+  podSelector:
+    matchLabels:
+      app: loki
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress:
+    # Allow from Promtail
+    - from:
+        - podSelector:
+            matchLabels:
+              app: promtail
+      ports:
+        - protocol: TCP
+          port: 3100
+        - protocol: TCP
+          port: 9096
+
+    # Allow from Grafana
+    - from:
+        - podSelector:
+            matchLabels:
+              app: grafana
+      ports:
+        - protocol: TCP
+          port: 3100
+
+    # Allow from AlertManager
+    - from:
+        - podSelector:
+            matchLabels:
+              app: alertmanager
+      ports:
+        - protocol: TCP
+          port: 3100
+
+    # Allow Kubernetes API
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: kube-system
+      ports:
+        - protocol: TCP
+          port: 3100
+
+  egress:
+    # Allow DNS
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+
+    # Allow S3/MinIO
+    - to:
+        - podSelector:
+            matchLabels:
+              app: minio
+      ports:
+        - protocol: TCP
+          port: 9000
+
+    # Allow Memcached
+    - to:
+        - podSelector:
+            matchLabels:
+              app: memcached
+      ports:
+        - protocol: TCP
+          port: 11211
+
+    # Allow Alertmanager
+    - to:
+        - podSelector:
+            matchLabels:
+              app: alertmanager
+      ports:
+        - protocol: TCP
+          port: 9093
+
+---
+# NetworkPolicy for Promtail access control
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: promtail-network-policy
+  namespace: monitoring
+spec:
+  podSelector:
+    matchLabels:
+      app: promtail
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress:
+    # Allow Prometheus scraping
+    - from:
+        - podSelector:
+            matchLabels:
+              app: prometheus
+      ports:
+        - protocol: TCP
+          port: 9080
+
+  egress:
+    # Allow DNS
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+
+    # Allow Loki
+    - to:
+        - podSelector:
+            matchLabels:
+              app: loki
+      ports:
+        - protocol: TCP
+          port: 3100
+        - protocol: TCP
+          port: 9096

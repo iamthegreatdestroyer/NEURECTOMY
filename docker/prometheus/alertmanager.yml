@@ -1,0 +1,328 @@
+# Alertmanager Configuration
+# Phase 18A - Alert Routing, Grouping, and Notification Management
+
+global:
+  # Resolve timeout: how long an alert can remain firing before auto-resolve
+  resolve_timeout: 5m
+
+  # Slack configuration (global fallback)
+  slack_api_url: "${SLACK_WEBHOOK_URL}"
+
+  # PagerDuty configuration (global)
+  pagerduty_url: "https://events.pagerduty.com/v2/enqueue"
+
+  # SMTP configuration for email notifications
+  smtp_smarthost: "${SMTP_HOST}:${SMTP_PORT}"
+  smtp_auth_username: "${SMTP_USERNAME}"
+  smtp_auth_password: "${SMTP_PASSWORD}"
+  smtp_from: "neurectomy-alerts@example.com"
+  smtp_require_tls: true
+
+# Templates for alert messages
+templates:
+  - "/etc/alertmanager/templates/*.tmpl"
+
+# Top-level routing tree
+route:
+  # Default receiver for all alerts
+  receiver: "default"
+
+  # Wait time before sending group
+  group_wait: 10s
+
+  # Time to wait before sending update about new alerts
+  group_interval: 10m
+
+  # How long alert stays fired without repeat
+  repeat_interval: 12h
+
+  # Label-based routing
+  routes:
+    # Critical tier-3 (Agent Collective) alerts - immediate PagerDuty
+    - match:
+        service_tier: "tier-3"
+        severity: "critical"
+      receiver: "pagerduty-critical"
+      group_wait: 1s
+      repeat_interval: 5m
+      continue: true
+
+    # Critical tier-1 (API) alerts - PagerDuty with 2m resolution window
+    - match:
+        service_tier: "tier-1"
+        severity: "critical"
+      receiver: "pagerduty-critical"
+      group_wait: 2s
+      repeat_interval: 10m
+      continue: true
+
+    # Critical tier-2 (Services) alerts - PagerDuty page on fire
+    - match:
+        service_tier: "tier-2"
+        severity: "critical"
+      receiver: "pagerduty-tier2"
+      group_wait: 5s
+      repeat_interval: 10m
+      continue: true
+
+    # Infrastructure critical - Page on call
+    - match:
+        severity: "critical"
+        component: "infrastructure"
+      receiver: "pagerduty-infrastructure"
+      group_wait: 2s
+      repeat_interval: 5m
+      continue: true
+
+    # Cost anomalies - email ops team for investigation
+    - match:
+        alert: "MonthlyBudgetAtRisk"
+      receiver: "email-cost-ops"
+      group_wait: 30s
+      repeat_interval: 1h
+      continue: true
+
+    - match:
+        alert: "ComputeCostSpike"
+      receiver: "email-cost-ops"
+      group_wait: 30s
+      repeat_interval: 2h
+      continue: true
+
+    # Warnings - Slack notification
+    - match:
+        severity: "warning"
+      receiver: "slack-warnings"
+      group_wait: 30s
+      group_interval: 30m
+      repeat_interval: 4h
+      continue: true
+
+    # Info level - development Slack channel
+    - match:
+        severity: "info"
+      receiver: "slack-info"
+      group_wait: 1m
+      group_interval: 1h
+      repeat_interval: 8h
+      continue: true
+
+    # Ryot LLM specific - AI team channel
+    - match:
+        service: "ryot"
+      receiver: "slack-ai-team"
+      group_wait: 15s
+      repeat_interval: 6h
+      continue: true
+
+    # ΣLANG compression specific - platform team
+    - match:
+        service: "sigmalang"
+      receiver: "slack-platform-team"
+      group_wait: 15s
+      repeat_interval: 6h
+      continue: true
+
+    # ΣVAULT storage specific - storage team
+    - match:
+        service: "sigmavault"
+      receiver: "slack-storage-team"
+      group_wait: 20s
+      repeat_interval: 6h
+      continue: true
+
+# Inhibition rules: suppress certain alerts when others are firing
+inhibit_rules:
+  # Suppress warnings if critical is firing
+  - source_match:
+      severity: "critical"
+    target_match:
+      severity: "warning"
+    # Both must have same service
+    equal: ["service", "service_tier"]
+
+  # Suppress info if warning is firing
+  - source_match:
+      severity: "warning"
+    target_match:
+      severity: "info"
+    equal: ["service"]
+
+  # Suppress APIServiceDown if HighAPILatency is firing (likely cascade)
+  - source_match:
+      alert: "HighAPILatency"
+    target_match:
+      alert: "APIServiceDown"
+    equal: ["service"]
+
+  # Suppress low completion rate if service is down
+  - source_match:
+      alert: "APIServiceDown"
+    target_match:
+      alert: "LowAgentTaskCompletionRate"
+    equal: ["service_tier"]
+
+  # Don't alert on high latency if few requests (might be slow sample)
+  - source_match:
+      alert: "HighHTTPErrorRate"
+    target_match:
+      alert: "HighAPILatency"
+    equal: ["service"]
+
+# Receivers: where alerts are sent
+receivers:
+  # Default - Slack #alerts channel
+  - name: "default"
+    slack_configs:
+      - channel: "#alerts"
+        title: "Alert: {{ .GroupLabels.alertname }}"
+        text: "{{ range .Alerts.Firing }}{{ .Annotations.description }}{{ end }}"
+        send_resolved: true
+
+  # PagerDuty for critical tier-3 (Elite Agent Collective)
+  - name: "pagerduty-critical"
+    pagerduty_configs:
+      - service_key: "${PAGERDUTY_SERVICE_KEY_TIER3}"
+        description: "{{ .GroupLabels.alertname }} - {{ .Status }}"
+        details:
+          alert: "{{ .CommonLabels.alertname }}"
+          service: "{{ .CommonLabels.service }}"
+          tier: "{{ .CommonLabels.service_tier }}"
+          severity: "{{ .CommonLabels.severity }}"
+          status: "{{ .Status }}"
+    # Also notify Slack
+    slack_configs:
+      - channel: "#critical-alerts"
+        color: '{{ if eq .Status "firing" }}danger{{ else }}good{{ end }}'
+        title: "🚨 CRITICAL - {{ .GroupLabels.alertname }}"
+        text: |
+          Service: {{ .CommonLabels.service }}
+          Tier: {{ .CommonLabels.service_tier }}
+          Status: {{ .Status }}
+          {{ range .Alerts.Firing }}
+          Description: {{ .Annotations.description }}
+          {{ end }}
+        send_resolved: true
+        actions:
+          - type: button
+            text: "View in Prometheus"
+            url: "http://prometheus:9090/graph?g0.expr={{ .Alerts.Firing | first | .Annotations.dashboard_url }}"
+          - type: button
+            text: "View Dashboard"
+            url: "http://grafana:3000{{ .Alerts.Firing | first | .Annotations.dashboard_url }}"
+
+  # PagerDuty for tier-2 alerts
+  - name: "pagerduty-tier2"
+    pagerduty_configs:
+      - service_key: "${PAGERDUTY_SERVICE_KEY_TIER2}"
+        description: "{{ .GroupLabels.alertname }} - {{ .Status }}"
+        details:
+          alert: "{{ .CommonLabels.alertname }}"
+          service: "{{ .CommonLabels.service }}"
+          tier: "{{ .CommonLabels.service_tier }}"
+          component: "{{ .CommonLabels.component }}"
+          runbook: "{{ .Alerts.Firing | first | .Annotations.runbook_url }}"
+
+  # PagerDuty for infrastructure
+  - name: "pagerduty-infrastructure"
+    pagerduty_configs:
+      - service_key: "${PAGERDUTY_SERVICE_KEY_INFRASTRUCTURE}"
+        description: "{{ .GroupLabels.alertname }}"
+        details:
+          component: "{{ .CommonLabels.component }}"
+          environment: "{{ .CommonLabels.environment }}"
+
+  # Email for cost team
+  - name: "email-cost-ops"
+    email_configs:
+      - to: "cost-ops@example.com"
+        smarthost: "${SMTP_HOST}:${SMTP_PORT}"
+        auth_username: "${SMTP_USERNAME}"
+        auth_password: "${SMTP_PASSWORD}"
+        from: "neurectomy-alerts@example.com"
+        require_tls: true
+        headers:
+          Subject: "Cost Alert: {{ .GroupLabels.alertname }}"
+        html: |
+          <h2>{{ .GroupLabels.alertname }}</h2>
+          <p>Cost Center: {{ .CommonLabels.cost_center }}</p>
+          <p>Status: {{ .Status }}</p>
+          {{ range .Alerts.Firing }}
+          <p>{{ .Annotations.description }}</p>
+          <p>Current Value: {{ .ValueString }}</p>
+          {{ end }}
+
+  # Slack for warnings
+  - name: "slack-warnings"
+    slack_configs:
+      - channel: "#warnings"
+        color: "warning"
+        title: "Warning: {{ .GroupLabels.alertname }}"
+        text: |
+          {{ range .Alerts.Firing }}
+          Service: {{ .Labels.service }}
+          {{ .Annotations.description }}
+          {{ end }}
+        send_resolved: true
+
+  # Slack for info
+  - name: "slack-info"
+    slack_configs:
+      - channel: "#monitoring-info"
+        color: "good"
+        title: "Info: {{ .GroupLabels.alertname }}"
+        text: |
+          {{ range .Alerts.Firing }}
+          {{ .Annotations.description }}
+          {{ end }}
+
+  # AI team Slack channel for Ryot alerts
+  - name: "slack-ai-team"
+    slack_configs:
+      - channel: "#ai-team-alerts"
+        title: "Ryot Alert: {{ .GroupLabels.alertname }}"
+        text: |
+          {{ range .Alerts.Firing }}
+          Status: {{ .Status }}
+          {{ .Annotations.description }}
+          Runbook: {{ .Annotations.runbook_url }}
+          {{ end }}
+        send_resolved: true
+
+  # Platform team Slack for ΣLANG
+  - name: "slack-platform-team"
+    slack_configs:
+      - channel: "#platform-alerts"
+        title: "ΣLANG Alert: {{ .GroupLabels.alertname }}"
+        text: |
+          {{ range .Alerts.Firing }}
+          {{ .Annotations.description }}
+          {{ end }}
+        send_resolved: true
+
+  # Storage team Slack for ΣVAULT
+  - name: "slack-storage-team"
+    slack_configs:
+      - channel: "#storage-alerts"
+        title: "ΣVAULT Alert: {{ .GroupLabels.alertname }}"
+        text: |
+          {{ range .Alerts.Firing }}
+          Capacity: {{ index .Labels "capacity_class" }}
+          {{ .Annotations.description }}
+          {{ end }}
+        send_resolved: true
+# Network connectivity / webhook examples
+# Uncomment to add external integrations
+
+# webhooks:
+#   - url: 'http://custom-receiver:5001/'
+#     send_resolved: true
+
+# telegram_configs:
+#   - bot_token: '${TELEGRAM_BOT_TOKEN}'
+#     chat_id: '${TELEGRAM_CHAT_ID}'
+#     api_url: 'https://api.telegram.org'
+
+# mattermost_configs:
+#   - api_url: '${MATTERMOST_WEBHOOK_URL}'
+#     channel: '#alerts'

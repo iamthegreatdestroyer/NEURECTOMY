@@ -1,0 +1,509 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "enable": true,
+        "expr": "ALERTS{service=\"sigmalang\"}",
+        "iconColor": "rgba(255, 96, 96, 1)",
+        "name": "ΣLANG Alerts",
+        "step": "60s"
+      }
+    ]
+  },
+  "description": "ΣLANG Compression Metrics - Compression ratios, cache performance, throughput, data type analysis",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": 2,
+  "links": [
+    {
+      "asDropdown": false,
+      "icon": "star",
+      "includeVars": true,
+      "targetBlank": true,
+      "title": "View Storage Impact",
+      "tooltip": "Navigate to ΣVAULT dashboard to see storage impact of compression",
+      "type": "link",
+      "url": "/d/sigmavault-storage/sigmavault-storage-metrics?${__url_time_range}"
+    }
+  ],
+  "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Average compression ratio (original size / compressed size) - aim for 5x+ with hybrid compression",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 2 },
+              { "color": "green", "value": 5 }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 0 },
+      "id": 20,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "values": false,
+          "fields": "",
+          "calcs": ["lastNotNull"]
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "targets": [
+        {
+          "expr": "tier2:sigmalang_compression_ratio:avg",
+          "legendFormat": "Avg Compression Ratio"
+        }
+      ],
+      "title": "Average Compression Ratio",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Compression ratio trend over time by compression method",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 2 },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 6, "y": 0 },
+      "id": 21,
+      "options": {
+        "legend": { "displayMode": "table", "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "expr": "rate(neurectomy_sigmalang_original_bytes_total[5m]) / rate(neurectomy_sigmalang_compressed_bytes_total[5m])",
+          "legendFormat": "Ratio - {{ method }}"
+        }
+      ],
+      "title": "Compression Ratio Trend",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Compression ratio by method - DEFLATE, LZMA, ZSTD, Hybrid",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "id": 22,
+      "options": {
+        "legend": { "displayMode": "list" },
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "values": false,
+          "fields": "",
+          "calcs": ["lastNotNull"]
+        }
+      },
+      "targets": [
+        {
+          "expr": "avg(neurectomy_sigmalang_compression_ratio_bucket) by (method)",
+          "legendFormat": "{{ method }}"
+        }
+      ],
+      "title": "Compression Ratio by Method (Bar Chart)",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Percentage of incompressible data - data that provides <1.5x compression",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 30 },
+              { "color": "red", "value": 50 }
+            ]
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 8 },
+      "id": 23,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "values": false,
+          "fields": "",
+          "calcs": ["lastNotNull"]
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "targets": [
+        {
+          "expr": "(rate(neurectomy_sigmalang_incompressible_bytes[5m]) / (rate(neurectomy_sigmalang_original_bytes_total[5m]) + 1)) * 100",
+          "legendFormat": "Incompressible %"
+        }
+      ],
+      "title": "Incompressible Data %",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Cache hit ratio for compression lookups - higher is better (>60% is good)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 40 },
+              { "color": "green", "value": 60 }
+            ]
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 16 },
+      "id": 24,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "values": false,
+          "fields": "",
+          "calcs": ["lastNotNull"]
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "targets": [
+        {
+          "expr": "tier2:sigmalang_cache_hit_ratio",
+          "legendFormat": "Cache Hit %"
+        }
+      ],
+      "title": "Cache Hit Ratio",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Cache performance trend - hits vs misses over time",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "fillOpacity": 10 },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 6, "y": 16 },
+      "id": 25,
+      "options": {
+        "legend": { "displayMode": "list" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "expr": "rate(neurectomy_sigmalang_cache_hits_total[5m])",
+          "legendFormat": "Cache Hits"
+        },
+        {
+          "expr": "rate(neurectomy_sigmalang_cache_misses_total[5m])",
+          "legendFormat": "Cache Misses"
+        }
+      ],
+      "title": "Cache Performance Trend",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Throughput of compression in MB/second",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "MB/s"
+        }
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 24 },
+      "id": 26,
+      "options": {
+        "legend": { "displayMode": "list" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "expr": "rate(neurectomy_sigmalang_bytes_processed_total[1m]) / 1000000",
+          "legendFormat": "Compression Throughput"
+        }
+      ],
+      "title": "Compression Throughput (MB/s)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Sub-linear speedup ratio - wall-clock time improvement from using ΣLANG",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 1.5 },
+              { "color": "green", "value": 3 }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 6, "y": 24 },
+      "id": 27,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "values": false,
+          "fields": "",
+          "calcs": ["lastNotNull"]
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "targets": [
+        {
+          "expr": "avg(neurectomy_sigmalang_baseline_latency_ms / neurectomy_sigmalang_optimized_latency_ms)",
+          "legendFormat": "Speedup Ratio"
+        }
+      ],
+      "title": "Sub-linear Speedup",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Request count by status (success/error)",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 24 },
+      "id": 28,
+      "options": {
+        "legend": { "displayMode": "list" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "expr": "rate(neurectomy_sigmalang_requests_total[5m])",
+          "legendFormat": "Requests - {{ status }}"
+        }
+      ],
+      "title": "Request Rate by Status",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Success/Failure pie chart",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 32 },
+      "id": 29,
+      "options": {
+        "legend": { "displayMode": "table", "values": ["value"] },
+        "pieType": "pie",
+        "tooltip": { "mode": "single" }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(neurectomy_sigmalang_requests_total[5m])) by (status)",
+          "legendFormat": "{{ status }}"
+        }
+      ],
+      "title": "Success vs Failure Rate",
+      "type": "piechart"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Optimization opportunities - data types with <5x compression ratio",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "displayMode": "auto"
+          },
+          "mappings": []
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 6, "y": 32 },
+      "id": 30,
+      "options": {
+        "sortBy": []
+      },
+      "targets": [
+        {
+          "format": "table",
+          "instant": true,
+          "expr": "avg(neurectomy_sigmalang_compression_ratio_bucket) by (data_type)",
+          "refId": "A"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "exclude": { "match": "never" },
+            "index": {},
+            "renameByName": {
+              "Time": "",
+              "Value": "Avg Compression Ratio",
+              "data_type": "Data Type"
+            }
+          }
+        },
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "names": ["Data Type", "Avg Compression Ratio"]
+            }
+          }
+        }
+      ],
+      "title": "Compression Ratio by Data Type",
+      "type": "table"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["phase-18", "sigmalang", "compression", "tier-2"],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": false,
+          "text": "production",
+          "value": "production"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "definition": "label_values(neurectomy_sigmalang_requests_total, environment)",
+        "description": null,
+        "hide": 0,
+        "includeAll": false,
+        "label": "Environment",
+        "multi": false,
+        "name": "environment",
+        "options": [],
+        "query": {
+          "query": "label_values(neurectomy_sigmalang_requests_total, environment)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": ["All"],
+          "value": ["$__all"]
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "definition": "label_values(neurectomy_sigmalang_requests_total, method)",
+        "description": null,
+        "hide": 0,
+        "includeAll": true,
+        "label": "Compression Method",
+        "multi": true,
+        "name": "method",
+        "options": [],
+        "query": {
+          "query": "label_values(neurectomy_sigmalang_requests_total, method)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Dashboard 2: ΣLANG Compression Metrics",
+  "uid": "sigmalang-compression",
+  "version": 1,
+  "weekStart": ""
+}

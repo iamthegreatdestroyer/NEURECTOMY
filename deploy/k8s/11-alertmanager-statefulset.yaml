@@ -1,0 +1,168 @@
+---
+# AlertManager StatefulSet (3 replicas for clustering)
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: alertmanager
+  namespace: monitoring
+  labels:
+    app: alertmanager
+spec:
+  serviceName: alertmanager
+  replicas: 3
+  selector:
+    matchLabels:
+      app: alertmanager
+  template:
+    metadata:
+      labels:
+        app: alertmanager
+        tier: observability
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9093"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: alertmanager
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+
+      affinity:
+        # Spread replicas across different nodes (required for clustering)
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - alertmanager
+              topologyKey: kubernetes.io/hostname
+
+      # Init container to configure clustering
+      initContainers:
+        - name: init-config
+          image: busybox:1.35
+          command:
+            - sh
+            - -c
+            - |
+              mkdir -p /alertmanager/data
+              chown -R 65534:65534 /alertmanager
+          volumeMounts:
+            - name: storage
+              mountPath: /alertmanager
+
+      containers:
+        - name: alertmanager
+          image: prom/alertmanager:v0.26.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 9093
+              protocol: TCP
+            - name: mesh
+              containerPort: 6783
+              protocol: TCP
+
+          args:
+            - "--config.file=/etc/alertmanager/alertmanager.yml"
+            - "--storage.path=/alertmanager/data"
+            - "--cluster.listen-address=0.0.0.0:6783"
+            - "--cluster.peer=$(POD_NAME).alertmanager:6783"
+            - "--log.level=info"
+
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1"
+
+          # Health checks
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: 9093
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: 9093
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          # Security context
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+
+          volumeMounts:
+            - name: config
+              mountPath: /etc/alertmanager
+            - name: storage
+              mountPath: /alertmanager
+            - name: tmp
+              mountPath: /tmp
+
+      volumes:
+        - name: config
+          secret:
+            secretName: alertmanager-config
+            items:
+              - key: alertmanager.yml
+                path: alertmanager.yml
+        - name: tmp
+          emptyDir: {}
+
+      # Graceful shutdown
+      terminationGracePeriodSeconds: 300
+
+  # Persistent volume for cluster state
+  volumeClaimTemplates:
+    - metadata:
+        name: storage
+        labels:
+          app: alertmanager
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: monitoring-standard
+        resources:
+          requests:
+            storage: 5Gi
+---
+# Pod Disruption Budget for AlertManager
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: alertmanager-pdb
+  namespace: monitoring
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: alertmanager

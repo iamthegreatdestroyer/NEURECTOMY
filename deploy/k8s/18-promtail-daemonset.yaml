@@ -1,0 +1,265 @@
+---
+# Promtail DaemonSet for log collection
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: promtail
+  namespace: monitoring
+  labels:
+    app: promtail
+    tier: observability
+spec:
+  selector:
+    matchLabels:
+      app: promtail
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: promtail
+        tier: observability
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9080"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: promtail
+      securityContext:
+        runAsNonRoot: false # Need to read container logs
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+
+      # Host networking for better performance
+      hostNetwork: false
+      hostPID: false
+      hostIPC: false
+
+      # Tolerations for all node types
+      tolerations:
+        - effect: NoSchedule
+          operator: Exists
+        - effect: NoExecute
+          operator: Exists
+
+      # Priority class for reliability
+      priorityClassName: system-node-critical
+
+      # Init container to prepare positions
+      initContainers:
+        - name: prepare-positions
+          image: busybox:1.35
+          command:
+            - sh
+            - -c
+            - |
+              mkdir -p /tmp/promtail
+              chmod -R 777 /tmp/promtail
+              touch /tmp/promtail/positions.yaml
+          volumeMounts:
+            - name: positions
+              mountPath: /tmp/promtail
+
+      containers:
+        - name: promtail
+          image: grafana/promtail:2.9.4
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: http
+              containerPort: 9080
+              protocol: TCP
+            - name: syslog
+              containerPort: 1514
+              protocol: UDP
+
+          env:
+            - name: HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+
+          # Volume mounts
+          volumeMounts:
+            # Configuration
+            - name: config
+              mountPath: /etc/promtail
+
+            # Positions tracking
+            - name: positions
+              mountPath: /tmp/promtail
+
+            # Container logs
+            - name: varlog
+              mountPath: /var/log
+              readOnly: true
+
+            # Container runtime logs
+            - name: varlibdockercontainers
+              mountPath: /var/lib/docker/containers
+              readOnly: true
+
+            - name: etcmachineid
+              mountPath: /etc/machine-id
+              readOnly: true
+
+          # Resource limits
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+
+          # Security context
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+
+          # Liveness probe
+          livenessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          # Readiness probe
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
+
+          # Startup probe
+          startupProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 0
+            periodSeconds: 2
+            timeoutSeconds: 3
+            failureThreshold: 30
+
+      # Volumes
+      volumes:
+        - name: config
+          configMap:
+            name: promtail-config
+
+        - name: positions
+          emptyDir: {}
+
+        - name: varlog
+          hostPath:
+            path: /var/log
+
+        - name: varlibdockercontainers
+          hostPath:
+            path: /var/lib/docker/containers
+
+        - name: etcmachineid
+          hostPath:
+            path: /etc/machine-id
+            type: File
+
+---
+# Promtail Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: promtail
+  namespace: monitoring
+  labels:
+    app: promtail
+    tier: observability
+spec:
+  type: ClusterIP
+  clusterIP: None # Headless service
+  ports:
+    - name: http
+      port: 9080
+      targetPort: 9080
+      protocol: TCP
+    - name: syslog
+      port: 1514
+      targetPort: 1514
+      protocol: UDP
+  selector:
+    app: promtail
+
+---
+# ServiceAccount for Promtail
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: promtail
+  namespace: monitoring
+  labels:
+    app: promtail
+
+---
+# ClusterRole for Promtail
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: promtail
+  labels:
+    app: promtail
+rules:
+  # Read pods
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+
+  # Read pod logs
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get", "list"]
+
+  # Read configmaps
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch"]
+
+  # Read nodes (for node metrics)
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "watch"]
+
+---
+# ClusterRoleBinding for Promtail
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: promtail
+  labels:
+    app: promtail
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: promtail
+subjects:
+  - kind: ServiceAccount
+    name: promtail
+    namespace: monitoring

@@ -1,0 +1,118 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jaeger-config
+  namespace: monitoring
+  labels:
+    app: jaeger
+    component: all-in-one
+data:
+  sampling-strategies.json: |
+    {
+      "default_strategy": {
+        "type": "probabilistic",
+        "param": 0.1
+      },
+      "service_strategies": [
+        {
+          "service": "ryot",
+          "type": "probabilistic",
+          "param": 0.2
+        },
+        {
+          "service": "sigmalang",
+          "type": "probabilistic",
+          "param": 0.15
+        },
+        {
+          "service": "sigmavault",
+          "type": "probabilistic",
+          "param": 0.25
+        },
+        {
+          "service": "agents",
+          "type": "probabilistic",
+          "param": 0.1
+        }
+      ],
+      "operation_strategies": [
+        {
+          "service": "ryot",
+          "operation": "llm.inference",
+          "type": "probabilistic",
+          "param": 0.5
+        },
+        {
+          "service": "ryot",
+          "operation": "cache.miss",
+          "type": "probabilistic",
+          "param": 1.0
+        },
+        {
+          "service": "sigmavault",
+          "operation": "storage.store",
+          "type": "probabilistic",
+          "param": 0.5
+        },
+        {
+          "service": "sigmavault",
+          "operation": "encryption.encrypt",
+          "type": "probabilistic",
+          "param": 1.0
+        },
+        {
+          "service": "sigmalang",
+          "operation": "sigma.parse",
+          "type": "probabilistic",
+          "param": 0.1
+        },
+        {
+          "service": "sigmalang",
+          "operation": "sigma.error",
+          "type": "probabilistic",
+          "param": 1.0
+        }
+      ]
+    }
+  jaeger-agent-config.yaml: |
+    agent:
+      servers:
+        zipkinThrift: 0.0.0.0:6831
+        compact: 0.0.0.0:6831
+        binary: 0.0.0.0:6832
+        serve_configs_with_http: true
+      processors:
+        zipkinThrift:
+          protocol: thrift
+          compact: false
+        compactThrift:
+          protocol: thrift
+          compact: true
+    cache:
+      type: memory
+      memory:
+        max_traces: 10000
+    processors:
+      batch:
+        queue_size: 2048
+        num_workers: 10
+        flush_interval: 100ms
+    storage:
+      type: badger
+      badger:
+        ephemeral: false
+        directory_value: /badger/data
+        directory_key: /badger/key
+        value_log_file_size: 268435456
+        key_log_file_size: 268435456
+      span_store_type: badger
+      log_store_type: badger
+    metrics:
+      backend: prometheus
+      prometheus:
+        default_handlers_enabled: true
+    sampling:
+      type: remote
+      remote:
+        host_port: localhost:5778
+        initial: 0.001

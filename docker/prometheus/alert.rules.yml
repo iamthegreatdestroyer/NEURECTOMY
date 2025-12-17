@@ -1,0 +1,605 @@
+# Prometheus Alert Rules for Neurectomy Phase 18A
+# Comprehensive alerts for all service tiers and business metrics
+
+groups:
+  # ============================================================================
+  # TIER 1: FOUNDATIONAL - API & REQUEST ALERTS
+  # ============================================================================
+
+  - name: tier1_api_alerts
+    interval: 30s
+    rules:
+      # High error rate on API
+      - alert: HighHTTPErrorRate
+        expr: tier1:error_rate > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          tier: tier-1
+          service: neurectomy-api
+        annotations:
+          summary: "High HTTP error rate detected ({{ $value | humanizePercentage }})"
+          description: "{{ $labels.instance }} has error rate > 5% for last 5 minutes"
+          runbook_url: "https://wiki.neurectomy.dev/runbooks/high-error-rate"
+          dashboard_url: "http://grafana:3000/d/tier1-api"
+
+      # Very high error rate
+      - alert: CriticalHTTPErrorRate
+        expr: tier1:error_rate > 0.10
+        for: 2m
+        labels:
+          severity: critical
+          tier: tier-1
+          service: neurectomy-api
+          page: true
+        annotations:
+          summary: "CRITICAL: HTTP error rate > 10%"
+          description: "{{ $labels.instance }} has error rate > 10% - immediate action required"
+
+      # High latency on API
+      - alert: HighAPILatency
+        expr: tier1:http_request_duration:p95 > 1
+        for: 5m
+        labels:
+          severity: warning
+          tier: tier-1
+          service: neurectomy-api
+        annotations:
+          summary: "High P95 API latency: {{ $value | humanizeDuration }}"
+          description: "API P95 latency exceeded 1 second"
+
+      # Critical latency spike
+      - alert: CriticalAPILatency
+        expr: tier1:http_request_duration:p99 > 5
+        for: 2m
+        labels:
+          severity: critical
+          tier: tier-1
+          service: neurectomy-api
+          page: true
+        annotations:
+          summary: "CRITICAL: P99 latency > 5 seconds"
+          description: "API unresponsive - P99 latency {{ $value | humanizeDuration }}"
+
+      # API service down
+      - alert: APIServiceDown
+        expr: up{job="neurectomy-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          tier: tier-1
+          service: neurectomy-api
+          page: true
+        annotations:
+          summary: "Neurectomy API service is DOWN"
+          description: "Service {{ $labels.instance }} is not responding to scrapes"
+
+  # ============================================================================
+  # TIER 2: RYOT LLM ALERTS
+  # ============================================================================
+
+  - name: tier2_ryot_alerts
+    interval: 30s
+    rules:
+      # High Ryot error rate
+      - alert: HighRyotErrorRate
+        expr: tier2:ryot_error_rate > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          tier: tier-2
+          service: ryot
+        annotations:
+          summary: "High Ryot LLM error rate: {{ $value | humanizePercentage }}"
+          description: "Ryot inference errors exceed 5% threshold"
+
+      # Ryot latency spike
+      - alert: HighRyotLatency
+        expr: tier2:ryot_latency:p95 > 5
+        for: 5m
+        labels:
+          severity: warning
+          tier: tier-2
+          service: ryot
+        annotations:
+          summary: "Ryot P95 latency high: {{ $value | humanizeDuration }}"
+          description: "LLM inference taking > 5 seconds"
+
+      # GPU memory pressure
+      - alert: HighGPUMemoryUsage
+        expr: neurectomy_ryot_gpu_memory_usage_bytes / neurectomy_ryot_gpu_memory_total_bytes > 0.9
+        for: 2m
+        labels:
+          severity: warning
+          tier: tier-2
+          service: ryot
+          resource: gpu
+        annotations:
+          summary: "GPU memory utilization > 90%"
+          description: "Ryot GPU memory {{ $value | humanizePercentage }} - risk of OOM"
+
+      # OOM condition
+      - alert: RyotOutOfMemory
+        expr: neurectomy_ryot_gpu_memory_usage_bytes > neurectomy_ryot_gpu_memory_total_bytes * 0.98
+        for: 30s
+        labels:
+          severity: critical
+          tier: tier-2
+          service: ryot
+          page: true
+        annotations:
+          summary: "Ryot GPU OOM condition imminent"
+          description: "GPU memory exhausted - service will fail"
+
+      # Ryot timeout rate
+      - alert: HighRyotTimeoutRate
+        expr: sum(rate(neurectomy_ryot_requests_total{status="timeout"}[5m])) / sum(rate(neurectomy_ryot_requests_total[5m])) > 0.01
+        for: 3m
+        labels:
+          severity: warning
+          tier: tier-2
+          service: ryot
+        annotations:
+          summary: "Ryot timeout rate elevated"
+          description: "Timeouts exceed 1% of requests"
+
+      # Model not responding
+      - alert: RyotServiceDown
+        expr: up{job="ryot-llm"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          tier: tier-2
+          service: ryot
+          page: true
+        annotations:
+          summary: "Ryot LLM service DOWN"
+          description: "LLM inference service is not responding"
+
+      # Low token generation rate
+      - alert: LowTokenGenerationRate
+        expr: neurectomy_ryot_tokens_generated_total == 0
+        for: 5m
+        labels:
+          severity: warning
+          tier: tier-2
+          service: ryot
+        annotations:
+          summary: "No tokens being generated"
+          description: "Token generation has stalled"
+
+  # ============================================================================
+  # TIER 2: ΣLANG COMPRESSION ALERTS
+  # ============================================================================
+
+  - name: tier2_sigmalang_alerts
+    interval: 30s
+    rules:
+      # Low compression ratio
+      - alert: LowCompressionRatio
+        expr: tier2:sigmalang_compression_ratio:avg < 2.0
+        for: 10m
+        labels:
+          severity: warning
+          tier: tier-2
+          service: sigmalang
+        annotations:
+          summary: "Compression ratio low: {{ $value | humanize2 }}x"
+          description: "Average compression ratio < 2.0x indicates inefficient compression"
+          optimization_hint: "Check input data characteristics and algorithm settings"
+
+      # High incompressible data ratio
+      - alert: HighIncompressibleRatio
+        expr: tier2:sigmalang_incompressible_bytes_ratio > 50
+        for: 5m
+        labels:
+          severity: info
+          tier: tier-2
+          service: sigmalang
+        annotations:
+          summary: "{{ $value | humanizePercentage }} of data is incompressible"
+          description: "Consider adjusting compression strategy for mixed data types"
+
+      # Cache hit ratio degradation
+      - alert: LowCacheHitRatio
+        expr: sigmalang:cache_hit_ratio < 0.5
+        for: 10m
+        labels:
+          severity: warning
+          tier: tier-2
+          service: sigmalang
+        annotations:
+          summary: "Cache hit ratio low: {{ $value | humanizePercentage }}"
+          description: "Consider cache size tuning or access pattern analysis"
+
+      # Compression throughput drop
+      - alert: LowCompressionThroughput
+        expr: rate(neurectomy_sigmalang_bytes_processed_total[5m]) < 1000000
+        for: 5m
+        labels:
+          severity: warning
+          tier: tier-2
+          service: sigmalang
+        annotations:
+          summary: "Compression throughput low"
+          description: "Processing < 1MB/s - check service health"
+
+      # ΣLANG service down
+      - alert: SigmalangServiceDown
+        expr: up{job="sigmalang-compression"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          tier: tier-2
+          service: sigmalang
+          page: true
+        annotations:
+          summary: "ΣLANG compression service DOWN"
+          description: "Compression service is not responding"
+
+  # ============================================================================
+  # TIER 2: ΣVAULT STORAGE ALERTS
+  # ============================================================================
+
+  - name: tier2_sigmavault_alerts
+    interval: 30s
+    rules:
+      # High capacity utilization
+      - alert: HighStorageUtilization
+        expr: tier2:sigmavault_capacity_utilization:percent > 80
+        for: 10m
+        labels:
+          severity: warning
+          tier: tier-2
+          service: sigmavault
+        annotations:
+          summary: "Storage capacity {{ $value | humanize }}% utilized"
+          description: "ΣVAULT storage > 80% full - capacity planning needed"
+
+      # Critical storage capacity
+      - alert: CriticalStorageCapacity
+        expr: tier2:sigmavault_capacity_utilization:percent > 95
+        for: 2m
+        labels:
+          severity: critical
+          tier: tier-2
+          service: sigmavault
+          page: true
+        annotations:
+          summary: "CRITICAL: Storage {{ $value | humanize }}% full"
+          description: "Immediate capacity expansion required"
+
+      # High replication lag
+      - alert: HighReplicationLag
+        expr: tier2:sigmavault_replication_lag:seconds > 60
+        for: 5m
+        labels:
+          severity: warning
+          tier: tier-2
+          service: sigmavault
+        annotations:
+          summary: "Storage replication lag: {{ $value | humanizeDuration }}"
+          description: "Replication is {{ $value | humanizeDuration }} behind"
+
+      # SLA compliance degradation
+      - alert: SLAComplianceDegraded
+        expr: tier2:sigmavault_sla_compliance:percent < 99.9
+        for: 15m
+        labels:
+          severity: warning
+          tier: tier-2
+          service: sigmavault
+        annotations:
+          summary: "SLA compliance: {{ $value | humanize }}%"
+          description: "Storage SLA compliance below 99.9%"
+
+      # High operation latency
+      - alert: HighStorageLatency
+        expr: tier2:sigmavault_read_latency:p95 > 100 or tier2:sigmavault_write_latency:p95 > 100
+        for: 5m
+        labels:
+          severity: warning
+          tier: tier-2
+          service: sigmavault
+        annotations:
+          summary: "Storage latency high (P95 > 100ms)"
+          description: "I/O performance degraded"
+
+      # ΣVAULT service down
+      - alert: SigmavaultServiceDown
+        expr: up{job="sigmavault-storage"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          tier: tier-2
+          service: sigmavault
+          page: true
+        annotations:
+          summary: "ΣVAULT storage service DOWN"
+          description: "Storage service is not responding"
+
+      # Cost anomaly
+      - alert: StorageCostAnomaly
+        expr: |
+          (neurectomy_sigmavault_cost_usd - avg_over_time(neurectomy_sigmavault_cost_usd[30d])) 
+          / avg_over_time(neurectomy_sigmavault_cost_usd[30d]) > 0.5
+        for: 1h
+        labels:
+          severity: warning
+          tier: tier-2
+          service: sigmavault
+          alert_type: cost
+        annotations:
+          summary: "Storage cost increased > 50%"
+          description: "Current cost {{ $value | humanizePercentage }} above monthly average"
+
+  # ============================================================================
+  # TIER 3: ELITE AGENT COLLECTIVE ALERTS
+  # ============================================================================
+
+  - name: tier3_agent_alerts
+    interval: 30s
+    rules:
+      # Agent task completion rate drop
+      - alert: LowAgentTaskCompletionRate
+        expr: tier3:agent_task_throughput:rate5m < 10
+        for: 5m
+        labels:
+          severity: warning
+          tier: tier-3
+          service: agent-collective
+        annotations:
+          summary: "Agent task completion rate low"
+          description: "< 10 tasks/5min completed"
+
+      # Agent success rate degradation
+      - alert: LowAgentSuccessRate
+        expr: tier3:agent_success_rate < 0.95
+        for: 10m
+        labels:
+          severity: warning
+          tier: tier-3
+          service: agent-collective
+        annotations:
+          summary: "Agent success rate: {{ $value | humanizePercentage }}"
+          description: "Success rate below 95% threshold"
+
+      # Tier-specific agent failure
+      - alert: AgentTierFailure
+        expr: neurectomy_agent_health_score < 0.5 and neurectomy_agent_health_score > 0
+        for: 5m
+        labels:
+          severity: warning
+          tier: tier-3
+          service: agent-collective
+        annotations:
+          summary: "Agent tier {{ $labels.agent_tier }} health low: {{ $value }}"
+          description: "One or more agents in tier {{ $labels.agent_tier }} failing"
+
+      # Memory retrieval latency high
+      - alert: HighMnemonicRetrievalLatency
+        expr: tier3:mnemonic_retrieval_latency:p95 > 500
+        for: 5m
+        labels:
+          severity: warning
+          tier: tier-3
+          service: agent-collective
+        annotations:
+          summary: "MNEMONIC retrieval P95: {{ $value | humanizeDuration }}ms"
+          description: "Memory system performance degraded"
+
+      # Breakthrough discovery rate low
+      - alert: LowBreakthroughDiscoveryRate
+        expr: rate(neurectomy_mnemonic_breakthrough_promoted_total[1h]) < 0.1
+        for: 2h
+        labels:
+          severity: info
+          tier: tier-3
+          service: agent-collective
+        annotations:
+          summary: "Few breakthroughs discovered in last hour"
+          description: "Rate: {{ $value | humanize }} breakthroughs/hour"
+
+      # Collective fitness score degradation
+      - alert: LowCollectiveFitnessScore
+        expr: tier3:collective_fitness_score < 0.7
+        for: 15m
+        labels:
+          severity: warning
+          tier: tier-3
+          service: agent-collective
+        annotations:
+          summary: "Collective fitness score: {{ $value | humanize }}"
+          description: "Overall agent collective health below 70%"
+
+      # Agent collaboration anomaly
+      - alert: HighAgentCollaborationErrors
+        expr: sum(rate(neurectomy_agent_collaboration_failed_total[5m])) > 5
+        for: 5m
+        labels:
+          severity: warning
+          tier: tier-3
+          service: agent-collective
+        annotations:
+          summary: "Agent collaboration errors: {{ $value | humanize }}/min"
+          description: "Multiple inter-agent communication failures"
+
+      # Collective service down
+      - alert: AgentCollectiveDown
+        expr: up{job="agent-collective"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          tier: tier-3
+          service: agent-collective
+          page: true
+        annotations:
+          summary: "Elite Agent Collective DOWN"
+          description: "Agent system is not responding"
+
+  # ============================================================================
+  # INFRASTRUCTURE ALERTS
+  # ============================================================================
+
+  - name: infrastructure_alerts
+    interval: 30s
+    rules:
+      # Database connection pool exhaustion
+      - alert: DatabaseConnectionPoolExhausted
+        expr: database:connection_pool_utilization:percent > 90
+        for: 5m
+        labels:
+          severity: warning
+          tier: infrastructure
+          service: postgresql
+        annotations:
+          summary: "DB connection pool {{ $value | humanize }}% utilized"
+          description: "Connection pool near capacity"
+
+      # High database query latency
+      - alert: HighDatabaseLatency
+        expr: database:query_latency:p95 > 1000
+        for: 5m
+        labels:
+          severity: warning
+          tier: infrastructure
+          service: postgresql
+        annotations:
+          summary: "Database P95 latency: {{ $value | humanizeDuration }}ms"
+          description: "Query performance degraded"
+
+      # Database replication lag critical
+      - alert: DatabaseReplicationLagCritical
+        expr: database:replication_lag:seconds > 300
+        for: 2m
+        labels:
+          severity: critical
+          tier: infrastructure
+          service: postgresql
+          page: true
+        annotations:
+          summary: "Database replication lag: {{ $value | humanizeDuration }}"
+          description: "Data may be stale - replication must catch up"
+
+      # Cache hit ratio critical
+      - alert: CacheHitRatioCritical
+        expr: cache:hit_ratio < 0.3
+        for: 10m
+        labels:
+          severity: warning
+          tier: infrastructure
+          service: redis
+        annotations:
+          summary: "Cache hit ratio: {{ $value | humanizePercentage }}"
+          description: "Cache effectiveness very low"
+
+      # Queue depth anomaly
+      - alert: MessageQueueBacklog
+        expr: queue:depth:total > 10000
+        for: 5m
+        labels:
+          severity: warning
+          tier: infrastructure
+          service: rabbitmq
+        annotations:
+          summary: "Message queue backlog: {{ $value | humanize }}"
+          description: "Message consumption rate < production rate"
+
+      # Prometheus storage issues
+      - alert: PrometheusStorageIssue
+        expr: prometheus_tsdb_symbol_table_size_bytes > 9.2e9
+        for: 5m
+        labels:
+          severity: warning
+          tier: infrastructure
+          service: prometheus
+        annotations:
+          summary: "Prometheus storage utilization high"
+          description: "Consider data retention reduction"
+
+  # ============================================================================
+  # COST & BUDGET ALERTS
+  # ============================================================================
+
+  - name: cost_alerts
+    interval: 1h
+    rules:
+      # Monthly cost projection above budget
+      - alert: MonthlyBudgetAtRisk
+        expr: costs:monthly_projection > 110
+        for: 30m
+        labels:
+          severity: warning
+          alert_type: cost
+          team: finance
+        annotations:
+          summary: "Monthly cost projection: {{ $value | humanize }}% of budget"
+          description: "Projected costs exceed budget by {{ $value - 100 | humanize }}%"
+
+      # Compute cost spike
+      - alert: ComputeCostSpike
+        expr: |
+          (rate(neurectomy_compute_cost_usd[1h]) - avg_over_time(rate(neurectomy_compute_cost_usd[1h])[30d]))
+          / avg_over_time(rate(neurectomy_compute_cost_usd[1h])[30d]) > 0.5
+        for: 1h
+        labels:
+          severity: warning
+          alert_type: cost
+        annotations:
+          summary: "Compute costs up {{ $value | humanizePercentage }}"
+          description: "Hourly compute cost {{ $value | humanizePercentage }} above baseline"
+
+      # Storage cost spike
+      - alert: StorageCostSpike
+        expr: |
+          (rate(neurectomy_storage_cost_usd[1h]) - avg_over_time(rate(neurectomy_storage_cost_usd[1h])[30d]))
+          / avg_over_time(rate(neurectomy_storage_cost_usd[1h])[30d]) > 0.5
+        for: 1h
+        labels:
+          severity: info
+          alert_type: cost
+        annotations:
+          summary: "Storage costs up {{ $value | humanizePercentage }}"
+          description: "Investigate storage usage patterns"
+
+  # ============================================================================
+  # CIRCUIT BREAKER & RELIABILITY ALERTS
+  # ============================================================================
+
+  - name: reliability_alerts
+    interval: 30s
+    rules:
+      # Circuit breaker open
+      - alert: CircuitBreakerOpen
+        expr: neurectomy_circuit_breaker_state{state="open"} > 0
+        for: 2m
+        labels:
+          severity: warning
+          alert_type: reliability
+        annotations:
+          summary: "Circuit breaker OPEN for {{ $labels.service }}"
+          description: "Service {{ $labels.service }} is failing - requests rejected"
+
+      # Circuit breaker flapping
+      - alert: CircuitBreakerFlapping
+        expr: increase(neurectomy_circuit_breaker_failures_total[5m]) > 10
+        for: 3m
+        labels:
+          severity: warning
+          alert_type: reliability
+        annotations:
+          summary: "Circuit breaker flapping for {{ $labels.service }}"
+          description: "Service unstable - > 10 failures in 5 minutes"
+
+      # High failure rate across multiple services
+      - alert: SystemWideFailureRate
+        expr: |
+          count(tier1:error_rate > 0.05 or tier2:ryot_error_rate > 0.05 or tier2:sigmalang_incompressible_bytes_ratio > 50) > 2
+        for: 5m
+        labels:
+          severity: critical
+          alert_type: reliability
+          page: true
+        annotations:
+          summary: "Multiple services failing"
+          description: "System-wide reliability degradation detected"

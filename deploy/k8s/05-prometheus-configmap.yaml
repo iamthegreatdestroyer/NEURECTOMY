@@ -1,0 +1,389 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: monitoring
+  labels:
+    app: prometheus
+data:
+  prometheus.yml: |
+    # Prometheus configuration for Neurectomy Phase 18A
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 30s
+      external_labels:
+        cluster: 'neurectomy-prod'
+        environment: 'production'
+        region: 'us-east-1'
+
+    # AlertManager configuration
+    alerting:
+      alertmanagers:
+        - service_discovery_configs:
+            - kubernetes_sd_configs:
+                - role: pod
+                  namespaces:
+                    names:
+                      - monitoring
+          relabel_configs:
+            - source_labels: [__meta_kubernetes_pod_label_app]
+              action: keep
+              regex: alertmanager
+            - source_labels: [__meta_kubernetes_pod_container_port_number]
+              action: keep
+              regex: "9093"
+
+    # Rule files
+    rule_files:
+      - /etc/prometheus/rules/alert-rules.yml
+      - /etc/prometheus/rules/recording-rules.yml
+
+    # Remote write (optional: send to external long-term storage)
+    # remote_write:
+    #   - url: http://remote-storage:9009/api/v1/write
+    #     queue_config:
+    #       capacity: 2500
+    #       max_shards: 200
+    #       min_shards: 1
+    #       max_samples_per_send: 1000
+    #       batch_send_wait: 5s
+    #       min_backoff: 30ms
+    #       max_backoff: 100ms
+
+    scrape_configs:
+      # Scrape Prometheus itself
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
+        scrape_interval: 15s
+        scrape_timeout: 10s
+      
+      # Kubernetes API server
+      - job_name: 'kubernetes-apiservers'
+        kubernetes_sd_configs:
+          - role: endpoints
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+            action: keep
+            regex: default;kubernetes;https
+      
+      # Kubernetes nodes
+      - job_name: 'kubernetes-nodes'
+        kubernetes_sd_configs:
+          - role: node
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        relabel_configs:
+          - action: labelmap
+            regex: __meta_kubernetes_node_label_(.+)
+          - target_label: __address__
+            replacement: kubernetes.default.svc:443
+          - source_labels: [__meta_kubernetes_node_name]
+            regex: (.+)
+            target_label: __metrics_path__
+            replacement: /api/v1/nodes/${1}/proxy/metrics
+      
+      # Kubernetes pods
+      - job_name: 'kubernetes-pods'
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - neurectomy
+                - monitoring
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: 'true'
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+            action: replace
+            regex: ([^:]+)(?::\d+)?;(\d+)
+            replacement: $1:$2
+            target_label: __address__
+          - action: labelmap
+            regex: __meta_kubernetes_pod_label_(.+)
+          - source_labels: [__meta_kubernetes_namespace]
+            action: replace
+            target_label: kubernetes_namespace
+          - source_labels: [__meta_kubernetes_pod_name]
+            action: replace
+            target_label: kubernetes_pod_name
+      
+      # Neurectomy API services
+      - job_name: 'neurectomy-api'
+        static_configs:
+          - targets: ['neurectomy-api:8000']
+        relabel_configs:
+          - source_labels: [__address__]
+            target_label: instance
+          - replacement: 'neurectomy-api'
+            target_label: service
+      
+      # Ryot LLM service
+      - job_name: 'ryot-llm'
+        static_configs:
+          - targets: ['ryot-service:8001']
+        relabel_configs:
+          - source_labels: [__address__]
+            target_label: instance
+          - replacement: 'ryot-llm'
+            target_label: service
+      
+      # ΣLANG compression service
+      - job_name: 'sigmalang'
+        static_configs:
+          - targets: ['sigmalang-service:8002']
+        relabel_configs:
+          - source_labels: [__address__]
+            target_label: instance
+          - replacement: 'sigmalang'
+            target_label: service
+      
+      # ΣVAULT storage service
+      - job_name: 'sigmavault'
+        static_configs:
+          - targets: ['sigmavault-service:9000']
+        relabel_configs:
+          - source_labels: [__address__]
+            target_label: instance
+          - replacement: 'sigmavault'
+            target_label: service
+      
+      # PostgreSQL exporter
+      - job_name: 'postgres'
+        static_configs:
+          - targets: ['postgres-exporter:9187']
+        relabel_configs:
+          - replacement: 'postgresql'
+            target_label: service
+      
+      # Redis exporter
+      - job_name: 'redis'
+        static_configs:
+          - targets: ['redis-exporter:9121']
+        relabel_configs:
+          - replacement: 'redis'
+            target_label: service
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-alert-rules
+  namespace: monitoring
+  labels:
+    app: prometheus
+data:
+  alert-rules.yml: |
+    groups:
+      - name: neurectomy.alerts
+        interval: 30s
+        rules:
+          # Prometheus alerts
+          - alert: PrometheusConfigReloadFailed
+            expr: increase(prometheus_config_last_reload_unsuccessful_timestamp_seconds[5m]) > 0
+            for: 10m
+            labels:
+              severity: warning
+              component: prometheus
+            annotations:
+              summary: "Prometheus config reload failed"
+              description: "Prometheus failed to reload its configuration"
+          
+          - alert: PrometheusRuleEvaluationFailure
+            expr: increase(prometheus_rule_evaluation_failures_total[5m]) > 0
+            for: 10m
+            labels:
+              severity: warning
+              component: prometheus
+            annotations:
+              summary: "Prometheus rule evaluation failure"
+              description: "Prometheus failed to evaluate {{ $labels.rule_group }}"
+          
+          # API Service alerts
+          - alert: NeurectomyAPIHighErrorRate
+            expr: |
+              rate(neurectomy_api_requests_total{status=~"5.."}[5m]) / 
+              rate(neurectomy_api_requests_total[5m]) > 0.05
+            for: 5m
+            labels:
+              severity: critical
+              service: neurectomy-api
+            annotations:
+              summary: "Neurectomy API high error rate"
+              description: "Error rate is {{ $value | humanizePercentage }} over 5 minutes"
+          
+          - alert: NeurectomyAPIHighLatency
+            expr: |
+              histogram_quantile(0.99, rate(neurectomy_api_request_duration_seconds_bucket[5m])) > 2
+            for: 10m
+            labels:
+              severity: warning
+              service: neurectomy-api
+            annotations:
+              summary: "Neurectomy API high latency"
+              description: "P99 latency is {{ $value | humanizeDuration }}"
+          
+          # Ryot LLM alerts
+          - alert: RyotLLMQueueDepth
+            expr: ryot_llm_queue_depth > 1000
+            for: 5m
+            labels:
+              severity: warning
+              service: ryot-llm
+            annotations:
+              summary: "Ryot LLM queue backlogged"
+              description: "Queue depth is {{ $value }} tasks"
+          
+          - alert: RyotLLMInferenceError
+            expr: |
+              rate(ryot_llm_inference_errors_total[5m]) > 0.1
+            for: 5m
+            labels:
+              severity: critical
+              service: ryot-llm
+            annotations:
+              summary: "Ryot LLM inference errors"
+              description: "Error rate is {{ $value }} per second"
+          
+          # ΣLANG compression alerts
+          - alert: SigmaLangCompressionRatio
+            expr: sigmalang_compression_ratio < 0.5
+            for: 10m
+            labels:
+              severity: warning
+              service: sigmalang
+            annotations:
+              summary: "ΣLANG compression ratio degraded"
+              description: "Compression ratio is {{ $value }}"
+          
+          # ΣVAULT storage alerts
+          - alert: SigmaVaultStorageCapacity
+            expr: (sigmavault_storage_used_bytes / sigmavault_storage_total_bytes) > 0.85
+            for: 10m
+            labels:
+              severity: warning
+              service: sigmavault
+            annotations:
+              summary: "ΣVAULT storage capacity warning"
+              description: "Storage is {{ $value | humanizePercentage }} full"
+          
+          - alert: SigmaVaultStorageCritical
+            expr: (sigmavault_storage_used_bytes / sigmavault_storage_total_bytes) > 0.95
+            for: 5m
+            labels:
+              severity: critical
+              service: sigmavault
+            annotations:
+              summary: "ΣVAULT storage critical"
+              description: "Storage is {{ $value | humanizePercentage }} full"
+          
+          # Database alerts
+          - alert: PostgreSQLConnectionCount
+            expr: pg_stat_activity_count > 80
+            for: 5m
+            labels:
+              severity: warning
+              service: postgresql
+            annotations:
+              summary: "PostgreSQL connection count high"
+              description: "Active connections: {{ $value }}"
+          
+          - alert: PostgreSQLSlowQueries
+            expr: rate(pg_slow_queries_total[5m]) > 10
+            for: 5m
+            labels:
+              severity: warning
+              service: postgresql
+            annotations:
+              summary: "PostgreSQL slow query rate"
+              description: "Rate: {{ $value }} per second"
+          
+          # Kubernetes alerts
+          - alert: KubernetesNodeNotReady
+            expr: kube_node_status_condition{condition="Ready", status="true"} == 0
+            for: 5m
+            labels:
+              severity: critical
+              component: kubernetes
+            annotations:
+              summary: "Kubernetes node not ready"
+              description: "Node {{ $labels.node }} is not ready"
+          
+          - alert: KubernetesPodCrashLooping
+            expr: rate(kube_pod_container_status_restarts_total[30m]) > 0.1
+            for: 5m
+            labels:
+              severity: warning
+              component: kubernetes
+            annotations:
+              summary: "Kubernetes pod crash looping"
+              description: "Pod {{ $labels.pod }} in {{ $labels.namespace }} is crash looping"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-recording-rules
+  namespace: monitoring
+  labels:
+    app: prometheus
+data:
+  recording-rules.yml: |
+    groups:
+      - name: neurectomy.recording
+        interval: 30s
+        rules:
+          # API request rate calculations
+          - record: neurectomy_api:requests:rate5m
+            expr: rate(neurectomy_api_requests_total[5m])
+          
+          - record: neurectomy_api:error_rate:rate5m
+            expr: |
+              rate(neurectomy_api_requests_total{status=~"5.."}[5m]) /
+              rate(neurectomy_api_requests_total[5m])
+          
+          # Latency percentiles
+          - record: neurectomy_api:latency:p50
+            expr: histogram_quantile(0.50, rate(neurectomy_api_request_duration_seconds_bucket[5m]))
+          
+          - record: neurectomy_api:latency:p95
+            expr: histogram_quantile(0.95, rate(neurectomy_api_request_duration_seconds_bucket[5m]))
+          
+          - record: neurectomy_api:latency:p99
+            expr: histogram_quantile(0.99, rate(neurectomy_api_request_duration_seconds_bucket[5m]))
+          
+          # Ryot LLM metrics
+          - record: ryot_llm:avg_queue_depth:5m
+            expr: avg_over_time(ryot_llm_queue_depth[5m])
+          
+          - record: ryot_llm:inference_rate:5m
+            expr: rate(ryot_llm_inferences_total[5m])
+          
+          - record: ryot_llm:error_rate:5m
+            expr: rate(ryot_llm_inference_errors_total[5m])
+          
+          # ΣLANG compression metrics
+          - record: sigmalang:avg_compression_ratio:5m
+            expr: avg_over_time(sigmalang_compression_ratio[5m])
+          
+          - record: sigmalang:compression_rate:5m
+            expr: rate(sigmalang_compressions_total[5m])
+          
+          # ΣVAULT storage metrics
+          - record: sigmavault:storage_utilization
+            expr: (sigmavault_storage_used_bytes / sigmavault_storage_total_bytes)
+          
+          - record: sigmavault:write_rate:5m
+            expr: rate(sigmavault_writes_total[5m])
+          
+          - record: sigmavault:read_rate:5m
+            expr: rate(sigmavault_reads_total[5m])

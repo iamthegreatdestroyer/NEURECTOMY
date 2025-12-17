@@ -1,32 +1,41 @@
 # ============================================================================
 # NEURECTOMY Alertmanager Configuration
 # Routes alerts from Prometheus to notification channels
+# Production-Ready with Advanced Routing & Inhibition
 # ============================================================================
 
 global:
   # Default resolve timeout
   resolve_timeout: 5m
 
-  # PagerDuty settings (uncomment and configure for production)
-  # pagerduty_url: "https://events.pagerduty.com/v2/enqueue"
+  # PagerDuty settings
+  pagerduty_url: "https://events.pagerduty.com/v2/enqueue"
 
-  # SMTP settings (uncomment and configure for production)
-  # smtp_smarthost: "smtp.example.com:587"
-  # smtp_from: "alertmanager@neurectomy.local"
-  # smtp_auth_username: ""
-  # smtp_auth_password: ""
-  # smtp_require_tls: true
+  # SMTP settings (configure for production)
+  smtp_smarthost: "${SMTP_HOST:-smtp.neurectomy.local:587}"
+  smtp_from: "${ALERT_FROM_EMAIL:-alertmanager@neurectomy.local}"
+  smtp_auth_username: "${SMTP_USER:-}"
+  smtp_auth_password: "${SMTP_PASSWORD:-}"
+  smtp_require_tls: true
+  smtp_hello: "alertmanager.neurectomy.local"
 
-  # Slack settings (uncomment and configure for production)
-  # slack_api_url: "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+  # Slack settings
+  slack_api_url: "${SLACK_WEBHOOK_URL:-https://hooks.slack.com/services/YOUR/WEBHOOK/URL}"
+
+  # OpsGenie settings
+  opsgenie_api_url: "https://api.opsgenie.com/"
+  opsgenie_api_key: "${OPSGENIE_API_KEY:-}"
+
+  # Webhook settings for custom handlers
+  # Configured per receiver below
 
 # Route tree - defines how alerts are routed to receivers
 route:
-  # Default receiver
+  # Default receiver (fallback)
   receiver: "default-receiver"
 
   # Group alerts by these labels
-  group_by: ["alertname", "severity", "service"]
+  group_by: ["alertname", "severity", "service", "component", "instance"]
 
   # Wait before sending first notification for a group
   group_wait: 30s
@@ -39,114 +48,399 @@ route:
 
   # Child routes for specific alert handling
   routes:
-    # Critical alerts - immediate notification
+    # ======================================================================
+    # CRITICAL ALERTS - Multi-Channel Escalation
+    # ======================================================================
     - match:
         severity: critical
       receiver: "critical-receiver"
       group_wait: 10s
-      repeat_interval: 1h
+      group_interval: 2m
+      repeat_interval: 30m
       continue: true
+      routes:
+        # Service down - immediate page + all channels
+        - match:
+            alertname: "MLServiceDown|CompressionServiceDown|StorageServiceDown|AgentCollectiveDown"
+          receiver: "critical-pagerduty"
+          group_wait: 5s
+          repeat_interval: 15m
 
-    # Warning alerts - standard notification
+        # SLO breaches - page on-call
+        - match_re:
+            alertname: ".*SLOBreach|CriticalSLOViolation"
+          receiver: "critical-slo"
+          group_wait: 10s
+          repeat_interval: 20m
+
+    # ======================================================================
+    # WARNING ALERTS - Standard Notification
+    # ======================================================================
     - match:
         severity: warning
       receiver: "warning-receiver"
       group_wait: 1m
+      group_interval: 5m
       repeat_interval: 4h
+      continue: true
+      routes:
+        # Component-specific warnings
+        - match_re:
+            alertname: "(HighErrorRate|HighLatency|HighMemoryUsage|HighCPUUsage)"
+          receiver: "warning-slack"
+          group_wait: 1m
+          repeat_interval: 2h
 
-    # Info alerts - batched notifications
+        # Resource warnings
+        - match_re:
+            alertname: "(HighGPUUtilization|GPUMemoryPressure|DiskSpaceLow|MemoryPressure)"
+          receiver: "warning-ops"
+          group_wait: 2m
+          repeat_interval: 3h
+
+        # Training alerts
+        - match_re:
+            alertname: "(TrainingJobStuck|HighTrainingFailureRate)"
+          receiver: "ml-ops-receiver"
+          group_wait: 5m
+          repeat_interval: 2h
+
+    # ======================================================================
+    # INFO ALERTS - Logging Only
+    # ======================================================================
     - match:
         severity: info
       receiver: "info-receiver"
       group_wait: 5m
+      group_interval: 10m
       repeat_interval: 12h
+      continue: true
 
-    # Security-specific alerts
+    # ======================================================================
+    # SECURITY ALERTS - Immediate Escalation
+    # ======================================================================
     - match_re:
-        alertname: "(HighAuthFailureRate|PossibleBruteForce|HighRateLimitHits)"
-      receiver: "security-receiver"
-      group_wait: 10s
-      repeat_interval: 30m
+        alertname: "(HighAuthFailureRate|PossibleBruteForce|UnauthorizedAccess|DataExfiltration)"
+      receiver: "security-critical"
+      group_wait: 5s
+      group_interval: 1m
+      repeat_interval: 10m
+      continue: true
 
-    # Training-specific alerts
+    # ======================================================================
+    # SLO BURN ALERTS - Graduated Response
+    # ======================================================================
     - match_re:
-        alertname: "(TrainingJobStuck|HighTrainingFailureRate|TrainingLossNotDecreasing)"
-      receiver: "ml-ops-receiver"
-      group_wait: 5m
-      repeat_interval: 2h
+        alertname: "SLO.*Burn"
+      receiver: "slo-burn"
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 1h
+      continue: true
+      routes:
+        # Fast burn - immediate escalation
+        - match:
+            slo_burn_type: "fast"
+          receiver: "slo-burn-fast"
+          group_wait: 10s
+          repeat_interval: 15m
+
+        # Slow burn - standard notification
+        - match:
+            slo_burn_type: "slow"
+          receiver: "slo-burn-slow"
+          group_wait: 2m
+          repeat_interval: 1h
 
 # Inhibition rules - suppress alerts when parent alert fires
 inhibit_rules:
-  # If service is down, suppress other alerts from that service
+  # Critical service down suppresses warnings from that service
   - source_match:
       severity: "critical"
+      alertname: ".*ServiceDown"
     target_match:
       severity: "warning"
-    equal: ["service", "alertname"]
+    equal: ["service", "component"]
 
-  # If service is down, suppress info alerts
+  # Critical service down suppresses info alerts from that service
   - source_match:
       severity: "critical"
+      alertname: ".*ServiceDown"
     target_match:
       severity: "info"
     equal: ["service"]
 
+  # SLO breach suppresses related performance warnings
+  - source_match:
+      severity: "critical"
+      alertname: "CriticalSLOViolation"
+    target_match:
+      severity: "warning"
+      alertname: "HighLatency|HighErrorRate"
+    equal: ["component"]
+
+  # Database down suppresses query performance alerts
+  - source_match:
+      severity: "critical"
+      alertname: "PostgresDown"
+    target_match:
+      severity: "warning"
+      alertname: "HighDatabaseLatency|HighQueryTime"
+    equal: []
+
+  # High resource utilization suppresses performance warnings
+  - source_match:
+      severity: "critical"
+      alertname: "MemoryPressure"
+    target_match:
+      severity: "warning"
+      alertname: "HighLatency|HighErrorRate"
+    equal: ["instance"]
+
+  # Suppress repeated info alerts if warning exists for same alert
+  - source_match:
+      severity: "warning"
+    target_match:
+      severity: "info"
+    equal: ["alertname", "instance"]
+
 # Receivers - notification endpoints
 receivers:
-  # Default receiver - logs alerts (development mode)
+  # ========================================================================
+  # DEFAULT RECEIVER - Fallback (should rarely be used)
+  # ========================================================================
   - name: "default-receiver"
-    # In development, alerts are logged to Alertmanager's own logs
-    # Configure webhook_configs for production notification endpoints
+    webhook_configs:
+      - url: "http://localhost:5001/webhook/default"
+        send_resolved: true
 
-  # Critical alerts - multiple channels
+  # ========================================================================
+  # CRITICAL ALERTS - Primary receiver (routes to multiple channels)
+  # ========================================================================
   - name: "critical-receiver"
-    # Uncomment and configure for production:
-    # webhook_configs:
-    #   - url: "http://your-webhook-service:5001/webhook"
-    #     send_resolved: true
-    # slack_configs:
-    #   - channel: '#neurectomy-alerts-critical'
-    #     send_resolved: true
-    #     title: '🚨 CRITICAL: {{ .CommonLabels.alertname }}'
-    #     text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
-    # pagerduty_configs:
-    #   - service_key: '<your-pagerduty-key>'
-    #     severity: 'critical'
+    slack_configs:
+      - api_url: "${SLACK_WEBHOOK_URL}"
+        channel: "#neurectomy-alerts-critical"
+        send_resolved: true
+        title: "🚨 CRITICAL ALERT: {{ .CommonLabels.alertname }}"
+        text: |
+          Service: {{ .CommonLabels.service }}
+          Component: {{ .CommonLabels.component }}
+          Severity: {{ .CommonLabels.severity }}
+          {{ range .Alerts.Firing }}
+          Description: {{ .Annotations.description }}
+          {{ end }}
+        actions:
+          - type: button
+            text: "View Dashboard"
+            url: "http://grafana.neurectomy.local/d/neurectomy-critical"
+          - type: button
+            text: "View in Alertmanager"
+            url: "http://alertmanager.neurectomy.local:9093"
+    email_configs:
+      - to: "${ALERT_EMAIL_CRITICAL}"
+        from: "${ALERT_FROM_EMAIL}"
+        smarthost: "${SMTP_HOST}"
+        auth_username: "${SMTP_USER}"
+        auth_password: "${SMTP_PASSWORD}"
+        require_tls: true
+        headers:
+          Subject: "CRITICAL: {{ .GroupLabels.alertname }}"
+    webhook_configs:
+      - url: "http://localhost:5001/webhook/critical"
+        send_resolved: true
 
-  # Warning alerts
+  # ========================================================================
+  # CRITICAL - PagerDuty Escalation (immediate page)
+  # ========================================================================
+  - name: "critical-pagerduty"
+    pagerduty_configs:
+      - service_key: "${PAGERDUTY_SERVICE_KEY_CRITICAL}"
+        client: "Neurectomy AlertManager"
+        client_url: "http://alertmanager.neurectomy.local:9093"
+        severity: "critical"
+        links:
+          - href: "http://grafana.neurectomy.local/d/neurectomy-critical"
+            text: "Critical Dashboard"
+    slack_configs:
+      - api_url: "${SLACK_WEBHOOK_URL}"
+        channel: "#neurectomy-alerts-critical"
+        send_resolved: true
+        title: "🔴 PAGERDUTY PAGE: {{ .CommonLabels.alertname }}"
+        text: "Service Down - Immediate Action Required"
+    email_configs:
+      - to: "${ALERT_EMAIL_PAGERDUTY}"
+        headers:
+          Subject: "🔴 ON-CALL PAGE: {{ .GroupLabels.alertname }}"
+
+  # ========================================================================
+  # CRITICAL SLO ALERTS - Service Level Breach Escalation
+  # ========================================================================
+  - name: "critical-slo"
+    pagerduty_configs:
+      - service_key: "${PAGERDUTY_SERVICE_KEY_SLO}"
+        client: "Neurectomy SLO AlertManager"
+        client_url: "http://alertmanager.neurectomy.local:9093"
+        severity: "error"
+        links:
+          - href: "http://grafana.neurectomy.local/d/slo-dashboard"
+            text: "SLO Dashboard"
+    slack_configs:
+      - api_url: "${SLACK_WEBHOOK_URL}"
+        channel: "#neurectomy-slo"
+        send_resolved: true
+        title: "📊 SLO BREACH: {{ .CommonLabels.alertname }}"
+        text: |
+          Component: {{ .CommonLabels.component }}
+          Current Error Budget: {{ .CommonLabels.error_budget }}%
+          {{ range .Alerts.Firing }}
+          Details: {{ .Annotations.description }}
+          {{ end }}
+
+  # ========================================================================
+  # WARNING ALERTS - Slack Channel
+  # ========================================================================
   - name: "warning-receiver"
-    # webhook_configs:
-    #   - url: "http://your-webhook-service:5001/webhook"
-    #     send_resolved: true
-    # slack_configs:
-    #   - channel: '#neurectomy-alerts'
-    #     send_resolved: true
+    slack_configs:
+      - api_url: "${SLACK_WEBHOOK_URL}"
+        channel: "#neurectomy-alerts"
+        send_resolved: true
+        title: "⚠️  WARNING: {{ .CommonLabels.alertname }}"
+        text: |
+          Service: {{ .CommonLabels.service }}
+          Severity: {{ .CommonLabels.severity }}
+          {{ range .Alerts.Firing }}
+          {{ .Annotations.description }}
+          {{ end }}
 
-  # Info alerts
+  # ========================================================================
+  # WARNING - Slack Ops Channel
+  # ========================================================================
+  - name: "warning-ops"
+    slack_configs:
+      - api_url: "${SLACK_WEBHOOK_URL}"
+        channel: "#neurectomy-ops"
+        send_resolved: true
+        title: "🔧 OPS ALERT: {{ .CommonLabels.alertname }}"
+        text: |
+          Instance: {{ .CommonLabels.instance }}
+          Resource: {{ .CommonLabels.resource }}
+          {{ range .Alerts.Firing }}
+          {{ .Annotations.description }}
+          {{ end }}
+
+  # ========================================================================
+  # WARNING - Slack Performance Channel
+  # ========================================================================
+  - name: "warning-slack"
+    slack_configs:
+      - api_url: "${SLACK_WEBHOOK_URL}"
+        channel: "#neurectomy-performance"
+        send_resolved: true
+        title: "📈 PERFORMANCE: {{ .CommonLabels.alertname }}"
+        text: |
+          Component: {{ .CommonLabels.component }}
+          Endpoint: {{ .CommonLabels.endpoint }}
+          {{ range .Alerts.Firing }}
+          {{ .Annotations.description }}
+          {{ end }}
+
+  # ========================================================================
+  # INFO ALERTS - Logging Only
+  # ========================================================================
   - name: "info-receiver"
-    # webhook_configs:
-    #   - url: "http://your-webhook-service:5001/webhook"
-    #     send_resolved: true
+    webhook_configs:
+      - url: "http://localhost:5001/webhook/info"
+        send_resolved: true
 
-  # Security alerts - dedicated channel
-  - name: "security-receiver"
-    # webhook_configs:
-    #   - url: "http://your-webhook-service:5001/webhook"
-    #     send_resolved: true
-    # slack_configs:
-    #   - channel: '#neurectomy-security'
-    #     send_resolved: true
-    #     color: '{{ if eq .Status "firing" }}danger{{ else }}good{{ end }}'
+  # ========================================================================
+  # SECURITY ALERTS - Critical Security Issues
+  # ========================================================================
+  - name: "security-critical"
+    pagerduty_configs:
+      - service_key: "${PAGERDUTY_SERVICE_KEY_SECURITY}"
+        client: "Neurectomy Security AlertManager"
+        severity: "critical"
+        links:
+          - href: "http://grafana.neurectomy.local/d/security-dashboard"
+            text: "Security Dashboard"
+    slack_configs:
+      - api_url: "${SLACK_WEBHOOK_URL}"
+        channel: "#neurectomy-security"
+        send_resolved: true
+        title: "🔐 SECURITY CRITICAL: {{ .CommonLabels.alertname }}"
+        text: |
+          Alert: {{ .CommonLabels.alertname }}
+          Severity: CRITICAL
+          {{ range .Alerts.Firing }}
+          Details: {{ .Annotations.description }}
+          Remediation: {{ .Annotations.remediation }}
+          {{ end }}
+    email_configs:
+      - to: "${ALERT_EMAIL_SECURITY}"
+        headers:
+          Subject: "🔐 SECURITY CRITICAL: {{ .GroupLabels.alertname }}"
 
-  # ML Ops alerts
+  # ========================================================================
+  # SLO BURN - Fast Burn (immediate escalation)
+  # ========================================================================
+  - name: "slo-burn-fast"
+    pagerduty_configs:
+      - service_key: "${PAGERDUTY_SERVICE_KEY_SLO_BURN}"
+        client: "Neurectomy SLO Burn"
+        severity: "critical"
+    slack_configs:
+      - api_url: "${SLACK_WEBHOOK_URL}"
+        channel: "#neurectomy-slo"
+        send_resolved: true
+        title: "🔥 FAST SLO BURN: {{ .CommonLabels.component }}"
+        text: |
+          Budget Consumed: {{ .CommonLabels.burn_rate }}%/hour
+          Hours Until Exhaustion: {{ .CommonLabels.hours_remaining }}
+          Immediate Action Required!
+
+  # ========================================================================
+  # SLO BURN - Slow Burn (monitoring)
+  # ========================================================================
+  - name: "slo-burn-slow"
+    slack_configs:
+      - api_url: "${SLACK_WEBHOOK_URL}"
+        channel: "#neurectomy-slo"
+        send_resolved: true
+        title: "⏱️ SLOW SLO BURN: {{ .CommonLabels.component }}"
+        text: |
+          Budget Consumed: {{ .CommonLabels.burn_rate }}%/hour
+          Hours Until Exhaustion: {{ .CommonLabels.hours_remaining }}
+
+  # ========================================================================
+  # SLO BURN - Combined Receiver
+  # ========================================================================
+  - name: "slo-burn"
+    slack_configs:
+      - api_url: "${SLACK_WEBHOOK_URL}"
+        channel: "#neurectomy-slo"
+        send_resolved: true
+        title: "📉 SLO BURN DETECTED: {{ .CommonLabels.component }}"
+
+  # ========================================================================
+  # ML OPS - Training Alerts
+  # ========================================================================
   - name: "ml-ops-receiver"
-    # webhook_configs:
-    #   - url: "http://your-webhook-service:5001/webhook"
-    #     send_resolved: true
-    # slack_configs:
-    #   - channel: '#neurectomy-mlops'
-    #     send_resolved: true
+    slack_configs:
+      - api_url: "${SLACK_WEBHOOK_URL}"
+        channel: "#neurectomy-mlops"
+        send_resolved: true
+        title: "🤖 ML ALERT: {{ .CommonLabels.alertname }}"
+        text: |
+          Job ID: {{ .CommonLabels.job_id }}
+          {{ range .Alerts.Firing }}
+          {{ .Annotations.description }}
+          {{ end }}
+    email_configs:
+      - to: "${ALERT_EMAIL_MLOPS}"
+        headers:
+          Subject: "ML Alert: {{ .GroupLabels.alertname }}"
 
 # Templates for notification formatting
 templates:
-  - "/etc/alertmanager/templates/*.tmpl"
+  - "/etc/alertmanager/templates/neurectomy.tmpl"

@@ -7,17 +7,20 @@ Performance monitoring for ΣLANG compression service with sub-linear algorithm 
 ### Compression Operations (40+ Metrics)
 
 **Operation Counting:**
+
 - `sigmalang_compression_operations_total` - Total compression by algorithm/datatype
 - `sigmalang_decompression_operations_total` - Decompression operations
 - `sigmalang_compression_skipped_total` - Skipped compressions (pre-compressed)
 
 **Performance Tracking:**
+
 - `sigmalang_compression_duration_seconds` - Latency histogram (9 buckets, 1ms-10s)
-- `sigmalang_decompression_duration_seconds` - Decompression latency  
+- `sigmalang_decompression_duration_seconds` - Decompression latency
 - `sigmalang_compression_throughput_bytes_per_second` - Real-time speed
 - `sigmalang_decompression_throughput_bytes_per_second` - Decompress speed
 
 **Compression Effectiveness:**
+
 - `sigmalang_compression_ratio` - Ratio tracking (1x to 50x)
 - `sigmalang_original_data_size_bytes` - Input size distribution
 - `sigmalang_compressed_data_size_bytes` - Output size distribution
@@ -117,7 +120,7 @@ async def compress_with_context(data: bytes):
     with CompressionContext(algorithm='zstd', data_type='json') as ctx:
         compressed = zstd.compress(data)
         ctx.set_sizes(len(data), len(compressed))
-        
+
         if len(compressed) / len(data) < 1.5:
             ctx.record_incompressible()
 ```
@@ -232,7 +235,7 @@ sigmalang_dictionary_hit_ratio
 # Run tests
 pytest sigmalang/monitoring/test_metrics.py -v
 
-# Verify metrics  
+# Verify metrics
 curl http://localhost:8000/metrics | grep sigmalang_
 ```
 

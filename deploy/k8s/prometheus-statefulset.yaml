@@ -1,0 +1,552 @@
+---
+# Prometheus ServiceAccount & RBAC
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus
+  namespace: neurectomy
+  labels:
+    app: prometheus
+    tier: monitoring
+
+---
+# ClusterRole for Prometheus scraping
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus
+  labels:
+    app: prometheus
+rules:
+  - apiGroups: [""]
+    resources:
+      - nodes
+      - nodes/proxy
+      - services
+      - endpoints
+      - pods
+    verbs: ["get", "list", "watch"]
+  - apiGroups:
+      - extensions
+    resources:
+      - ingresses
+    verbs: ["get", "list", "watch"]
+  - nonResourceURLs: ["/metrics"]
+    verbs: ["get"]
+
+---
+# ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus
+  labels:
+    app: prometheus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus
+subjects:
+  - kind: ServiceAccount
+    name: prometheus
+    namespace: neurectomy
+
+---
+# PersistentVolume for Prometheus data
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: prometheus-pv
+  labels:
+    app: prometheus
+    tier: monitoring
+spec:
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 100Gi
+  storageClassName: fast-ssd
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: "/mnt/data/prometheus"
+
+---
+# PersistentVolumeClaim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-pvc
+  namespace: neurectomy
+  labels:
+    app: prometheus
+    tier: monitoring
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: fast-ssd
+  volumeName: prometheus-pv
+
+---
+# ConfigMap for Prometheus Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: neurectomy
+  labels:
+    app: prometheus
+    tier: monitoring
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 30s
+      external_labels:
+        cluster: 'neurectomy-production'
+        environment: 'production'
+        region: 'us-east-1'
+
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets: ['alertmanager:9093']
+
+    rule_files:
+      - '/etc/prometheus/rules/*.yml'
+
+    scrape_configs:
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
+
+      - job_name: 'neurectomy-api'
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - neurectomy
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            action: keep
+            regex: neurectomy-api
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: kubernetes_pod_name
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: kubernetes_namespace
+
+      - job_name: 'ryot-llm'
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - neurectomy
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            action: keep
+            regex: ryot-llm
+          - source_labels: [cost_center]
+            target_label: cost_class
+            regex: (.*)
+            replacement: compute
+
+      - job_name: 'sigmalang'
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - neurectomy
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            action: keep
+            regex: sigmalang
+
+      - job_name: 'sigmavault'
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - neurectomy
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            action: keep
+            regex: sigmavault
+
+      - job_name: 'agent-collective'
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - neurectomy
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            action: keep
+            regex: agent-collective
+
+      - job_name: 'kubernetes-pods'
+        kubernetes_sd_configs:
+          - role: pod
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: 'true'
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+            action: replace
+            regex: ([^:]+)(?::\d+)?;(\d+)
+            replacement: $1:$2
+            target_label: __address__
+
+---
+# ConfigMap for Recording Rules
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-recording-rules
+  namespace: neurectomy
+  labels:
+    app: prometheus
+    tier: monitoring
+data:
+  recording.rules.yml: |
+    groups:
+      - name: neurectomy_recording_rules
+        interval: 30s
+        rules:
+          # Tier aggregations
+          - record: tier1:http_requests_total:rate5m
+            expr: sum(rate(neurectomy_http_requests_total[5m])) by (status)
+          - record: tier1:error_rate
+            expr: sum(rate(neurectomy_http_requests_total{status=~"5.."}[5m])) / sum(rate(neurectomy_http_requests_total[5m]))
+          
+          # Ryot metrics
+          - record: tier2:ryot_latency:p95
+            expr: histogram_quantile(0.95, sum(rate(neurectomy_ryot_request_duration_seconds_bucket[5m])) by (le))
+          - record: tier2:ryot_error_rate
+            expr: sum(rate(neurectomy_ryot_requests_total{status="error"}[5m])) / sum(rate(neurectomy_ryot_requests_total[5m]))
+          
+          # Storage metrics
+          - record: tier2:sigmavault_capacity_utilization
+            expr: (neurectomy_sigmavault_used_bytes / neurectomy_sigmavault_total_bytes) * 100
+          - record: tier2:sigmavault_sla_compliance:percent
+            expr: (1 - (sum(neurectomy_sigmavault_downtime_seconds) / (86400 * 30))) * 100
+
+          # Agent collective
+          - record: tier3:agent_success_rate
+            expr: sum(rate(neurectomy_agent_task_completed_total{status="success"}[5m])) by (agent_tier) / sum(rate(neurectomy_agent_task_completed_total[5m])) by (agent_tier)
+
+---
+# ConfigMap for Alert Rules
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-alert-rules
+  namespace: neurectomy
+  labels:
+    app: prometheus
+    tier: monitoring
+data:
+  alert.rules.yml: |
+    groups:
+      - name: tier1_alerts
+        rules:
+          - alert: HighHTTPErrorRate
+            expr: tier1:error_rate > 0.05
+            for: 5m
+            annotations:
+              summary: "High HTTP error rate: {{ $value | humanizePercentage }}"
+
+          - alert: APIServiceDown
+            expr: up{job="neurectomy-api"} == 0
+            for: 1m
+            annotations:
+              summary: "API service is DOWN"
+
+      - name: tier2_alerts
+        rules:
+          - alert: HighRyotErrorRate
+            expr: tier2:ryot_error_rate > 0.05
+            for: 5m
+            annotations:
+              summary: "Ryot error rate: {{ $value | humanizePercentage }}"
+
+          - alert: HighStorageUtilization
+            expr: tier2:sigmavault_capacity_utilization > 80
+            for: 10m
+            annotations:
+              summary: "Storage {{ $value | humanize }}% utilized"
+
+---
+# StatefulSet for Prometheus
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: prometheus
+  namespace: neurectomy
+  labels:
+    app: prometheus
+    tier: monitoring
+spec:
+  serviceName: prometheus
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+        tier: monitoring
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+    spec:
+      serviceAccountName: prometheus
+      securityContext:
+        fsGroup: 65534
+      containers:
+        - name: prometheus
+          image: prom/prometheus:v2.48.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - "--config.file=/etc/prometheus/prometheus.yml"
+            - "--storage.tsdb.path=/prometheus"
+            - "--storage.tsdb.retention.time=30d"
+            - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+            - "--web.console.templates=/usr/share/prometheus/consoles"
+            - "--web.enable-lifecycle"
+            - "--query.max-concurrent=20"
+          ports:
+            - name: http
+              containerPort: 9090
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 500m
+              memory: 2Gi
+            limits:
+              cpu: 2000m
+              memory: 8Gi
+          volumeMounts:
+            - name: prometheus-config
+              mountPath: /etc/prometheus
+            - name: prometheus-data
+              mountPath: /prometheus
+            - name: recording-rules
+              mountPath: /etc/prometheus/rules/recording.rules.yml
+              subPath: recording.rules.yml
+            - name: alert-rules
+              mountPath: /etc/prometheus/rules/alert.rules.yml
+              subPath: alert.rules.yml
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 3
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: prometheus-config
+          configMap:
+            name: prometheus-config
+        - name: recording-rules
+          configMap:
+            name: prometheus-recording-rules
+        - name: alert-rules
+          configMap:
+            name: prometheus-alert-rules
+        - name: prometheus-data
+          persistentVolumeClaim:
+            claimName: prometheus-pvc
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - prometheus
+                topologyKey: kubernetes.io/hostname
+
+---
+# Service for Prometheus
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: neurectomy
+  labels:
+    app: prometheus
+    tier: monitoring
+spec:
+  type: ClusterIP
+  selector:
+    app: prometheus
+  ports:
+    - name: http
+      port: 9090
+      targetPort: http
+      protocol: TCP
+  sessionAffinity: None
+
+---
+# Headless Service for StatefulSet
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-headless
+  namespace: neurectomy
+  labels:
+    app: prometheus
+    tier: monitoring
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    app: prometheus
+  ports:
+    - name: http
+      port: 9090
+      targetPort: http
+      protocol: TCP
+
+---
+# NetworkPolicy for Prometheus
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: prometheus
+  namespace: neurectomy
+  labels:
+    app: prometheus
+spec:
+  podSelector:
+    matchLabels:
+      app: prometheus
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: neurectomy
+        - podSelector:
+            matchLabels:
+              app: grafana
+        - podSelector:
+            matchLabels:
+              app: alertmanager
+      ports:
+        - protocol: TCP
+          port: 9090
+  egress:
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 53
+        - protocol: UDP
+          port: 53
+    - to:
+        - podSelector:
+            matchLabels:
+              app: neurectomy-api
+      ports:
+        - protocol: TCP
+          port: 8000
+    - to:
+        - podSelector:
+            matchLabels:
+              app: ryot-llm
+      ports:
+        - protocol: TCP
+          port: 9000
+    - to:
+        - podSelector:
+            matchLabels:
+              app: sigmalang
+      ports:
+        - protocol: TCP
+          port: 9001
+    - to:
+        - podSelector:
+            matchLabels:
+              app: sigmavault
+      ports:
+        - protocol: TCP
+          port: 9002
+    - to:
+        - podSelector:
+            matchLabels:
+              app: alertmanager
+      ports:
+        - protocol: TCP
+          port: 9093
+
+---
+# HorizontalPodAutoscaler (optional)
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: prometheus
+  namespace: neurectomy
+  labels:
+    app: prometheus
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: StatefulSet
+    name: prometheus
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 85
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Percent
+          value: 50
+          periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 15

@@ -179,3 +179,310 @@ groups:
         annotations:
           summary: "High severity anomaly detected"
           description: "{{ $value }} anomalies detected in {{ $labels.metric_type }}"
+  # ==========================================================================
+  # SLO - Ryot (LLM Inference Service)
+  # SLO: TTFT <50ms (99.9%), Error Rate <1% (99.9%)
+  # Error Budget: 0.1% = 43.2 minutes/month
+  # ==========================================================================
+  - name: slo-ryot
+    interval: 30s
+    rules:
+      # Ryot TTFT SLO - 30 day sliding window
+      - record: slo:ryot:ttft:window_ratio
+        expr: |
+          (
+            sum(increase(ryot_time_to_first_token_seconds_bucket{le="0.05"}[30d]))
+            /
+            sum(increase(ryot_time_to_first_token_seconds_count[30d]))
+          )
+
+      # Ryot Error Rate SLO - 30 day sliding window
+      - record: slo:ryot:error_rate:window_ratio
+        expr: |
+          1 - (
+            sum(increase(ryot_errors_total[30d]))
+            /
+            sum(increase(ryot_requests_total[30d]))
+          )
+
+      # Fast Burn Rate (1h = 30 days of budget)
+      - alert: RyotSLOFastBurnRate
+        expr: |
+          (
+            (
+              sum(increase(ryot_time_to_first_token_seconds_bucket{le="0.05"}[1h]))
+              /
+              sum(increase(ryot_time_to_first_token_seconds_count[1h]))
+            ) < 0.999
+            or
+            (
+              1 - (
+                sum(increase(ryot_errors_total[1h]))
+                /
+                sum(increase(ryot_requests_total[1h]))
+              )
+            ) < 0.999
+          )
+        for: 15m
+        labels:
+          severity: critical
+          component: "ryot"
+          slo_burn_type: "fast"
+        annotations:
+          summary: "Ryot SLO fast burn rate detected"
+          description: "Error budget burn rate is >30x normal (1h of budget consumed in 2m)"
+
+      # Slow Burn Rate (6h = 30 days of budget)
+      - alert: RyotSLOSlowBurnRate
+        expr: |
+          (
+            (
+              sum(increase(ryot_time_to_first_token_seconds_bucket{le="0.05"}[6h]))
+              /
+              sum(increase(ryot_time_to_first_token_seconds_count[6h]))
+            ) < 0.999
+            or
+            (
+              1 - (
+                sum(increase(ryot_errors_total[6h]))
+                /
+                sum(increase(ryot_requests_total[6h]))
+              )
+            ) < 0.999
+          )
+        for: 1h
+        labels:
+          severity: warning
+          component: "ryot"
+          slo_burn_type: "slow"
+        annotations:
+          summary: "Ryot SLO slow burn rate detected"
+          description: "Error budget burn rate is >5x normal (1h of budget consumed in 12m)"
+
+      # Critical SLO Breach
+      - alert: CriticalSLOViolationRyot
+        expr: |
+          (
+            (
+              sum(increase(ryot_time_to_first_token_seconds_bucket{le="0.05"}[5m]))
+              /
+              sum(increase(ryot_time_to_first_token_seconds_count[5m]))
+            ) < 0.99
+            or
+            (
+              1 - (
+                sum(increase(ryot_errors_total[5m]))
+                /
+                sum(increase(ryot_requests_total[5m]))
+              )
+            ) < 0.99
+          )
+        for: 1m
+        labels:
+          severity: critical
+          component: "ryot"
+          alert_type: "slo_breach"
+        annotations:
+          summary: "Ryot SLO violation - immediate action required"
+          description: "SLO targets breached: TTFT or Error Rate"
+
+  # ==========================================================================
+  # SLO - ΣLANG (Compression Service)
+  # SLO: Ratio >5x (99.5%), Success Rate >99% (99.5%)
+  # Error Budget: 0.5% = 216 minutes/month
+  # ==========================================================================
+  - name: slo-sigma-lang
+    interval: 30s
+    rules:
+      # ΣLANG Compression Ratio SLO
+      - record: slo:sigmalang:ratio:window_ratio
+        expr: |
+          (
+            sum(increase(sigmalang_compression_ratio[30d]))
+            /
+            sum(increase(sigmalang_compressions_total[30d]))
+          ) >= 5.0
+
+      # ΣLANG Success Rate SLO
+      - record: slo:sigmalang:success:window_ratio
+        expr: |
+          1 - (
+            sum(increase(sigmalang_failures_total[30d]))
+            /
+            sum(increase(sigmalang_operations_total[30d]))
+          )
+
+      # Fast Burn Rate
+      - alert: SigmaLangSLOFastBurnRate
+        expr: |
+          (
+            (
+              sum(increase(sigmalang_compression_ratio[1h]))
+              /
+              sum(increase(sigmalang_compressions_total[1h]))
+            ) < 5.0
+            or
+            (
+              1 - (
+                sum(increase(sigmalang_failures_total[1h]))
+                /
+                sum(increase(sigmalang_operations_total[1h]))
+              )
+            ) < 0.99
+          )
+        for: 15m
+        labels:
+          severity: critical
+          component: "sigma-lang"
+          slo_burn_type: "fast"
+        annotations:
+          summary: "ΣLANG SLO fast burn rate detected"
+          description: "Compression ratio or success rate degrading rapidly"
+
+      # Slow Burn Rate
+      - alert: SigmaLangSLOSlowBurnRate
+        expr: |
+          (
+            (
+              sum(increase(sigmalang_compression_ratio[6h]))
+              /
+              sum(increase(sigmalang_compressions_total[6h]))
+            ) < 5.0
+            or
+            (
+              1 - (
+                sum(increase(sigmalang_failures_total[6h]))
+                /
+                sum(increase(sigmalang_operations_total[6h]))
+              )
+            ) < 0.99
+          )
+        for: 1h
+        labels:
+          severity: warning
+          component: "sigma-lang"
+          slo_burn_type: "slow"
+        annotations:
+          summary: "ΣLANG SLO slow burn rate detected"
+          description: "Compression efficiency trending downward"
+
+  # ==========================================================================
+  # SLO - ΣVAULT (Storage Service)
+  # SLO: Availability >99.99% (99.99%), Latency <100ms p95 (99.9%)
+  # Error Budget: 0.01% = 4.32 minutes/month (availability)
+  # ==========================================================================
+  - name: slo-sigma-vault
+    interval: 30s
+    rules:
+      # ΣVAULT Availability SLO
+      - record: slo:sigmavault:availability:window_ratio
+        expr: |
+          1 - (
+            sum(increase(sigmavault_failed_requests_total[30d]))
+            /
+            sum(increase(sigmavault_requests_total[30d]))
+          )
+
+      # ΣVAULT Latency SLO
+      - record: slo:sigmavault:latency:window_ratio
+        expr: |
+          (
+            sum(increase(sigmavault_request_duration_seconds_bucket{le="0.1"}[30d]))
+            /
+            sum(increase(sigmavault_request_duration_seconds_count[30d]))
+          )
+
+      # Fast Burn Rate
+      - alert: SigmaVaultSLOFastBurnRate
+        expr: |
+          (
+            (
+              1 - (
+                sum(increase(sigmavault_failed_requests_total[1h]))
+                /
+                sum(increase(sigmavault_requests_total[1h]))
+              )
+            ) < 0.9999
+            or
+            (
+              sum(increase(sigmavault_request_duration_seconds_bucket{le="0.1"}[1h]))
+              /
+              sum(increase(sigmavault_request_duration_seconds_count[1h]))
+            ) < 0.999
+          )
+        for: 15m
+        labels:
+          severity: critical
+          component: "sigma-vault"
+          slo_burn_type: "fast"
+        annotations:
+          summary: "ΣVAULT SLO fast burn rate detected"
+          description: "Storage availability or latency degrading rapidly"
+
+      # Slow Burn Rate
+      - alert: SigmaVaultSLOSlowBurnRate
+        expr: |
+          (
+            (
+              1 - (
+                sum(increase(sigmavault_failed_requests_total[6h]))
+                /
+                sum(increase(sigmavault_requests_total[6h]))
+              )
+            ) < 0.9999
+            or
+            (
+              sum(increase(sigmavault_request_duration_seconds_bucket{le="0.1"}[6h]))
+              /
+              sum(increase(sigmavault_request_duration_seconds_count[6h]))
+            ) < 0.999
+          )
+        for: 1h
+        labels:
+          severity: warning
+          component: "sigma-vault"
+          slo_burn_type: "slow"
+        annotations:
+          summary: "ΣVAULT SLO slow burn rate detected"
+          description: "Storage performance trending downward"
+
+  # ==========================================================================
+  # SLO - Agent Collective Health
+  # SLO: Health Score >95% (99%), Throughput Stable >±10% (99%)
+  # ==========================================================================
+  - name: slo-agent-collective
+    interval: 30s
+    rules:
+      # Agent Health Score SLO
+      - record: slo:agent:health:ratio
+        expr: |
+          avg(increase(neurectomy_agent_health_score[30d]))
+
+      # Throughput Stability SLO
+      - record: slo:agent:throughput:variance
+        expr: |
+          stddev(rate(neurectomy_agent_tasks_completed_total[1m])) / avg(rate(neurectomy_agent_tasks_completed_total[1m]))
+
+      # Health Score Alert
+      - alert: AgentCollectiveHealthDegradation
+        expr: |
+          avg(rate(neurectomy_agent_health_score[5m])) < 0.95
+        for: 5m
+        labels:
+          severity: warning
+          component: "agent-collective"
+        annotations:
+          summary: "Agent Collective health score degraded"
+          description: "Health score is {{ $value | humanizePercentage }} (target: >95%)"
+
+      # Throughput Instability Alert
+      - alert: AgentCollectiveThroughputInstability
+        expr: |
+          (stddev(rate(neurectomy_agent_tasks_completed_total[5m])) / avg(rate(neurectomy_agent_tasks_completed_total[5m]))) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+          component: "agent-collective"
+        annotations:
+          summary: "Agent Collective throughput unstable"
+          description: "Throughput variance is {{ $value | humanizePercentage }} (threshold: ±10%)"

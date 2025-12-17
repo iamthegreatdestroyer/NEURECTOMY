@@ -1,0 +1,310 @@
+# Prometheus Configuration for Neurectomy Phase 18A - PRODUCTION
+# Comprehensive metrics collection with tier aggregation and cost tracking
+# This is the complete production-ready configuration
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 30s
+  external_labels:
+    cluster: "neurectomy-production"
+    environment: "production"
+    region: "us-east-1"
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+      path_prefix: "/"
+      scheme: http
+      timeout: 10s
+      api_version: v1
+
+# Load rules and periodically evaluate them
+rule_files:
+  - "/etc/prometheus/rules/recording.rules.yml"
+  - "/etc/prometheus/rules/alert.rules.yml"
+
+# Scrape configurations for all Neurectomy services
+scrape_configs:
+  # ============================================================================
+  # SYSTEM MONITORING
+  # ============================================================================
+
+  - job_name: "prometheus"
+    description: "Prometheus self-monitoring"
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["localhost:9090"]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: "prometheus-main"
+
+  - job_name: "node-exporter"
+    description: "Node hardware and OS metrics"
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["node-exporter:9100"]
+        labels:
+          env: production
+          service_tier: infrastructure
+
+  - job_name: "docker-daemon"
+    description: "Docker container metrics"
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["localhost:9323"]
+    metrics_path: "/metrics"
+
+  # ============================================================================
+  # CORE NEURECTOMY API
+  # ============================================================================
+
+  - job_name: "neurectomy-api"
+    description: "Main Neurectomy API service metrics"
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["neurectomy-api:8000"]
+        labels:
+          service: "neurectomy-api"
+          service_tier: "tier-1"
+          cost_center: "api"
+          component: "main"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance_name
+        replacement: "neurectomy-main"
+      - source_labels: [service]
+        target_label: service_label
+      - source_labels: [cost_center]
+        target_label: cost_center_label
+
+  # ============================================================================
+  # RYOT LLM SERVICE
+  # ============================================================================
+
+  - job_name: "ryot-llm"
+    description: "Ryot Large Language Model inference service"
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["ryot-llm:9000"]
+        labels:
+          service: "ryot"
+          service_tier: "tier-2"
+          cost_center: "compute"
+          component: "llm"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance_name
+        replacement: "ryot-inference"
+      - source_labels: [cost_center]
+        target_label: cost_class
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: "neurectomy_ryot_.*"
+        action: keep
+      - source_labels: [__name__]
+        target_label: service_metric
+        replacement: "ryot"
+
+  # ============================================================================
+  # ΣLANG COMPRESSION SERVICE
+  # ============================================================================
+
+  - job_name: "sigmalang-compression"
+    description: "ΣLANG compression and optimization service"
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["sigmalang:9001"]
+        labels:
+          service: "sigmalang"
+          service_tier: "tier-2"
+          cost_center: "storage"
+          component: "compression"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance_name
+        replacement: "sigmalang-compress"
+      - source_labels: [cost_center]
+        target_label: cost_class
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: "neurectomy_sigmalang_.*"
+        action: keep
+
+  # ============================================================================
+  # ΣVAULT STORAGE SERVICE
+  # ============================================================================
+
+  - job_name: "sigmavault-storage"
+    description: "ΣVAULT distributed storage system"
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["sigmavault:9002"]
+        labels:
+          service: "sigmavault"
+          service_tier: "tier-2"
+          cost_center: "storage"
+          component: "vault"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance_name
+        replacement: "sigmavault-primary"
+      - source_labels: [cost_center]
+        target_label: cost_class
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: "neurectomy_sigmavault_.*"
+        action: keep
+
+  # ============================================================================
+  # ELITE AGENT COLLECTIVE
+  # ============================================================================
+
+  - job_name: "agent-collective"
+    description: "Elite Agent Collective - MNEMONIC system"
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["agent-collective:9003"]
+        labels:
+          service: "agent-collective"
+          service_tier: "tier-3"
+          cost_center: "compute"
+          component: "agents"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance_name
+        replacement: "collective-mnemonic"
+      - source_labels: [cost_center]
+        target_label: cost_class
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: "(neurectomy_agent_|neurectomy_mnemonic_).*"
+        action: keep
+
+  # ============================================================================
+  # DATABASE SERVICES
+  # ============================================================================
+
+  - job_name: "postgres-primary"
+    description: "PostgreSQL primary database"
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["postgres-exporter:9187"]
+        labels:
+          service: "postgresql"
+          service_tier: "tier-2"
+          cost_center: "storage"
+          component: "relational"
+          database_role: "primary"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance_name
+        replacement: "postgres-primary"
+
+  - job_name: "timescaledb-tsdb"
+    description: "TimescaleDB time-series database"
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["timescaledb-exporter:9187"]
+        labels:
+          service: "timescaledb"
+          service_tier: "tier-2"
+          cost_center: "storage"
+          component: "timeseries"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance_name
+        replacement: "timescaledb-primary"
+
+  # ============================================================================
+  # CACHE SERVICES
+  # ============================================================================
+
+  - job_name: "redis-primary"
+    description: "Redis cache primary"
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["redis-exporter:9121"]
+        labels:
+          service: "redis"
+          service_tier: "tier-2"
+          cost_center: "storage"
+          component: "cache"
+          cache_type: "primary"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance_name
+        replacement: "redis-cache"
+
+  # ============================================================================
+  # MESSAGE QUEUE SERVICES
+  # ============================================================================
+
+  - job_name: "rabbitmq-broker"
+    description: "RabbitMQ message broker"
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["rabbitmq-exporter:9419"]
+        labels:
+          service: "rabbitmq"
+          service_tier: "tier-2"
+          cost_center: "messaging"
+          component: "broker"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance_name
+        replacement: "rabbitmq-primary"
+
+  # ============================================================================
+  # MONITORING INFRASTRUCTURE
+  # ============================================================================
+
+  - job_name: "alertmanager"
+    description: "Alertmanager instances"
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["alertmanager:9093"]
+        labels:
+          service: "alertmanager"
+          service_tier: "tier-1"
+          cost_center: "monitoring"
+
+  - job_name: "grafana"
+    description: "Grafana metrics"
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["grafana:3000"]
+        labels:
+          service: "grafana"
+          service_tier: "tier-1"
+          cost_center: "monitoring"
+
+  - job_name: "loki-logs"
+    description: "Loki log aggregation"
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["loki:3100"]
+        labels:
+          service: "loki"
+          service_tier: "tier-2"
+          cost_center: "monitoring"

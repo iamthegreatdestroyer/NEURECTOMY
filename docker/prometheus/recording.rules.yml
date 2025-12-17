@@ -1,0 +1,257 @@
+# Prometheus Recording Rules for Neurectomy Phase 18A
+# Pre-compute complex aggregations for dashboard performance
+
+groups:
+  - name: neurectomy_recording_rules
+    interval: 30s
+    rules:
+      # ========================================================================
+      # TIER-LEVEL AGGREGATION
+      # ========================================================================
+
+      # Tier 1: Foundational Services (API)
+      - record: tier1:http_requests_total:rate5m
+        expr: sum(rate(neurectomy_http_requests_total[5m])) by (status)
+
+      - record: tier1:http_request_duration:p95
+        expr: histogram_quantile(0.95, sum(rate(neurectomy_http_request_duration_seconds_bucket[5m])) by (le))
+
+      - record: tier1:http_request_duration:p99
+        expr: histogram_quantile(0.99, sum(rate(neurectomy_http_request_duration_seconds_bucket[5m])) by (le))
+
+      - record: tier1:error_rate
+        expr: sum(rate(neurectomy_http_requests_total{status=~"5.."}[5m])) / sum(rate(neurectomy_http_requests_total[5m]))
+
+      # Tier 2: Specialist Services (Ryot, ΣLANG, ΣVAULT)
+      - record: tier2:ryot_requests_total:rate5m
+        expr: sum(rate(neurectomy_ryot_requests_total[5m])) by (status)
+
+      - record: tier2:ryot_latency:p95
+        expr: histogram_quantile(0.95, sum(rate(neurectomy_ryot_request_duration_seconds_bucket[5m])) by (le))
+
+      - record: tier2:ryot_latency:p99
+        expr: histogram_quantile(0.99, sum(rate(neurectomy_ryot_request_duration_seconds_bucket[5m])) by (le))
+
+      - record: tier2:ryot_error_rate
+        expr: sum(rate(neurectomy_ryot_requests_total{status="error"}[5m])) / sum(rate(neurectomy_ryot_requests_total[5m]))
+
+      - record: tier2:sigmalang_compression_ratio:avg
+        expr: avg(neurectomy_sigmalang_compression_ratio) by (method)
+
+      - record: tier2:sigmalang_throughput:rate5m
+        expr: sum(rate(neurectomy_sigmalang_compression_requests_total[5m])) by (status)
+
+      - record: tier2:sigmavault_operations:rate5m
+        expr: sum(rate(neurectomy_sigmavault_operations_total[5m])) by (operation, status)
+
+      - record: tier2:sigmavault_capacity_utilization
+        expr: (neurectomy_sigmavault_used_bytes / neurectomy_sigmavault_total_bytes) * 100
+
+      # Tier 3: Innovators (Agent Collective)
+      - record: tier3:agent_task_throughput:rate5m
+        expr: sum(rate(neurectomy_agent_task_completed_total[5m])) by (agent_tier)
+
+      - record: tier3:agent_success_rate
+        expr: sum(rate(neurectomy_agent_task_completed_total{status="success"}[5m])) by (agent_tier) / sum(rate(neurectomy_agent_task_completed_total[5m])) by (agent_tier)
+
+      - record: tier3:mnemonic_retrieval_latency:p95
+        expr: histogram_quantile(0.95, sum(rate(neurectomy_mnemonic_retrieval_duration_seconds_bucket[5m])) by (le))
+
+      - record: tier3:collective_health_score
+        expr: avg(neurectomy_agent_health_score) by (agent_tier)
+
+      # ========================================================================
+      # COST ANALYSIS & FORECASTING
+      # ========================================================================
+
+      - record: costs:hourly_compute
+        expr: sum(rate(neurectomy_compute_cost_usd[1h])) by (cost_center)
+
+      - record: costs:hourly_storage
+        expr: sum(rate(neurectomy_storage_cost_usd[1h])) by (service)
+
+      - record: costs:hourly_network
+        expr: sum(rate(neurectomy_network_cost_usd[1h])) by (direction)
+
+      - record: costs:daily_total
+        expr: sum(rate(neurectomy_total_cost_usd[24h])) by (cost_center)
+
+      - record: costs:monthly_projection
+        expr: (day_of_month() / 30) * sum(neurectomy_total_cost_usd) by (cost_center)
+
+      - record: costs:trend_vs_budget
+        expr: (sum(neurectomy_total_cost_usd) by (cost_center) / on(cost_center) group_left neurectomy_monthly_budget) * 100
+
+      # ========================================================================
+      # RYOT LLM PERFORMANCE
+      # ========================================================================
+
+      - record: ryot:inference_latency:p50
+        expr: histogram_quantile(0.50, sum(rate(neurectomy_ryot_request_duration_seconds_bucket[5m])) by (le, model))
+
+      - record: ryot:inference_latency:p95
+        expr: histogram_quantile(0.95, sum(rate(neurectomy_ryot_request_duration_seconds_bucket[5m])) by (le, model))
+
+      - record: ryot:inference_latency:p99
+        expr: histogram_quantile(0.99, sum(rate(neurectomy_ryot_request_duration_seconds_bucket[5m])) by (le, model))
+
+      - record: ryot:tokens_per_second
+        expr: sum(rate(neurectomy_ryot_tokens_generated_total[1m])) by (model)
+
+      - record: ryot:gpu_utilization
+        expr: (neurectomy_ryot_gpu_memory_usage_bytes / neurectomy_ryot_gpu_memory_total_bytes) * 100
+
+      - record: ryot:batch_size_avg
+        expr: avg(neurectomy_ryot_batch_size) by (model)
+
+      - record: ryot:time_to_first_token:p95
+        expr: histogram_quantile(0.95, sum(rate(neurectomy_ryot_ttft_seconds_bucket[5m])) by (le))
+
+      - record: ryot:throughput:requests_per_minute
+        expr: sum(rate(neurectomy_ryot_requests_total[1m])) by (status)
+
+      # ========================================================================
+      # ΣLANG COMPRESSION METRICS
+      # ========================================================================
+
+      - record: sigmalang:compression_ratio:avg
+        expr: avg(neurectomy_sigmalang_compression_ratio)
+
+      - record: sigmalang:compression_ratio:percentile:p95
+        expr: histogram_quantile(0.95, sum(rate(neurectomy_sigmalang_compression_ratio_bucket[5m])) by (le))
+
+      - record: sigmalang:incompressible_bytes_ratio
+        expr: (sum(neurectomy_sigmalang_incompressible_bytes) / sum(neurectomy_sigmalang_total_bytes)) * 100
+
+      - record: sigmalang:cache_hit_ratio
+        expr: sum(rate(neurectomy_sigmalang_cache_hits_total[5m])) / (sum(rate(neurectomy_sigmalang_cache_hits_total[5m])) + sum(rate(neurectomy_sigmalang_cache_misses_total[5m])))
+
+      - record: sigmalang:throughput:bytes_per_second
+        expr: sum(rate(neurectomy_sigmalang_bytes_processed_total[1m]))
+
+      - record: sigmalang:sub_linear_speedup
+        expr: (neurectomy_sigmalang_baseline_latency_ms / neurectomy_sigmalang_optimized_latency_ms)
+
+      # ========================================================================
+      # ΣVAULT STORAGE METRICS
+      # ========================================================================
+
+      - record: sigmavault:capacity_utilization:percent
+        expr: (sum(neurectomy_sigmavault_used_bytes) / sum(neurectomy_sigmavault_total_bytes)) * 100
+
+      - record: sigmavault:available_capacity:percent
+        expr: 100 - ((sum(neurectomy_sigmavault_used_bytes) / sum(neurectomy_sigmavault_total_bytes)) * 100)
+
+      - record: sigmavault:operations_per_minute
+        expr: sum(rate(neurectomy_sigmavault_operations_total[1m])) by (operation)
+
+      - record: sigmavault:read_latency:p95
+        expr: histogram_quantile(0.95, sum(rate(neurectomy_sigmavault_read_duration_seconds_bucket[5m])) by (le))
+
+      - record: sigmavault:write_latency:p95
+        expr: histogram_quantile(0.95, sum(rate(neurectomy_sigmavault_write_duration_seconds_bucket[5m])) by (le))
+
+      - record: sigmavault:replication_lag:seconds
+        expr: max(neurectomy_sigmavault_replication_lag_seconds)
+
+      - record: sigmavault:sla_compliance:percent
+        expr: (1 - (sum(neurectomy_sigmavault_downtime_seconds) / (86400 * 30))) * 100
+
+      - record: sigmavault:cost_per_gb_month
+        expr: sum(neurectomy_sigmavault_cost_usd) / sum(neurectomy_sigmavault_total_bytes) * (1024^3)
+
+      # ========================================================================
+      # AGENT COLLECTIVE METRICS
+      # ========================================================================
+
+      - record: agent:tasks_completed:rate5m
+        expr: sum(rate(neurectomy_agent_task_completed_total[5m])) by (agent_tier, agent_name)
+
+      - record: agent:task_success_rate
+        expr: sum(rate(neurectomy_agent_task_completed_total{status="success"}[5m])) by (agent_tier) / ignoring(status) sum(rate(neurectomy_agent_task_completed_total[5m])) by (agent_tier)
+
+      - record: agent:collaboration_count:rate5m
+        expr: sum(rate(neurectomy_agent_collaboration_total[5m])) by (initiator_tier, responder_tier)
+
+      - record: agent:memory_retrieval:p95
+        expr: histogram_quantile(0.95, sum(rate(neurectomy_mnemonic_retrieval_duration_seconds_bucket[5m])) by (le, retrieval_type))
+
+      - record: agent:breakthrough_discoveries:rate1h
+        expr: sum(increase(neurectomy_mnemonic_breakthrough_promoted_total[1h]))
+
+      - record: agent:collective_fitness_score
+        expr: avg(neurectomy_agent_fitness_score)
+
+      # ========================================================================
+      # CIRCUIT BREAKER STATUS
+      # ========================================================================
+
+      - record: circuit_breaker:state_summary
+        expr: sum by (service, state) (neurectomy_circuit_breaker_state)
+
+      - record: circuit_breaker:failure_rate:rate5m
+        expr: sum(rate(neurectomy_circuit_breaker_failures_total[5m])) by (service)
+
+      - record: circuit_breaker:open_duration:minutes
+        expr: (time() - neurectomy_circuit_breaker_open_timestamp) / 60
+
+      # ========================================================================
+      # DATABASE HEALTH
+      # ========================================================================
+
+      - record: database:connection_pool_utilization:percent
+        expr: (pg_stat_activity_count / pg_settings_max_connections) * 100
+
+      - record: database:query_latency:p95
+        expr: histogram_quantile(0.95, sum(rate(pg_stat_statements_query_time_bucket[5m])) by (le))
+
+      - record: database:replication_lag:seconds
+        expr: max(pg_replication_lag)
+
+      - record: database:table_bloat:percent
+        expr: (pg_table_bloat_ratio) * 100
+
+      # ========================================================================
+      # CACHE PERFORMANCE
+      # ========================================================================
+
+      - record: cache:hit_ratio
+        expr: redis_keyspace_hits_total / (redis_keyspace_hits_total + redis_keyspace_misses_total)
+
+      - record: cache:eviction_rate:rate5m
+        expr: rate(redis_evicted_keys_total[5m])
+
+      - record: cache:memory_utilization:percent
+        expr: (redis_memory_used_bytes / redis_memory_max_bytes) * 100
+
+      # ========================================================================
+      # MESSAGE QUEUE METRICS
+      # ========================================================================
+
+      - record: queue:depth:total
+        expr: sum(rabbitmq_queue_messages_ready)
+
+      - record: queue:publish_rate:rate1m
+        expr: sum(rate(rabbitmq_queue_messages_published_total[1m]))
+
+      - record: queue:consume_rate:rate1m
+        expr: sum(rate(rabbitmq_queue_messages_consumed_total[1m]))
+
+      - record: queue:consumer_lag
+        expr: sum(rabbitmq_queue_messages_ready) / sum(rate(rabbitmq_queue_messages_consumed_total[1m] offset 5m))
+
+      # ========================================================================
+      # REQUEST SUCCESS/ERROR RATES BY ENDPOINT
+      # ========================================================================
+
+      - record: endpoint:request_rate:5m
+        expr: sum(rate(neurectomy_http_requests_total[5m])) by (endpoint, method)
+
+      - record: endpoint:error_rate:5m
+        expr: sum(rate(neurectomy_http_requests_total{status=~"5.."}[5m])) by (endpoint) / sum(rate(neurectomy_http_requests_total[5m])) by (endpoint)
+
+      - record: endpoint:latency:p95
+        expr: histogram_quantile(0.95, sum(rate(neurectomy_http_request_duration_seconds_bucket[5m])) by (le, endpoint))
+
+      - record: endpoint:latency:p99
+        expr: histogram_quantile(0.99, sum(rate(neurectomy_http_request_duration_seconds_bucket[5m])) by (le, endpoint))

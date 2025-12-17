@@ -1,0 +1,26 @@
+---
+# SSD Storage Class for high-performance monitoring stack
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: monitoring-ssd
+  namespace: monitoring
+provisioner: ebs.csi.aws.amazon.com # AWS EBS (adjust for your cloud provider)
+parameters:
+  type: gp3
+  iops: "3000"
+  throughput: "125"
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+---
+# Standard Storage Class for non-critical data
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: monitoring-standard
+  namespace: monitoring
+provisioner: ebs.csi.aws.amazon.com
+parameters:
+  type: gp2
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer

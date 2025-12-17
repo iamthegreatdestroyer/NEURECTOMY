@@ -1,0 +1,122 @@
+---
+# Prometheus Service (ClusterIP for internal access)
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: monitoring
+  labels:
+    app: prometheus
+spec:
+  type: ClusterIP
+  clusterIP: None # Headless service for StatefulSet
+  selector:
+    app: prometheus
+  ports:
+    - name: http
+      port: 9090
+      targetPort: 9090
+      protocol: TCP
+  sessionAffinity: None
+---
+# Prometheus External Service (LoadBalancer - optional)
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-external
+  namespace: monitoring
+  labels:
+    app: prometheus
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+spec:
+  type: LoadBalancer
+  selector:
+    app: prometheus
+  ports:
+    - name: http
+      port: 80
+      targetPort: 9090
+      protocol: TCP
+  sessionAffinity: None
+---
+# Prometheus Service Monitor (for Prometheus Operator auto-discovery)
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: prometheus
+  namespace: monitoring
+  labels:
+    app: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: prometheus
+  endpoints:
+    - port: http
+      interval: 30s
+      path: /metrics
+---
+# Alertmanager Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager
+  namespace: monitoring
+  labels:
+    app: alertmanager
+spec:
+  type: ClusterIP
+  clusterIP: None # Headless service for StatefulSet
+  selector:
+    app: alertmanager
+  ports:
+    - name: http
+      port: 9093
+      targetPort: 9093
+      protocol: TCP
+    - name: mesh
+      port: 6783
+      targetPort: 6783
+      protocol: TCP
+---
+# Grafana Service (ClusterIP for internal)
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: monitoring
+  labels:
+    app: grafana
+spec:
+  type: ClusterIP
+  selector:
+    app: grafana
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
+      protocol: TCP
+  sessionAffinity: ClientIP
+---
+# Grafana Service (LoadBalancer - optional for external access)
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana-external
+  namespace: monitoring
+  labels:
+    app: grafana
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+spec:
+  type: LoadBalancer
+  selector:
+    app: grafana
+  ports:
+    - name: http
+      port: 80
+      targetPort: 3000
+      protocol: TCP
+      nodePort: 30000
+  sessionAffinity: ClientIP

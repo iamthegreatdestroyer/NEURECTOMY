@@ -1,0 +1,96 @@
+---
+# Pod Security Policy for monitoring stack
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: monitoring-restricted
+  annotations:
+    seccomp.security.alpha.kubernetes.io/allowedProfileNames: "runtime/default"
+    apparmor.security.beta.kubernetes.io/allowedProfileNames: "runtime/default"
+    seccomp.security.alpha.kubernetes.io/defaultProfileName: "runtime/default"
+    apparmor.security.beta.kubernetes.io/defaultProfileName: "runtime/default"
+spec:
+  privileged: false
+  allowPrivilegeEscalation: false
+  requiredDropCapabilities:
+    - ALL
+  allowedCapabilities: []
+  volumes:
+    - "configMap"
+    - "emptyDir"
+    - "projected"
+    - "secret"
+    - "downwardAPI"
+    - "persistentVolumeClaim"
+  hostNetwork: false
+  hostIPC: false
+  hostPID: false
+  runAsUser:
+    rule: "MustRunAsNonRoot"
+  seLinux:
+    rule: "MustRunAs"
+    seLinuxOptions:
+      level: "s0:c123,c456"
+  fsGroup:
+    rule: "MustRunAs"
+    ranges:
+      - min: 1000
+        max: 65535
+  readOnlyRootFilesystem: false
+---
+# ClusterRole to use the PSP
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: monitoring-psp
+rules:
+  - apiGroups:
+      - policy
+    resources:
+      - podsecuritypolicies
+    verbs:
+      - use
+    resourceNames:
+      - monitoring-restricted
+---
+# ClusterRoleBinding for Prometheus
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus-psp
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: monitoring-psp
+subjects:
+  - kind: ServiceAccount
+    name: prometheus
+    namespace: monitoring
+---
+# ClusterRoleBinding for Grafana
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: grafana-psp
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: monitoring-psp
+subjects:
+  - kind: ServiceAccount
+    name: grafana
+    namespace: monitoring
+---
+# ClusterRoleBinding for AlertManager
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: alertmanager-psp
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: monitoring-psp
+subjects:
+  - kind: ServiceAccount
+    name: alertmanager
+    namespace: monitoring
