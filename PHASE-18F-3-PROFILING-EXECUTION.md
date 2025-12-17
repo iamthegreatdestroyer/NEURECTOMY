@@ -12,6 +12,7 @@
 Execute comprehensive profiling benchmarks across all 4 core services to identify performance bottlenecks and prioritize optimizations for Phase 18G.
 
 **Success Criteria:**
+
 - ✅ All 14 benchmarks executed successfully
 - ✅ Baseline metrics established for each component
 - ✅ Top 3 bottlenecks identified per service (with ROI scoring)
@@ -22,15 +23,15 @@ Execute comprehensive profiling benchmarks across all 4 core services to identif
 
 ## 📊 Performance Targets
 
-| Service | Component | Current Target | Benchmark |
-|---------|-----------|----------------|-----------|
-| **Ryot** | TTFT | TBD | <100ms | FirstTokenLatencyBenchmark |
-| **Ryot** | Throughput | TBD | >50 tok/sec | TokenGenerationBenchmark |
-| **ΣLANG** | Ratio | TBD | >3:1 | CompressionRatioBenchmark |
-| **ΣLANG** | Speed | TBD | >100MB/s | CompressionThroughputBenchmark |
-| **ΣVAULT** | Read Latency | TBD | <5ms p50, <10ms p99 | RSUReadBenchmark |
-| **ΣVAULT** | Write Latency | TBD | <10ms p50, <20ms p99 | RSUWriteBenchmark |
-| **Agents** | Task Latency | TBD | <50ms p99 | AgentTaskLatencyBenchmark |
+| Service    | Component     | Current Target | Benchmark            |
+| ---------- | ------------- | -------------- | -------------------- | ------------------------------ |
+| **Ryot**   | TTFT          | TBD            | <100ms               | FirstTokenLatencyBenchmark     |
+| **Ryot**   | Throughput    | TBD            | >50 tok/sec          | TokenGenerationBenchmark       |
+| **ΣLANG**  | Ratio         | TBD            | >3:1                 | CompressionRatioBenchmark      |
+| **ΣLANG**  | Speed         | TBD            | >100MB/s             | CompressionThroughputBenchmark |
+| **ΣVAULT** | Read Latency  | TBD            | <5ms p50, <10ms p99  | RSUReadBenchmark               |
+| **ΣVAULT** | Write Latency | TBD            | <10ms p50, <20ms p99 | RSUWriteBenchmark              |
+| **Agents** | Task Latency  | TBD            | <50ms p99            | AgentTaskLatencyBenchmark      |
 
 ---
 
@@ -39,6 +40,7 @@ Execute comprehensive profiling benchmarks across all 4 core services to identif
 ### **Day 1-2: Infrastructure Setup & Baseline Microbenchmarks**
 
 #### 1. Environment Preparation (2 hours)
+
 ```bash
 # Install profiling tools
 pip install py-spy memory_profiler line_profiler scalene cProfile-flamegraph
@@ -53,6 +55,7 @@ echo -1 | sudo tee /proc/sys/kernel/perf_event_paranoid
 ```
 
 #### 2. Baseline Metrics - Microbenchmarks (Day 1 afternoon)
+
 ```bash
 # Ryot benchmarks (30-45 minutes)
 python runner.py \
@@ -111,6 +114,7 @@ python runner.py \
 ### **Day 2: Profiling Macrobenchmarks & Trace Collection**
 
 #### 1. Macrobenchmarks (Day 2 morning - 2 hours each)
+
 ```bash
 # Full LLM Inference (Macrobenchmark 1) - 20-30 minutes
 python runner.py \
@@ -171,6 +175,7 @@ python runner.py \
 #### 1. Component-Specific Profiling (Day 3)
 
 **Ryot LLM Profiling (Morning):**
+
 ```bash
 # Detailed inference profiling - 45 minutes
 python runner.py \
@@ -187,6 +192,7 @@ python -c "import pstats; p = pstats.Stats('results/day3/ryot.prof'); p.print_st
 ```
 
 **ΣVAULT Storage Profiling (Midday):**
+
 ```bash
 # Memory profiling for storage operations - 45 minutes
 python runner.py \
@@ -203,6 +209,7 @@ python analyze_memory_profile.py results/day3/sigmavault_memory.txt > results/da
 ```
 
 **Agent Communication Profiling (Afternoon):**
+
 ```bash
 # Profile agent task execution - 45 minutes
 python runner.py \
@@ -216,6 +223,7 @@ python runner.py \
 ```
 
 #### 2. Bottleneck Analysis (Day 3 evening)
+
 ```bash
 # Run comprehensive bottleneck detection
 python bottleneck_analyzer.py \
@@ -236,6 +244,7 @@ python generate_optimization_roadmap.py \
 ### **Day 4-5: Data Analysis & Optimization Planning**
 
 #### 1. Data Consolidation (Day 4 morning)
+
 ```bash
 # Consolidate all profiling data
 python consolidate_profiling_results.py \
@@ -246,6 +255,7 @@ python consolidate_profiling_results.py \
 ```
 
 #### 2. Statistical Analysis & Confidence (Day 4)
+
 ```bash
 # Determine statistical significance of bottlenecks
 python statistical_significance.py \
@@ -258,9 +268,11 @@ python statistical_significance.py \
 ```
 
 #### 3. Optimization Roadmap (Day 4-5)
+
 Create `PHASE-18G-OPTIMIZATION-ROADMAP.md` with:
 
 **For Each Bottleneck:**
+
 - Bottleneck name and location
 - Current metric vs target
 - Root cause analysis
@@ -271,12 +283,14 @@ Create `PHASE-18G-OPTIMIZATION-ROADMAP.md` with:
 - Recommended algorithm/technique
 
 **Example Roadmap Entry:**
+
 ```markdown
 ## Bottleneck: Ryot TTFT - Attention Mechanism (35% of inference time)
 
 **Current State:** 45ms TTFT vs target <100ms
 **Root Cause:** Full attention computation O(n²) on full sequence
 **Candidates:**
+
 1. Flash Attention (40% faster, low risk)
 2. Sparse Attention (50% faster, medium risk)
 3. Speculative Decoding (60% faster, high complexity)
@@ -341,30 +355,35 @@ Create `PHASE-18G-OPTIMIZATION-ROADMAP.md` with:
 ## Top 5 Bottlenecks (Prioritized by ROI)
 
 ### 1. Ryot Attention Mechanism (35% of time, Flash Attention 40% improvement)
+
 - **Effort:** 2 days
 - **ROI:** 14ms faster TTFT (31% improvement)
 - **Risk:** Low (well-tested)
 - **Priority:** 🔴 CRITICAL
 
 ### 2. ΣLANG Dictionary Lookup (28% of compression time, 50% improvement via binary search)
+
 - **Effort:** 1 day
 - **ROI:** 50MB/s faster throughput
 - **Risk:** Low
 - **Priority:** 🔴 CRITICAL
 
 ### 3. ΣVAULT LRU Cache (22% of storage latency, skip-list 3× faster)
+
 - **Effort:** 3 days
 - **ROI:** 5ms faster read latency
 - **Risk:** Medium (complex data structure)
 - **Priority:** 🟡 HIGH
 
 ### 4. Agent Lock Contention (18% of agent time, lock-free queue)
+
 - **Effort:** 4 days
 - **ROI:** 8ms faster task latency
 - **Risk:** High (concurrency complexity)
 - **Priority:** 🟡 MEDIUM
 
 ### 5. Memory Fragmentation (15% extra memory, slab allocator)
+
 - **Effort:** 5 days
 - **ROI:** 40% memory reduction
 - **Risk:** High
@@ -426,30 +445,35 @@ python benchmarks/runner.py \
 ## 📋 Checklist for Success
 
 **Day 1:**
+
 - [ ] Environment setup complete
 - [ ] Profiling tools installed and verified
 - [ ] Microbenchmarks running for all 4 services
 - [ ] Baseline metrics recorded
 
 **Day 2:**
+
 - [ ] All macrobenchmarks executed
 - [ ] Profiling data collected
 - [ ] Scaling tests show performance degradation curves
 - [ ] Endurance test identifies memory leaks (if any)
 
 **Day 3:**
+
 - [ ] Component-specific profiling complete
 - [ ] Flame graphs generated for each service
 - [ ] Memory profiles analyzed
 - [ ] Bottleneck analysis report generated
 
 **Day 4:**
+
 - [ ] All data consolidated into single report
 - [ ] Statistical significance calculated
 - [ ] Top bottlenecks ranked by ROI
 - [ ] Optimization roadmap ready for Phase 18G
 
 **Day 5:**
+
 - [ ] Executive summary created
 - [ ] Presentations prepared for each service optimization
 - [ ] Phase 18G implementation plan finalized
@@ -498,12 +522,14 @@ python benchmarks/runner.py \
 ## 🚀 Next Phase (18G) Dependency
 
 **Phase 18G will use:**
+
 - Bottleneck rankings from Day 4
 - ROI scores to prioritize optimizations
 - Implementation complexity estimates
 - Risk assessments for safe execution
 
 **Phase 18G Timeline:**
+
 - Week 1: Implement top 5 optimizations
 - Week 2: Execute Phase 18G-2 through 18G-5 in parallel
 - Week 3: Validate improvements, prepare Phase 18H
@@ -524,4 +550,3 @@ python benchmarks/runner.py \
 **Status: 🟢 READY TO EXECUTE**
 
 Start Day 1 profiling immediately. Report bottleneck findings by EOD Day 4.
-
