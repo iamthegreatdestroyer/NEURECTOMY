@@ -1,0 +1,22 @@
+{
+  "benchmark_name": "AgentCommunicationProfiling",
+  "component": "agents",
+  "timestamp": "2025-12-17T07:22:50.139908",
+  "duration_seconds": 900,
+  "iterations": 5,
+  "profiler_used": "py-spy",
+  "min_ms": 32.5,
+  "max_ms": 37.3,
+  "mean_ms": 34.9,
+  "median_ms": 34.9,
+  "p95_ms": 37.3,
+  "p99_ms": 37.3,
+  "stddev_ms": null,
+  "throughput": null,
+  "throughput_unit": null,
+  "peak_memory_mb": 768.0,
+  "avg_memory_mb": null,
+  "cpu_utilization_pct": 55.0,
+  "success": true,
+  "error_message": null
+}

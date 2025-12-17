@@ -1,0 +1,22 @@
+{
+  "benchmark_name": "SigmaVaultMemoryProfiling",
+  "component": "sigmavault",
+  "timestamp": "2025-12-17T07:22:48.134982",
+  "duration_seconds": 1800,
+  "iterations": 10,
+  "profiler_used": "memory_profiler",
+  "min_ms": 6.2,
+  "max_ms": 9.35,
+  "mean_ms": 7.775,
+  "median_ms": 7.95,
+  "p95_ms": 9.35,
+  "p99_ms": 9.35,
+  "stddev_ms": null,
+  "throughput": 128.61736334405145,
+  "throughput_unit": "ops/sec",
+  "peak_memory_mb": 256.0,
+  "avg_memory_mb": null,
+  "cpu_utilization_pct": 68.0,
+  "success": true,
+  "error_message": null
+}
