@@ -10,6 +10,7 @@
 ## 📋 OPTIMIZATION PRIORITIES OVERVIEW
 
 ### Priority 1: Flash Attention 2 (Ryot LLM) ⭐
+
 - **Current Performance:** 49.5ms TTFT, 1,010 tok/sec
 - **Target Performance:** 25-30ms TTFT, 1,400+ tok/sec
 - **Speedup:** 40-50% (1.4-2×)
@@ -18,6 +19,7 @@
 - **Files:** `neurectomy/optimizations/flash_attention.py`
 
 ### Priority 2: Lock-Free Async Queue (Agents) 🚀
+
 - **Current Performance:** 55.3ms p99, 43.9ms mean task latency
 - **Target Performance:** 16-20ms p99, 12-15ms mean
 - **Speedup:** 64% (3-4×)
@@ -26,6 +28,7 @@
 - **Files:** `neurectomy/optimizations/async_queue.py`
 
 ### Priority 3: Cache-Line Alignment (ΣVAULT) 💾
+
 - **Current Performance:** 11.1ms p99 read latency
 - **Target Performance:** 5-7ms p99
 - **Speedup:** 50% (2-3×)
@@ -60,6 +63,7 @@ Phase 18G
 ## 📦 DELIVERABLES CHECKLIST
 
 ### Module 1: Flash Attention 2
+
 - [x] `flash_attention.py` created
   - [x] `FlashAttention2Module` class
   - [x] Standard attention fallback
@@ -70,6 +74,7 @@ Phase 18G
 - [ ] Performance validation
 
 ### Module 2: Lock-Free Async Queue
+
 - [x] `async_queue.py` created
   - [x] `LockFreeAsyncQueue` class
   - [x] `AsyncTaskPool` for worker management
@@ -80,6 +85,7 @@ Phase 18G
 - [ ] Performance validation
 
 ### Module 3: Cache-Line Alignment
+
 - [x] `cache_alignment.py` created
   - [x] `CacheAlignedBuffer` for aligned allocation
   - [x] `CacheAwareHashTable` implementation
@@ -128,6 +134,7 @@ attention = FlashAttention2Module(
 ```
 
 **Expected Performance Gain:**
+
 - TTFT: 49.5ms → 25-30ms (50% improvement)
 - Throughput: 1,010 → 1,400+ tok/sec (40% improvement)
 
@@ -161,6 +168,7 @@ metrics = pool.get_metrics()
 ```
 
 **Expected Performance Gain:**
+
 - Task p99: 55.3ms → 16-20ms (64% improvement)
 - Task mean: 43.9ms → 12-15ms (65% improvement)
 - Throughput: 18 tasks/sec → 50+ tasks/sec (175% improvement)
@@ -188,6 +196,7 @@ index = CacheAwareHashTable(capacity=10000)
 ```
 
 **Expected Performance Gain:**
+
 - Read p99: 11.1ms → 5-7ms (50% improvement)
 - Write p99: 11.1ms → 5-7ms (50% improvement)
 - Cache hit rate: 87% → 92% (improved under concurrent load)
@@ -229,6 +238,7 @@ index = CacheAwareHashTable(capacity=10000)
 ## 🚀 DEPLOYMENT STRATEGY
 
 ### Phase 1: Staging (Day 7)
+
 ```
 Full deployment in staging environment
   ✓ Run full benchmark suite
@@ -237,6 +247,7 @@ Full deployment in staging environment
 ```
 
 ### Phase 2: Canary (Day 8)
+
 ```
 Gradual rollout to production
   Stage 1: 10% traffic → 1 hour → verify metrics
@@ -246,6 +257,7 @@ Gradual rollout to production
 ```
 
 ### Phase 3: Monitoring (Day 9)
+
 ```
 Continuous observation for 24 hours
   ✓ Monitor error rates (target: <0.1%)
@@ -259,18 +271,21 @@ Continuous observation for 24 hours
 ## 📊 SUCCESS METRICS
 
 ### Tier 1: Performance Targets (MUST ACHIEVE)
+
 - [ ] Ryot TTFT: ≤30ms (currently 49.5ms)
 - [ ] Agent task p99: ≤20ms (currently 55.3ms)
 - [ ] ΣVAULT read p99: ≤7ms (currently 11.1ms)
 - [ ] System throughput: ≥3× baseline
 
 ### Tier 2: Reliability (MUST ACHIEVE)
+
 - [ ] Zero critical errors
 - [ ] Memory leaks: ZERO
 - [ ] Compatibility: 100% backward compatible
 - [ ] Regression tests: 100% passing
 
 ### Tier 3: Operational (SHOULD ACHIEVE)
+
 - [ ] CPU utilization: Optimal (not increased)
 - [ ] Memory usage: +5-10% max
 - [ ] Monitoring: Complete instrumentation
@@ -317,6 +332,7 @@ Continuous observation for 24 hours
 Each optimization has a rapid rollback procedure:
 
 ### Flash Attention 2 Rollback
+
 ```python
 # Revert to standard attention
 # Change: use_flash_attention=True
@@ -325,6 +341,7 @@ Each optimization has a rapid rollback procedure:
 ```
 
 ### Async Queue Rollback
+
 ```python
 # Revert to threading.Queue
 # Change: AsyncTaskPool
@@ -333,6 +350,7 @@ Each optimization has a rapid rollback procedure:
 ```
 
 ### Cache Alignment Rollback
+
 ```python
 # Revert to standard Python dicts
 # Change: CacheOptimizedLRU
@@ -345,6 +363,7 @@ Each optimization has a rapid rollback procedure:
 ## 🎯 NEXT STEPS
 
 1. **Verify Dependencies:**
+
    ```bash
    pip install flash-attn
    python neurectomy/optimizations/flash_attention.py
@@ -386,4 +405,3 @@ Each optimization has a rapid rollback procedure:
 **Phase 18G Implementation Guide: READY FOR EXECUTION ✅**
 
 All optimization modules have been created and are ready for integration into the main system. Expected outcome: **2-3× overall system performance improvement** by December 27-28.
-

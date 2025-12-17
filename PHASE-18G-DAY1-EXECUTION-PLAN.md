@@ -10,6 +10,7 @@
 ## 📋 Tasks for Day 1
 
 ### Task 1: Install Flash Attention 2 ✅
+
 **Status:** Ready to execute  
 **Effort:** 15 minutes
 
@@ -31,6 +32,7 @@ print(f'Flash Attention version: {flash_attn.__version__}')
 ```
 
 ### Task 2: Test Flash Attention 2 Module ✅
+
 **Status:** Ready to execute  
 **Effort:** 20 minutes
 
@@ -40,7 +42,7 @@ python neurectomy/optimizations/flash_attention.py
 
 # Step 2: Expected output:
 #   ✅ Flash Attention 2 is available
-#   
+#
 #   Benchmark Results:
 #     device: cuda or cpu
 #     batch_size: 32
@@ -56,10 +58,12 @@ python neurectomy/optimizations/flash_attention.py
 ```
 
 ### Task 3: Locate Ryot Model Definition
+
 **Status:** Discovery phase  
 **Effort:** 30 minutes
 
 **Potential locations:**
+
 ```
 neurectomy/
 ├── core/
@@ -73,6 +77,7 @@ neurectomy/
 ```
 
 **Search strategy:**
+
 ```bash
 # Find all model definitions
 find neurectomy -name "*.py" -type f | xargs grep -l "class.*Model\|MultiheadAttention" | head -20
@@ -85,6 +90,7 @@ grep -r "MultiheadAttention\|nn.attention" neurectomy --include="*.py" | head -2
 ```
 
 ### Task 4: Prepare Model Upgrade Script
+
 **Status:** To create  
 **Effort:** 1 hour
 
@@ -118,14 +124,14 @@ logger = logging.getLogger(__name__)
 
 def main():
     """Main upgrade workflow."""
-    
+
     # Step 1: Check prerequisites
     print("Step 1: Checking Flash Attention 2 availability...")
     if not is_flash_attention_available():
         logger.error("Flash Attention 2 not installed")
         return False
     print("  ✅ Flash Attention 2 is available\n")
-    
+
     # Step 2: Load Ryot model
     print("Step 2: Loading Ryot model...")
     try:
@@ -139,7 +145,7 @@ def main():
         logger.error(f"Failed to load Ryot model: {e}")
         return False
     print("  ✅ Model loaded\n")
-    
+
     # Step 3: Upgrade attention layers
     print("Step 3: Upgrading attention layers...")
     try:
@@ -148,7 +154,7 @@ def main():
     except Exception as e:
         logger.error(f"Failed to upgrade attention: {e}")
         return False
-    
+
     # Step 4: Validate equivalence
     print("Step 4: Validating output equivalence...")
     try:
@@ -157,7 +163,7 @@ def main():
     except Exception as e:
         logger.error(f"Output validation failed: {e}")
         return False
-    
+
     # Step 5: Benchmark performance
     print("Step 5: Benchmarking performance...")
     try:
@@ -167,7 +173,7 @@ def main():
     except Exception as e:
         logger.error(f"Benchmark failed: {e}")
         return False
-    
+
     # Step 6: Save upgraded model
     print("Step 6: Saving upgraded model...")
     try:
@@ -176,7 +182,7 @@ def main():
     except Exception as e:
         logger.error(f"Failed to save model: {e}")
         return False
-    
+
     print("=" * 60)
     print("✅ Ryot Flash Attention 2 Upgrade Complete!")
     print("=" * 60)
@@ -186,7 +192,7 @@ def main():
 def create_dummy_transformer():
     """Create dummy transformer for testing (temporary)."""
     import torch.nn as nn
-    
+
     class DummyTransformer(nn.Module):
         def __init__(self):
             super().__init__()
@@ -197,13 +203,13 @@ def create_dummy_transformer():
                 nn.ReLU(),
                 nn.Linear(3072, 768)
             )
-        
+
         def forward(self, x):
             x = self.embedding(x)
             attn_out, _ = self.attention(x, x, x)
             out = self.mlp(attn_out)
             return out
-    
+
     return DummyTransformer()
 
 
@@ -234,10 +240,12 @@ if __name__ == "__main__":
 ```
 
 ### Task 5: Integration Testing
+
 **Status:** To execute  
 **Effort:** 1.5 hours
 
 **Test checklist:**
+
 ```
 [ ] Flash Attention 2 module loads without errors
 [ ] Model upgrade script runs successfully
@@ -249,6 +257,7 @@ if __name__ == "__main__":
 ```
 
 ### Task 6: Documentation & Progress Report
+
 **Status:** To create  
 **Effort:** 1 hour
 
@@ -272,11 +281,13 @@ if __name__ == "__main__":
 ## 📊 Performance Results
 
 ### Before Optimization (Ryot Baseline)
+
 - TTFT: 49.5ms
 - Throughput: 1,010 tok/sec
 - Latency p99: 52.3ms
 
 ### After Flash Attention 2
+
 - TTFT: XX.Xms (XX% improvement)
 - Throughput: X,XXX tok/sec (XX% improvement)
 - Latency p99: XX.Xms (XX% improvement)
@@ -310,24 +321,27 @@ if __name__ == "__main__":
 ## 🎯 Expected Outcomes
 
 ### Immediate Results (End of Day 1)
+
 - ✅ Flash Attention 2 integrated into Ryot
 - ✅ 40-50% TTFT improvement verified
 - ✅ Backward compatibility confirmed
 - ✅ Integration tests passing
 
 ### Metrics to Track
-| Metric | Baseline | Target | Status |
-|--------|----------|--------|--------|
-| TTFT (ms) | 49.5 | 25-30 | TBD |
-| Throughput (tok/sec) | 1,010 | 1,400+ | TBD |
-| Latency p99 (ms) | 52.3 | 26-30 | TBD |
-| Memory (GB) | 4.2 | <4.5 | TBD |
+
+| Metric               | Baseline | Target | Status |
+| -------------------- | -------- | ------ | ------ |
+| TTFT (ms)            | 49.5     | 25-30  | TBD    |
+| Throughput (tok/sec) | 1,010    | 1,400+ | TBD    |
+| Latency p99 (ms)     | 52.3     | 26-30  | TBD    |
+| Memory (GB)          | 4.2      | <4.5   | TBD    |
 
 ---
 
 ## 🔧 Troubleshooting
 
 ### Issue: Flash Attention 2 install fails
+
 ```bash
 # Solution 1: Update pip
 pip install --upgrade pip
@@ -343,6 +357,7 @@ python setup.py install
 ```
 
 ### Issue: CUDA incompatibility
+
 ```bash
 # Check CUDA version
 nvidia-smi
@@ -355,6 +370,7 @@ pip install flash-attn --index-url https://download.pytorch.org/whl/cu118
 ```
 
 ### Issue: Performance not improving
+
 ```bash
 # Verify Flash Attention is actually being used
 python -c "
@@ -379,4 +395,3 @@ print('✅ Flash Attention executed successfully')
 **Phase 18G Day 1: READY TO EXECUTE ✅**
 
 All prerequisites configured. Ready to proceed with Flash Attention 2 integration immediately upon approval.
-

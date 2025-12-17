@@ -36,6 +36,7 @@ Phase 18F-3 comprehensive profiling identified **3 HIGH-ROI optimization opportu
 **Methodology:** Replace standard attention with Flash Attention 2
 
 **Technical Details:**
+
 ```
 Problem:
   - Attention mechanism consuming 11ms (22% of inference time)
@@ -69,6 +70,7 @@ Week 2:
 ```
 
 **Risk Assessment:**
+
 - Complexity: 2/5 (library integration)
 - Risk: LOW (well-tested, industry standard)
 - Rollback: EASY (single component change)
@@ -78,6 +80,7 @@ Week 2:
 **Priority:** CRITICAL
 
 **Implementation Steps:**
+
 1. Install `flash-attn` library (pip install flash-attn)
 2. Replace `torch.nn.MultiheadAttention` with `flash_attn.flash_attn_func`
 3. Verify numerical equivalence with regression tests
@@ -94,12 +97,13 @@ Week 2:
 **Methodology:** Asyncio-based lock-free queue
 
 **Technical Details:**
+
 ```
 Problem:
   - Task queue lock causing GIL contention
   - Context switching overhead: 18% of p99 latency
   - Current implementation uses threading.Queue (lock-based)
-  
+
 Problem Analysis:
   - Concurrent tasks competing for queue lock
   - GIL prevents true parallelism
@@ -133,6 +137,7 @@ Week 3:
 ```
 
 **Risk Assessment:**
+
 - Complexity: 3/5 (architecture change)
 - Risk: MEDIUM (significant refactoring)
 - Rollback: COMPLEX (distributed state change)
@@ -142,6 +147,7 @@ Week 3:
 **Priority:** CRITICAL
 
 **Implementation Steps:**
+
 1. Design asyncio-based event loop architecture
 2. Implement lock-free asyncio.Queue for task distribution
 3. Migrate agent task handlers to async/await
@@ -160,12 +166,13 @@ Week 3:
 **Methodology:** Aligned memory allocation + cache-aware data structure
 
 **Technical Details:**
+
 ```
 Problem:
   - Cache line misses causing memory stalls
   - 87% cache hit rate, but misses concentrated in hot path
   - Hash table collisions increase under concurrent access
-  
+
 Memory Analysis:
   - Cache line size: 64 bytes (modern CPUs)
   - Current layout: Unaligned, causes false sharing
@@ -195,6 +202,7 @@ Week 1:
 ```
 
 **Risk Assessment:**
+
 - Complexity: 2/5 (data structure optimization)
 - Risk: LOW (isolated to ΣVAULT)
 - Rollback: EASY (memory layout revert)
@@ -204,6 +212,7 @@ Week 1:
 **Priority:** HIGH
 
 **Implementation Steps:**
+
 1. Profile current memory layout (cache miss patterns)
 2. Implement cache-aligned memory allocator
 3. Redesign hash table with padding for cache lines
@@ -276,14 +285,14 @@ Thursday-Friday:
 
 ### Performance Targets - Before and After
 
-| Metric | Current | Target | Improvement | Method |
-|--------|---------|--------|-------------|--------|
-| **Ryot TTFT** | 49.5ms | 25-30ms | 40-50% | Flash Attention 2 |
-| **Ryot Throughput** | 1,010 tok/s | 1,400+ tok/s | 40% | Flash Attention 2 |
-| **ΣVAULT Read p99** | 11.1ms | 5-7ms | 50% | Cache alignment |
-| **Agents Task p99** | 55.3ms | 16-20ms | 64% | Async queue |
-| **Agents Task Mean** | 43.9ms | 12-15ms | 65% | Async queue |
-| **System Throughput** | 18 tasks/s | 50+ tasks/s | 175% | Async queue |
+| Metric                | Current     | Target       | Improvement | Method            |
+| --------------------- | ----------- | ------------ | ----------- | ----------------- |
+| **Ryot TTFT**         | 49.5ms      | 25-30ms      | 40-50%      | Flash Attention 2 |
+| **Ryot Throughput**   | 1,010 tok/s | 1,400+ tok/s | 40%         | Flash Attention 2 |
+| **ΣVAULT Read p99**   | 11.1ms      | 5-7ms        | 50%         | Cache alignment   |
+| **Agents Task p99**   | 55.3ms      | 16-20ms      | 64%         | Async queue       |
+| **Agents Task Mean**  | 43.9ms      | 12-15ms      | 65%         | Async queue       |
+| **System Throughput** | 18 tasks/s  | 50+ tasks/s  | 175%        | Async queue       |
 
 ### Aggregate System Improvement
 
@@ -313,17 +322,20 @@ Combined: 2.3-3.5× overall improvement
 ### Rollback Plans
 
 **Flash Attention 2:**
+
 - Single-line rollback (restore attention implementation)
 - Zero breaking changes
 - Full backward compatibility
 
 **Async Queue:**
+
 - Feature flag toggle for routing
 - Keep old threading.Queue as fallback
 - Gradual traffic migration (canary)
 - Full rollback within 5 minutes
 
 **Cache Alignment:**
+
 - Memory allocator abstraction layer
 - Switch between aligned/unaligned with config
 - No logic changes required for rollback
@@ -400,16 +412,19 @@ Phase 4: Production Rollout (Week 3)
 ## PHASE 18G DELIVERABLES
 
 **Week 1 Deliverables:**
+
 - ✅ Flash Attention 2 integrated and validated
 - ✅ Cache-line alignment implemented for ΣVAULT
 - ✅ 15-20% performance improvement verified
 
 **Week 2 Deliverables:**
+
 - ✅ Asyncio queue fully migrated
 - ✅ Lock-free task distribution operational
 - ✅ 30-50% improvement in agent coordination
 
 **Week 3 Deliverables:**
+
 - ✅ Full system integration validated
 - ✅ Canary deployment completed
 - ✅ Production rollout 100%
@@ -420,6 +435,7 @@ Phase 4: Production Rollout (Week 3)
 ## PHASE 18G → PHASE 18H TRANSITION
 
 After Phase 18G completion:
+
 - Phase 18H (Integration Testing) will validate system stability
 - Phase 18I (Production Readiness) will perform final hardening
 - Phase 18J (Deployment) will go live by December 30
@@ -433,4 +449,3 @@ Phase 18F-3 profiling identified clear, high-ROI optimization opportunities. Wit
 All identified optimizations use proven, industry-standard techniques with low implementation risk. Phased rollout with canary deployment ensures safe, reversible deployment to production.
 
 **Status:** Ready for Phase 18G Implementation ✅
-
