@@ -30,6 +30,7 @@ python benchmarks/runner_18f.py 1
 ```
 
 **Expected Output:**
+
 ```
 ============================================================
 # PHASE 18F-3 PROFILING - DAY 1
@@ -55,6 +56,7 @@ Running: TokenGenerationBenchmark
 ### Day 1: Ryot LLM Baselines (Today - Dec 17)
 
 **Commands:**
+
 ```bash
 # Run Day 1 benchmarks (30-45 minutes)
 python benchmarks/runner_18f.py 1
@@ -65,6 +67,7 @@ cat results/phase_18f/daily_reports/day_1_report_*.json | jq '.results[] | {name
 ```
 
 **Benchmarks Running:**
+
 1. **FirstTokenLatencyBenchmark** - Time to first token
    - Target: <100ms
    - Expected baseline: ~45ms (exceeds target ✓)
@@ -74,6 +77,7 @@ cat results/phase_18f/daily_reports/day_1_report_*.json | jq '.results[] | {name
    - Expected baseline: ~48-52 tokens/sec (meets target ✓)
 
 **Expected Output:**
+
 ```json
 {
   "name": "FirstTokenLatencyBenchmark",
@@ -91,6 +95,7 @@ cat results/phase_18f/daily_reports/day_1_report_*.json | jq '.results[] | {name
 ### Day 2: ΣLANG, ΣVAULT, Agents Baselines (Dec 18)
 
 **Commands:**
+
 ```bash
 # Run Day 2 benchmarks (1.5-2 hours)
 python benchmarks/runner_18f.py 2
@@ -106,6 +111,7 @@ with open('results/phase_18f/daily_reports/day_2_report_*.json'.glob_latest()) a
 ```
 
 **Benchmarks Running:**
+
 1. **CompressionRatioBenchmark** (ΣLANG)
    - Expected baseline: ~3.5:1 (exceeds 3:1 target ✓)
 
@@ -128,6 +134,7 @@ with open('results/phase_18f/daily_reports/day_2_report_*.json'.glob_latest()) a
 ### Day 3: Macrobenchmarks & Profiling (Dec 19)
 
 **Commands:**
+
 ```bash
 # Run Day 3 macrobenchmarks (1-2 hours each)
 python benchmarks/runner_18f.py 3
@@ -137,12 +144,14 @@ watch -n 5 'ps aux | grep python | grep runner'
 ```
 
 **Benchmarks Running:**
+
 1. **FullLLMInference** (10 min) - Complete inference stack
 2. **ScalingTest** (15 min) - Concurrent request handling
 3. **EnduranceTest** (60 min) - Extended stress test
 4. **CollectiveWorkflow** (10 min) - All 4 services together
 
 **Expected Output:**
+
 ```
 Completed FullLLMInference: avg_latency=52.3ms, p99=78.5ms
 Completed ScalingTest: throughput degradation at 50 concurrent: -12%
@@ -157,6 +166,7 @@ Completed CollectiveWorkflow: end-to-end latency: 156ms
 ### Day 4: Detailed Analysis & Bottleneck Identification (Dec 20)
 
 **Commands:**
+
 ```bash
 # Run profiling suite
 python benchmarks/runner_18f.py 4
@@ -169,6 +179,7 @@ cat bottleneck_analysis.json | jq '.identified_bottlenecks[] | {component: .comp
 ```
 
 **Expected Bottleneck Analysis:**
+
 ```
 TOP 5 BOTTLENECKS (by ROI):
 ┌─────────────────────────────────────────────────────────────┐
@@ -201,6 +212,7 @@ TOP 5 BOTTLENECKS (by ROI):
 ### Day 5: Optimization Roadmap Creation (Dec 21)
 
 **Commands:**
+
 ```bash
 # Generate roadmap
 python benchmarks/generate_optimization_roadmap.py \
@@ -212,18 +224,22 @@ cat PHASE-18G-OPTIMIZATION-ROADMAP.md
 ```
 
 **Expected Roadmap Structure:**
+
 ```markdown
 # Phase 18G Optimization Roadmap
 
 ## Week 1 (High ROI, Low Risk)
+
 - [ ] Flash Attention (Ryot) - 2 days
 - [ ] Binary Search Dict (ΣLANG) - 1 day
 
 ## Week 2 (Medium ROI/Risk)
+
 - [ ] Skip-List LRU Cache (ΣVAULT) - 3 days
 - [ ] Lock-Free Queue (Agents) - 4 days
 
 ## Week 3 (Validation & Cleanup)
+
 - [ ] Performance validation - 2 days
 - [ ] Regression testing - 1 day
 ```
@@ -236,15 +252,15 @@ cat PHASE-18G-OPTIMIZATION-ROADMAP.md
 
 ### Expected Baseline Values (Pre-Optimization)
 
-| Service | Metric | Baseline | Target | Status |
-|---------|--------|----------|--------|--------|
-| Ryot | TTFT | 45ms | <100ms | ✅ EXCEEDS |
-| Ryot | Throughput | 52 tok/sec | >50 | ✅ EXCEEDS |
-| ΣLANG | Ratio | 3.5:1 | >3:1 | ✅ EXCEEDS |
-| ΣLANG | Speed | 125 MB/s | >100 | ✅ EXCEEDS |
-| ΣVAULT | Read p99 | 9.2ms | <10ms | ✅ MEETS |
-| ΣVAULT | Write p99 | 18.5ms | <20ms | ✅ MEETS |
-| Agents | Task p99 | 45ms | <50ms | ✅ MEETS |
+| Service | Metric     | Baseline   | Target | Status     |
+| ------- | ---------- | ---------- | ------ | ---------- |
+| Ryot    | TTFT       | 45ms       | <100ms | ✅ EXCEEDS |
+| Ryot    | Throughput | 52 tok/sec | >50    | ✅ EXCEEDS |
+| ΣLANG   | Ratio      | 3.5:1      | >3:1   | ✅ EXCEEDS |
+| ΣLANG   | Speed      | 125 MB/s   | >100   | ✅ EXCEEDS |
+| ΣVAULT  | Read p99   | 9.2ms      | <10ms  | ✅ MEETS   |
+| ΣVAULT  | Write p99  | 18.5ms     | <20ms  | ✅ MEETS   |
+| Agents  | Task p99   | 45ms       | <50ms  | ✅ MEETS   |
 
 ---
 
@@ -264,15 +280,19 @@ python -m flamegraph results/phase_18f/raw_profiles/ryot_sampling.prof \
 ### Bottleneck Severity Classification
 
 **🔴 CRITICAL** (>25% of total time, ROI >3× effort)
+
 - Implement immediately in Week 1
 
 **🟡 HIGH** (15-25% of total time, ROI >2× effort)
+
 - Implement in Week 2
 
 **🟢 MEDIUM** (5-15% of total time, ROI >1× effort)
+
 - Implement in Week 3 if time permits
 
 **⚪ LOW** (<5% of total time, ROI <1× effort)
+
 - Document for future optimization
 
 ---
@@ -280,30 +300,35 @@ python -m flamegraph results/phase_18f/raw_profiles/ryot_sampling.prof \
 ## 📋 DATA COLLECTION CHECKLIST
 
 **Day 1:**
+
 - [ ] Run Ryot benchmarks
 - [ ] Verify metrics saved
 - [ ] Check for errors
 - [ ] Document baseline
 
 **Day 2:**
+
 - [ ] Run ΣLANG/ΣVAULT/Agents benchmarks
 - [ ] Compare against targets
 - [ ] Identify quick wins
 - [ ] Document findings
 
 **Day 3:**
+
 - [ ] Run macrobenchmarks (long duration)
 - [ ] Monitor resource usage
 - [ ] Capture scaling characteristics
 - [ ] Analyze degradation
 
 **Day 4:**
+
 - [ ] Run detailed profiling
 - [ ] Generate bottleneck report
 - [ ] Calculate ROI scores
 - [ ] Rank optimizations
 
 **Day 5:**
+
 - [ ] Consolidate all data
 - [ ] Create optimization roadmap
 - [ ] Finalize recommendations
@@ -316,6 +341,7 @@ python -m flamegraph results/phase_18f/raw_profiles/ryot_sampling.prof \
 ### Issue: Benchmarks fail to run
 
 **Solution:**
+
 ```bash
 # Check environment
 pip list | grep -E "py-spy|memory-profiler|line_profiler"
@@ -330,6 +356,7 @@ python -m cProfile -o test.prof -c "import sys; sys.exit(0)"
 ### Issue: Memory usage grows during endurance test
 
 **Solution:**
+
 ```bash
 # Check for memory leaks
 python -m memory_profiler benchmarks/runner_18f.py 3
@@ -340,6 +367,7 @@ python -m memory_profiler benchmarks/runner_18f.py 3
 ### Issue: Results directory not created
 
 **Solution:**
+
 ```bash
 mkdir -p results/phase_18f/{raw_profiles,flame_graphs,metrics_json,daily_reports}
 ```
@@ -377,4 +405,3 @@ When Day 5 is complete:
 ---
 
 **Ready to begin Day 1? Run: `python benchmarks/runner_18f.py 1`**
-

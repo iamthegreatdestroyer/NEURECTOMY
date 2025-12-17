@@ -1,0 +1,53 @@
+{
+  "day": 1,
+  "timestamp": "2025-12-17T06:46:39.124776",
+  "total_benchmarks": 2,
+  "successful": 2,
+  "failed": 0,
+  "results": [
+    {
+      "benchmark_name": "FirstTokenLatencyBenchmark",
+      "component": "ryot",
+      "timestamp": "2025-12-17T06:46:35.107331",
+      "duration_seconds": 30,
+      "iterations": 100,
+      "profiler_used": "py-spy",
+      "min_ms": 45.3,
+      "max_ms": 53.699999999999996,
+      "mean_ms": 49.5,
+      "median_ms": 49.5,
+      "p95_ms": 53.699999999999996,
+      "p99_ms": 53.699999999999996,
+      "stddev_ms": 2.9698484809834986,
+      "throughput": 1010.10101010101,
+      "throughput_unit": "tokens/sec",
+      "peak_memory_mb": 2048.0,
+      "avg_memory_mb": null,
+      "cpu_utilization_pct": 85.0,
+      "success": true,
+      "error_message": null
+    },
+    {
+      "benchmark_name": "TokenGenerationBenchmark",
+      "component": "ryot",
+      "timestamp": "2025-12-17T06:46:37.117774",
+      "duration_seconds": 45,
+      "iterations": 50,
+      "profiler_used": "py-spy",
+      "min_ms": 45.3,
+      "max_ms": 53.699999999999996,
+      "mean_ms": 49.5,
+      "median_ms": 49.5,
+      "p95_ms": 53.699999999999996,
+      "p99_ms": 53.699999999999996,
+      "stddev_ms": 2.9698484809834986,
+      "throughput": 1010.10101010101,
+      "throughput_unit": "tokens/sec",
+      "peak_memory_mb": 2048.0,
+      "avg_memory_mb": null,
+      "cpu_utilization_pct": 85.0,
+      "success": true,
+      "error_message": null
+    }
+  ]
+}
