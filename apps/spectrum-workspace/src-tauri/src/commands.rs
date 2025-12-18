@@ -129,6 +129,22 @@ pub async fn save_file_dialog(
     Ok(result.map(|p| p.to_string()))
 }
 
+/// Open a folder selection dialog
+#[tauri::command]
+pub async fn open_folder_dialog(
+    app: AppHandle,
+) -> Result<Option<String>, String> {
+    use tauri_plugin_dialog::DialogExt;
+    
+    let dialog = app.dialog().file()
+        .set_title("Select Folder")
+        .set_directory(true);
+    
+    let result = dialog.blocking_pick_folder();
+    
+    Ok(result.map(|p| p.to_string()))
+}
+
 /// Read a project file from the file system
 #[tauri::command]
 pub async fn read_project_file(path: String) -> Result<String, String> {

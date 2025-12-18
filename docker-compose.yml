@@ -1,22 +1,26 @@
 # NEURECTOMY Docker Compose Configuration
-# Phase 8: Deployment & DevOps
-
-version: '3.8'
+# Updated: December 18, 2025
+# Port Series: 16000-16999 (NEURECTOMY exclusive range)
 
 services:
+  # =============================================================================
+  # Core Application Services
+  # =============================================================================
+
   neurectomy-api:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: neurectomy-api
     ports:
-      - "8000:8000"
+      - "16080:8000" # API Gateway (internal 8000 → external 16080)
     volumes:
       - neurectomy-data:/app/data
       - neurectomy-logs:/app/logs
     environment:
       - PYTHONUNBUFFERED=1
       - LOG_LEVEL=INFO
+      - PORT=8000
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -26,66 +30,27 @@ services:
       start_period: 40s
     networks:
       - neurectomy-network
-
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: neurectomy-prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus-data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-    restart: unless-stopped
-    networks:
-      - neurectomy-network
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: neurectomy-grafana
-    ports:
-      - "3000:3000"
-    volumes:
-      - grafana-data:/var/lib/grafana
-      - ./docker/grafana/provisioning:/etc/grafana/provisioning
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_USERS_ALLOW_SIGN_UP=false
-    restart: unless-stopped
-    networks:
-      - neurectomy-network
     depends_on:
-      - prometheus
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
-  redis:
-    image: redis:7-alpine
-    container_name: neurectomy-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
-    command: redis-server --appendonly yes
+  # =============================================================================
+  # Databases
+  # =============================================================================
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: neurectomy-postgres
     restart: unless-stopped
-    networks:
-      - neurectomy-network
-
-volumes:
-  neurectomy-data:
-    driver: local
-  neurectomy-logs:
-    driver: local
-  prometheus-data:
-    driver: local
-  grafana-data:
-    driver: local
-  redis-data:
-    driver: local
-
-networks:
-  neurectomy-network:
-    driver: bridge
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-neurectomy}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-neurectomy}
+      POSTGRES_DB: neurectomy
+      POSTGRES_MULTIPLE_DATABASES: mlflow,optuna
+    ports:
+      - "16432:5432" # PostgreSQL (internal 5432 → external 16432)
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/postgres/init:/docker-entrypoint-initdb.d
@@ -106,7 +71,7 @@ networks:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-neurectomy}
       POSTGRES_DB: neurectomy_ts
     ports:
-      - "5433:5432"
+      - "16433:5432" # TimescaleDB (internal 5432 → external 16433)
     volumes:
       - timescale_data:/var/lib/postgresql/data
     healthcheck:
@@ -126,9 +91,11 @@ networks:
       NEO4J_PLUGINS: '["apoc", "graph-data-science"]'
       NEO4J_dbms_memory_pagecache_size: 512M
       NEO4J_dbms_memory_heap_max__size: 512M
+      NEO4J_dbms_connector_http_listen__address: :7474
+      NEO4J_dbms_connector_bolt_listen__address: :7687
     ports:
-      - "7474:7474" # HTTP
-      - "7687:7687" # Bolt
+      - "16474:7474" # Neo4j HTTP (internal 7474 → external 16474)
+      - "16475:7687" # Neo4j Bolt (internal 7687 → external 16475)
     volumes:
       - neo4j_data:/data
       - neo4j_logs:/logs
@@ -150,7 +117,7 @@ networks:
     restart: unless-stopped
     command: redis-server --appendonly yes
     ports:
-      - "6379:6379"
+      - "16500:6379" # Redis (internal 6379 → external 16500)
     volumes:
       - redis_data:/data
     healthcheck:
@@ -167,8 +134,8 @@ networks:
     restart: unless-stopped
     command: ["--jetstream", "--store_dir", "/data"]
     ports:
-      - "4222:4222" # Client
-      - "8222:8222" # Monitoring
+      - "16522:4222" # NATS Client (internal 4222 → external 16522)
+      - "16523:8222" # NATS Monitoring (internal 8222 → external 16523)
     volumes:
       - nats_data:/data
     healthcheck:
@@ -188,7 +155,7 @@ networks:
     container_name: neurectomy-ollama
     restart: unless-stopped
     ports:
-      - "11434:11434"
+      - "16600:11434" # Ollama (internal 11434 → external 16600)
     volumes:
       - ollama_data:/root/.ollama
     deploy:
@@ -214,7 +181,7 @@ networks:
       - "--storage.tsdb.path=/prometheus"
       - "--web.enable-lifecycle"
     ports:
-      - "9090:9090"
+      - "16900:9090" # Prometheus (internal 9090 → external 16900)
     volumes:
       - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - ./docker/prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml
@@ -231,9 +198,9 @@ networks:
     command:
       - "--config.file=/etc/alertmanager/alertmanager.yml"
       - "--storage.path=/alertmanager"
-      - "--web.external-url=http://localhost:9093"
+      - "--web.external-url=http://localhost:16901"
     ports:
-      - "9093:9093"
+      - "16901:9093" # AlertManager (internal 9093 → external 16901)
     volumes:
       - ./docker/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
       - ./docker/alertmanager/templates:/etc/alertmanager/templates
@@ -254,8 +221,9 @@ networks:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: neurectomy
       GF_USERS_ALLOW_SIGN_UP: false
+      GF_SERVER_HTTP_PORT: 3000
     ports:
-      - "3001:3000"
+      - "16910:3000" # Grafana (internal 3000 → external 16910)
     volumes:
       - grafana_data:/var/lib/grafana
       - ./docker/grafana/provisioning:/etc/grafana/provisioning
@@ -271,14 +239,10 @@ networks:
     environment:
       COLLECTOR_OTLP_ENABLED: true
     ports:
-      - "5775:5775/udp"
-      - "6831:6831/udp"
-      - "6832:6832/udp"
-      - "5778:5778"
-      - "16686:16686" # UI
-      - "14268:14268"
-      - "14250:14250"
-      - "9411:9411"
+      - "16920:16686" # Jaeger UI (internal 16686 → external 16920)
+      - "16921:14268" # Jaeger Collector HTTP
+      - "16922:14250" # Jaeger Collector gRPC
+      - "16923:9411" # Zipkin compatible
     networks:
       - neurectomy-network
 
@@ -288,7 +252,7 @@ networks:
     restart: unless-stopped
     command: -config.file=/etc/loki/loki-config.yml
     ports:
-      - "3100:3100"
+      - "16930:3100" # Loki (internal 3100 → external 16930)
     volumes:
       - ./docker/loki/loki-config.yml:/etc/loki/loki-config.yml
       - loki_data:/loki
@@ -315,10 +279,9 @@ networks:
       - neurectomy-network
 
   # =============================================================================
-  # MLOps Services (Phase 2: Intelligence Layer)
+  # MLOps Services
   # =============================================================================
 
-  # MinIO - S3-compatible object storage for MLflow artifacts
   minio:
     image: minio/minio:latest
     container_name: neurectomy-minio
@@ -328,8 +291,8 @@ networks:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
     ports:
-      - "9000:9000" # API
-      - "9001:9001" # Console
+      - "16950:9000" # MinIO API (internal 9000 → external 16950)
+      - "16951:9001" # MinIO Console (internal 9001 → external 16951)
     volumes:
       - minio_data:/data
     healthcheck:
@@ -340,7 +303,6 @@ networks:
     networks:
       - neurectomy-network
 
-  # MinIO Client - Create buckets on startup
   minio-client:
     image: minio/mc:latest
     container_name: neurectomy-minio-client
@@ -380,7 +342,7 @@ networks:
       --host 0.0.0.0
       --port 5000
     ports:
-      - "5000:5000"
+      - "16610:5000" # MLflow (internal 5000 → external 16610)
     depends_on:
       postgres:
         condition: service_healthy
@@ -406,14 +368,13 @@ networks:
       --host 0.0.0.0
       --port 8080
     ports:
-      - "8085:8080"
+      - "16611:8080" # Optuna Dashboard (internal 8080 → external 16611)
     depends_on:
       postgres:
         condition: service_healthy
     networks:
       - neurectomy-network
 
-  # ChromaDB for vector storage (alternative to pgvector for experimentation)
   chromadb:
     image: chromadb/chroma:latest
     container_name: neurectomy-chromadb
@@ -423,14 +384,14 @@ networks:
       CHROMA_SERVER_AUTH_TOKEN_TRANSPORT_HEADER: X-Chroma-Token
       CHROMA_SERVER_AUTH_CREDENTIALS: ${CHROMA_TOKEN:-neurectomy-secret-token}
     ports:
-      - "8001:8000"
+      - "16620:8000" # ChromaDB (internal 8000 → external 16620)
     volumes:
       - chromadb_data:/chroma/chroma
     networks:
       - neurectomy-network
 
   # =============================================================================
-  # NEURECTOMY ML Service (Intelligence Foundry)
+  # NEURECTOMY ML Service
   # =============================================================================
 
   ml-service:
@@ -440,58 +401,28 @@ networks:
     container_name: neurectomy-ml-service
     restart: unless-stopped
     environment:
-      # Service Configuration
       SERVICE_NAME: intelligence-foundry-ml
       SERVICE_VERSION: 1.0.0
       HOST: 0.0.0.0
       PORT: 8000
       DEBUG: "false"
-
-      # MLflow Configuration
       MLFLOW_TRACKING_URI: http://mlflow:5000
       MLFLOW_ARTIFACT_ROOT: s3://mlflow-artifacts/
       MLFLOW_BACKEND_STORE_URI: postgresql://mlflow:mlflow@postgres:5432/mlflow
-
-      # Optuna Configuration
       OPTUNA_STORAGE: postgresql://optuna:optuna@postgres:5432/optuna
-      OPTUNA_DEFAULT_SAMPLER: tpe
-      OPTUNA_DEFAULT_PRUNER: median
-
-      # MinIO/S3 Configuration
       S3_ENDPOINT_URL: http://minio:9000
       S3_ACCESS_KEY: minioadmin
       S3_SECRET_KEY: minioadmin
-      S3_BUCKET: mlflow-artifacts
       AWS_ACCESS_KEY_ID: minioadmin
       AWS_SECRET_ACCESS_KEY: minioadmin
       MLFLOW_S3_ENDPOINT_URL: http://minio:9000
-
-      # PostgreSQL Configuration
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
-      POSTGRES_USER: mlflow
-      POSTGRES_PASSWORD: mlflow
-      POSTGRES_DB: mlflow
-
-      # Training Defaults
-      DEFAULT_BATCH_SIZE: 32
-      DEFAULT_EPOCHS: 10
-      DEFAULT_LEARNING_RATE: 0.001
-      MAX_PARALLEL_TRIALS: 4
-      GPU_MEMORY_FRACTION: 0.9
-
-      # WebSocket Configuration
-      WS_HEARTBEAT_INTERVAL: 30
-      WS_MAX_CONNECTIONS: 100
-
-      # CORS Configuration
-      CORS_ORIGINS: http://localhost:5173,http://localhost:3000,http://localhost:8080,tauri://localhost,http://localhost:1420
-
-      # Legacy support
       DATABASE_URL: postgresql://neurectomy:neurectomy@postgres:5432/neurectomy
       REDIS_URL: redis://redis:6379
+      CORS_ORIGINS: http://localhost:16000,http://localhost:16080,tauri://localhost,http://localhost:1420
     ports:
-      - "8002:8000"
+      - "16081:8000" # ML Service (internal 8000 → external 16081)
     volumes:
       - ./services/ml-service:/app
       - ml_service_cache:/root/.cache
@@ -515,7 +446,6 @@ networks:
     networks:
       - neurectomy-network
 
-  # ML Service with GPU support (for training)
   ml-service-gpu:
     build:
       context: ./services/ml-service
@@ -531,7 +461,7 @@ networks:
       JWT_SECRET: ${JWT_SECRET:-neurectomy-jwt-secret-change-in-production}
       CUDA_VISIBLE_DEVICES: 0
     ports:
-      - "8003:8000"
+      - "16082:8000" # ML Service GPU (internal 8000 → external 16082)
     volumes:
       - ml_models:/app/models
       - ml_data:/app/data
@@ -554,39 +484,6 @@ networks:
     networks:
       - neurectomy-network
 
-  # =============================================================================
-  # NEURECTOMY Services (for production-like development)
-  # =============================================================================
-
-  # Uncomment to run backend in Docker instead of locally
-  # rust-core:
-  #   build:
-  #     context: ./services/rust-core
-  #     dockerfile: Dockerfile
-  #   container_name: neurectomy-rust-core
-  #   restart: unless-stopped
-  #   environment:
-  #     DATABASE_URL: postgresql://neurectomy:neurectomy@postgres:5432/neurectomy
-  #     NEO4J_URI: bolt://neo4j:7687
-  #     NEO4J_USER: neo4j
-  #     NEO4J_PASSWORD: ${NEO4J_PASSWORD:-neurectomy}
-  #     REDIS_URL: redis://redis:6379
-  #     NATS_URL: nats://nats:4222
-  #     RUST_LOG: debug
-  #   ports:
-  #     - "8080:8080"
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #     neo4j:
-  #       condition: service_healthy
-  #     redis:
-  #       condition: service_healthy
-  #     nats:
-  #       condition: service_healthy
-  #   networks:
-  #     - neurectomy-network
-
 # =============================================================================
 # Networks & Volumes
 # =============================================================================
@@ -597,6 +494,10 @@ networks:
     name: neurectomy-network
 
 volumes:
+  neurectomy-data:
+    name: neurectomy-data
+  neurectomy-logs:
+    name: neurectomy-logs
   postgres_data:
     name: neurectomy-postgres-data
   timescale_data:

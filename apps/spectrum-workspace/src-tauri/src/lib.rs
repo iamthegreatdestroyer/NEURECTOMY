@@ -76,6 +76,7 @@ pub fn run() {
             commands::get_gpu_info,
             commands::open_file_dialog,
             commands::save_file_dialog,
+            commands::open_folder_dialog,
             commands::read_project_file,
             commands::write_project_file,
             commands::get_app_data_dir,

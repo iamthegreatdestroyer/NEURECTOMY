@@ -462,7 +462,7 @@ export function SearchPanel({
 interface OptionToggleProps {
   active: boolean;
   onClick: () => void;
-  icon: React.FC<{ size?: number; className?: string }>;
+  icon: any; // LucideIcon type
   tooltip: string;
 }
 

@@ -68,18 +68,18 @@ export function ConnectionLine({
     const offset = (state.clock.elapsedTime * speed) % 1;
 
     const material = flowRef.current.material as THREE.LineDashedMaterial;
-    material.dashOffset = -offset * 2;
+    (material as any).dashOffset = -offset * 2;
   });
 
-  const handleClick = (e: THREE.Event) => {
-    e.stopPropagation();
+  const handleClick = (e: any) => {
+    e?.stopPropagation?.();
     onClick?.(connection);
   };
 
   return (
     <group>
       {/* Main connection line */}
-      <line ref={lineRef} onClick={handleClick}>
+      <line ref={lineRef as any} onClick={handleClick}>
         <bufferGeometry>
           <bufferAttribute
             attach="attributes-position"
@@ -97,7 +97,7 @@ export function ConnectionLine({
       </line>
 
       {/* Flow animation line */}
-      <line ref={flowRef}>
+      <line ref={flowRef as any}>
         <bufferGeometry>
           <bufferAttribute
             attach="attributes-position"

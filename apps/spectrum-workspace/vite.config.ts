@@ -20,6 +20,24 @@ export default defineConfig({
       "@utils": path.resolve(__dirname, "./src/utils"),
     },
   },
+  // Vitest configuration
+  test: {
+    globals: true,
+    environment: "jsdom",
+    setupFiles: ["./src/test/setup.ts"],
+    include: ["src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "json", "html"],
+    },
+    alias: {
+      // Mock monaco-editor in tests
+      "monaco-editor": path.resolve(
+        __dirname,
+        "./src/test/__mocks__/monaco-editor.ts"
+      ),
+    },
+  },
   server: {
     port: 16000,
     proxy: {

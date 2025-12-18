@@ -9,11 +9,13 @@ import {
   registerTypeScriptCodeActions,
 } from "./typescript-config";
 import { configureJsonYaml } from "./json-yaml-config";
+import { registerSigmaLangLanguage, sigmaLangThemeTokens } from "./sigmalang";
 
 /**
  * Language to file extension mapping
  */
 export const LANGUAGE_EXTENSIONS: Record<string, string[]> = {
+  sigmalang: [".sigma", ".sig", ".σ"],
   typescript: [".ts", ".tsx", ".mts", ".cts"],
   javascript: [".js", ".jsx", ".mjs", ".cjs"],
   python: [".py", ".pyw", ".pyi"],
@@ -40,6 +42,7 @@ export const LANGUAGE_EXTENSIONS: Record<string, string[]> = {
  * Language icons mapping
  */
 export const LANGUAGE_ICONS: Record<string, string> = {
+  sigmalang: "sigma",
   typescript: "typescript",
   javascript: "javascript",
   typescriptreact: "react",
@@ -68,6 +71,7 @@ export const LANGUAGE_ICONS: Record<string, string> = {
  * Language display names
  */
 export const LANGUAGE_NAMES: Record<string, string> = {
+  sigmalang: "SigmaLang (Σ)",
   typescript: "TypeScript",
   javascript: "JavaScript",
   typescriptreact: "TypeScript React",
@@ -153,6 +157,9 @@ export function configureAllLanguages(
   // Configure JSON/YAML
   disposables.push(configureJsonYaml(monaco));
 
+  // Configure SigmaLang (Σ)
+  registerSigmaLangLanguage();
+
   return disposables;
 }
 
@@ -166,3 +173,8 @@ export {
   configureYaml,
   configureJsonYaml,
 } from "./json-yaml-config";
+export {
+  registerSigmaLangLanguage,
+  sigmaLangThemeTokens,
+  SIGMALANG_LANGUAGE_ID,
+} from "./sigmalang";

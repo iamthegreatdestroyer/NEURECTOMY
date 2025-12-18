@@ -25,6 +25,9 @@ import {
   Lock,
   FolderOpen,
 } from "lucide-react";
+
+// Motion div type
+const MotionDiv = motion.div;
 import { cn } from "@/lib/utils";
 import {
   Button,
@@ -393,7 +396,9 @@ export function GitHubImportDialog({
                       type="password"
                       placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
                       value={githubToken}
-                      onChange={(e) => setGithubToken(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setGithubToken(e.target.value)
+                      }
                       className="pl-10"
                     />
                   </div>
@@ -417,7 +422,7 @@ export function GitHubImportDialog({
 
               <Tabs
                 value={activeTab}
-                onValueChange={(value) => setActiveTab(value as any)}
+                onValueChange={(value: string) => setActiveTab(value as any)}
               >
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="url">Import by URL</TabsTrigger>
@@ -438,8 +443,12 @@ export function GitHubImportDialog({
                       id="repo-url"
                       placeholder="https://github.com/owner/repository"
                       value={repositoryUrl}
-                      onChange={(e) => setRepositoryUrl(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleUrlImport()}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setRepositoryUrl(e.target.value)
+                      }
+                      onKeyDown={(e: React.KeyboardEvent) =>
+                        e.key === "Enter" && handleUrlImport()
+                      }
                     />
                   </div>
                   <Button
@@ -473,8 +482,12 @@ export function GitHubImportDialog({
                       id="search"
                       placeholder="react, typescript, machine learning..."
                       value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setSearchQuery(e.target.value)
+                      }
+                      onKeyDown={(e: React.KeyboardEvent) =>
+                        e.key === "Enter" && handleSearch()
+                      }
                     />
                   </div>
                   <Button
@@ -548,7 +561,9 @@ export function GitHubImportDialog({
                           id="local-path"
                           placeholder="C:\Projects\my-repo"
                           value={localPath}
-                          onChange={(e) => setLocalPath(e.target.value)}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                            setLocalPath(e.target.value)
+                          }
                           className="pl-10"
                         />
                       </div>

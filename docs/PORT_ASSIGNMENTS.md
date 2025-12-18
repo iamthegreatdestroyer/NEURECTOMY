@@ -1,123 +1,174 @@
 # NEURECTOMY Port Assignments (16000 Series)
 
-**Purpose:** This document defines all port assignments for the NEURECTOMY project to avoid conflicts with other projects (e.g., Doppelganger Project on port 3000).
+**Purpose:** Complete port mapping for NEURECTOMY services to avoid conflicts.
 
-**Port Strategy:** All NEURECTOMY services use the 16000 series (16000-16999) for consistency and conflict avoidance.
+**Port Strategy:** NEURECTOMY uses the **16000-16999** range exclusively.
 
----
-
-## 🎯 Primary Application Ports
-
-| Port      | Service                       | Description                             | Configuration File                       |
-| --------- | ----------------------------- | --------------------------------------- | ---------------------------------------- |
-| **16000** | Spectrum Workspace (Frontend) | Vite development server for main UI     | `apps/spectrum-workspace/vite.config.ts` |
-| **16080** | API Gateway / GraphQL Backend | Main API and GraphQL endpoints          | `.env.example` → `API_URL`               |
-| **16081** | ML Service                    | Python FastAPI machine learning service | `services/ml-service/config.py`          |
+**Last Updated:** December 18, 2025  
+**Version:** 2.0.0
 
 ---
 
-## 📦 Supporting Services (Non-Standard Ports)
+## 🎯 Port Allocation Summary
 
-These services use their standard ports but are documented here for completeness:
+| Port Range  | Category        | Description                    |
+| ----------- | --------------- | ------------------------------ |
+| 16000-16099 | Application     | Frontend, Desktop, Dev Tools   |
+| 16080-16099 | API             | REST, GraphQL, WebSocket       |
+| 16400-16499 | Databases       | PostgreSQL, Neo4j, TimescaleDB |
+| 16500-16599 | Cache/Messaging | Redis, NATS                    |
+| 16600-16699 | AI/ML           | Ollama, MLflow, ChromaDB       |
+| 16900-16999 | Observability   | Prometheus, Grafana, Jaeger    |
 
-| Port | Service           | Description                   | Configuration File                   |
-| ---- | ----------------- | ----------------------------- | ------------------------------------ |
-| 5434 | PostgreSQL (Main) | Primary database              | `docker-compose.yml` → `postgres`    |
-| 5433 | TimescaleDB       | Time-series database          | `docker-compose.yml` → `timescaledb` |
-| 7474 | Neo4j HTTP        | Graph database HTTP interface | `docker-compose.yml` → `neo4j`       |
-| 7687 | Neo4j Bolt        | Graph database Bolt protocol  | `docker-compose.yml` → `neo4j`       |
-| 6379 | Redis             | Cache and pub/sub             | `docker-compose.yml` → `redis`       |
-| 4222 | NATS              | Message broker                | `docker-compose.yml` → `nats`        |
+---
+
+## 🔵 Application Tier (16000-16099)
+
+| Port      | Service            | Description              | Config File       |
+| --------- | ------------------ | ------------------------ | ----------------- |
+| **16000** | Spectrum Workspace | Vite frontend dev server | `vite.config.ts`  |
+| **16001** | Tauri Dev Server   | Desktop app dev mode     | `tauri.conf.json` |
+
+---
+
+## 🟢 API Tier (16080-16099)
+
+| Port      | Service        | Description               | Config File          |
+| --------- | -------------- | ------------------------- | -------------------- |
+| **16080** | API Gateway    | Main REST/GraphQL API     | `docker-compose.yml` |
+| **16081** | ML Service     | Python FastAPI ML service | `docker-compose.yml` |
+| **16082** | ML Service GPU | GPU-accelerated ML        | `docker-compose.yml` |
+| **16083** | WebSocket      | Real-time events          | `docker-compose.yml` |
+
+---
+
+## 🟡 Databases (16400-16499)
+
+| Port      | Service     | Internal Port | Config File          |
+| --------- | ----------- | ------------- | -------------------- |
+| **16432** | PostgreSQL  | 5432          | `docker-compose.yml` |
+| **16433** | TimescaleDB | 5432          | `docker-compose.yml` |
+| **16474** | Neo4j HTTP  | 7474          | `docker-compose.yml` |
+| **16475** | Neo4j Bolt  | 7687          | `docker-compose.yml` |
+
+---
+
+## 🟠 Cache & Messaging (16500-16599)
+
+| Port      | Service         | Internal Port | Config File          |
+| --------- | --------------- | ------------- | -------------------- |
+| **16500** | Redis           | 6379          | `docker-compose.yml` |
+| **16522** | NATS Client     | 4222          | `docker-compose.yml` |
+| **16523** | NATS Monitoring | 8222          | `docker-compose.yml` |
+
+---
+
+## 🟣 AI/ML Services (16600-16699)
+
+| Port      | Service          | Internal Port | Config File          |
+| --------- | ---------------- | ------------- | -------------------- |
+| **16600** | Ollama           | 11434         | `docker-compose.yml` |
+| **16610** | MLflow           | 5000          | `docker-compose.yml` |
+| **16611** | Optuna Dashboard | 8080          | `docker-compose.yml` |
+| **16620** | ChromaDB         | 8000          | `docker-compose.yml` |
+
+---
+
+## 🔴 Observability (16900-16999)
+
+| Port      | Service          | Internal Port | Config File          |
+| --------- | ---------------- | ------------- | -------------------- |
+| **16900** | Prometheus       | 9090          | `docker-compose.yml` |
+| **16901** | AlertManager     | 9093          | `docker-compose.yml` |
+| **16910** | Grafana          | 3000          | `docker-compose.yml` |
+| **16920** | Jaeger UI        | 16686         | `docker-compose.yml` |
+| **16921** | Jaeger Collector | 14268         | `docker-compose.yml` |
+| **16922** | Jaeger gRPC      | 14250         | `docker-compose.yml` |
+| **16923** | Zipkin           | 9411          | `docker-compose.yml` |
+| **16930** | Loki             | 3100          | `docker-compose.yml` |
+| **16950** | MinIO API        | 9000          | `docker-compose.yml` |
+| **16951** | MinIO Console    | 9001          | `docker-compose.yml` |
 
 ---
 
 ## 🔗 CORS Configuration
 
-The following origins are allowed for cross-origin requests:
-
 ```
-http://localhost:16000   # Spectrum Workspace (Frontend)
+http://localhost:16000   # Spectrum Workspace
 http://localhost:16080   # API Gateway
-tauri://localhost        # Tauri app (if applicable)
-http://localhost:1420    # Tauri dev server (if applicable)
+tauri://localhost        # Tauri Desktop App
+http://localhost:1420    # Tauri dev (legacy)
 ```
-
-**Configuration:** `.env.example` → `CORS_ORIGINS`
 
 ---
 
-## 🚀 Starting Services
-
-### Development Mode
+## 🚀 Quick Start
 
 ```powershell
-# Start infrastructure services (databases, cache, messaging)
+# Start all Docker services
 docker-compose up -d
 
-# Start frontend (Spectrum Workspace)
+# Start frontend dev server
+cd apps/spectrum-workspace
 pnpm dev
-# Frontend will be available at: http://localhost:16000
+# → http://localhost:16000
 
-# Start ML service (if needed)
-cd services/ml-service
-uvicorn main:app --host 0.0.0.0 --port 16081 --reload
-# ML service will be available at: http://localhost:16081
+# Start desktop app (dev mode)
+pnpm tauri:dev
 ```
 
-### Access Points
+---
 
-- **Spectrum Workspace UI:** http://localhost:16000
-- **API/GraphQL Endpoint:** http://localhost:16080
-- **ML Service API:** http://localhost:16081
-- **Neo4j Browser:** http://localhost:7474
+## 📊 Access Points
+
+| Service            | URL                    |
+| ------------------ | ---------------------- |
+| Spectrum Workspace | http://localhost:16000 |
+| API Gateway        | http://localhost:16080 |
+| ML Service         | http://localhost:16081 |
+| Grafana            | http://localhost:16910 |
+| Prometheus         | http://localhost:16900 |
+| Neo4j Browser      | http://localhost:16474 |
+| MLflow             | http://localhost:16610 |
+| Jaeger             | http://localhost:16920 |
+| MinIO Console      | http://localhost:16951 |
 
 ---
 
-## 📋 Port Conflict History
+## 🌐 Related Project Port Allocations
 
-### Resolved Conflicts
+To avoid cross-project conflicts, each project uses a distinct 10,000-series:
 
-| Date       | Conflict                                                            | Resolution       |
-| ---------- | ------------------------------------------------------------------- | ---------------- |
-| 2025-01-XX | Spectrum Workspace conflicted with Doppelganger Project (port 3000) | Changed to 16000 |
-| 2025-01-XX | API/GraphQL conflicted with Doppelganger services (port 8080)       | Changed to 16080 |
-| 2025-01-XX | ML Service default port (8000)                                      | Changed to 16081 |
+| Port Range      | Project             | Description         |
+| --------------- | ------------------- | ------------------- |
+| **10000-10999** | DOPPELGANGER-STUDIO | AI Content Platform |
+| **16000-16999** | NEURECTOMY          | AI Development IDE  |
+| **26000-26999** | SigmaLang (ΣLANG)   | Sub-Linear Compiler |
+| **36000-36999** | SigmaVault (ΣVAULT) | Encrypted Storage   |
+| **46000-46999** | Ryot LLM            | BitNet Inference    |
 
----
-
-## 🔧 Updating Ports
-
-If you need to add a new service or update a port:
-
-1. **Choose a port in the 16000 series** (16000-16999)
-2. **Update this document** with the new assignment
-3. **Update the relevant configuration files:**
-   - `.env` and `.env.example` (if applicable)
-   - `docker-compose.yml` (if Docker service)
-   - Service-specific config files (e.g., `config.py`, `vite.config.ts`)
-   - Update CORS configuration if needed
-4. **Restart affected services**
+See `docs/MASTER_PORT_ASSIGNMENTS.md` for complete cross-project allocations.
 
 ---
 
-## ⚠️ Reserved Ports
+## ⚠️ Ports to AVOID
 
-The following ports are reserved and should NOT be used:
+Never use these ports (default/common conflicts):
 
-- **3000:** Doppelganger Project (separate project)
-- **8080:** Commonly used, avoid to prevent conflicts
-- **8000:** Commonly used, avoid to prevent conflicts
-
----
-
-## 📝 Notes
-
-- All ports in the 16000 series are exclusively for NEURECTOMY
-- Database ports (5432, 5433, 6379, 7474, 7687) use standard offsets to avoid conflicts with default installations
-- Tauri ports (1420) are for desktop application development
-- Always update `.env.example` when adding new environment variables
+| Port | Reason               |
+| ---- | -------------------- |
+| 3000 | DOPPELGANGER uses it |
+| 5432 | Default PostgreSQL   |
+| 6379 | Default Redis        |
+| 8000 | Common API port      |
+| 8080 | Common HTTP alt      |
+| 9090 | Default Prometheus   |
 
 ---
 
-**Last Updated:** 2025-01-XX  
-**Version:** 1.0.0
+## 📋 Conflict Resolution History
+
+| Date       | Conflict                                 | Resolution                      |
+| ---------- | ---------------------------------------- | ------------------------------- |
+| 2025-12-18 | Multiple projects using 3000, 8000, 6379 | Migrated to 16xxx series        |
+| 2025-12-18 | Cross-project port collisions            | Created MASTER_PORT_ASSIGNMENTS |

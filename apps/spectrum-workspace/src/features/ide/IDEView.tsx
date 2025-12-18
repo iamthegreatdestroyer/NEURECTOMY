@@ -5,7 +5,7 @@
  * Integrating: Agent Execution Graph, GitOps Overlay, Experiment Sidebar, Enhanced Status Bar
  */
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   File,
@@ -50,14 +50,17 @@ import { LocalImportDialog } from "@/components/shell/LocalImportDialog";
 import { useNotifications } from "@/components/shell/NotificationToast";
 import { LocalImportPanel } from "@/components/shell/LocalImportPanel";
 import { GitHubImportPanel } from "@/components/shell/GitHubImportPanel";
+import { RealTerminal } from "@/components/terminal/RealTerminal";
 import { invoke } from "@tauri-apps/api/core";
 
 interface FileNode {
+  id?: string;
   name: string;
   type: "file" | "folder";
   path: string;
   children?: FileNode[];
   expanded?: boolean;
+  isLoading?: boolean;
 }
 
 // Mock file tree
@@ -127,10 +130,41 @@ type ActivityBarItem =
   | "local-import"
   | "settings";
 
+// DirectoryEntry type matching Rust backend struct
+interface DirectoryEntry {
+  name: string;
+  path: string;
+  is_directory: boolean;
+  size: number | null;
+  modified: string | null;
+}
+
+// Helper: Convert DirectoryEntry[] to FileNode[]
+function directoryEntriesToFileNodes(entries: DirectoryEntry[]): FileNode[] {
+  return entries
+    .sort((a, b) => {
+      // Directories first, then alphabetical
+      if (a.is_directory !== b.is_directory) {
+        return a.is_directory ? -1 : 1;
+      }
+      return a.name.localeCompare(b.name);
+    })
+    .map((entry) => ({
+      id: entry.path,
+      name: entry.name,
+      type: entry.is_directory ? ("folder" as const) : ("file" as const),
+      path: entry.path,
+      children: entry.is_directory ? [] : undefined,
+      expanded: false,
+    }));
+}
+
 export default function IDEView() {
   const [activeActivity, setActiveActivity] =
     useState<ActivityBarItem>("explorer");
-  const [fileTree, setFileTree] = useState<FileNode[]>(mockFileTree);
+  const [fileTree, setFileTree] = useState<FileNode[]>([]);
+  const [rootPath, setRootPath] = useState<string | null>(null);
+  const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const [terminalOpen, setTerminalOpen] = useState(true);
   const [agentGraphOpen, setAgentGraphOpen] = useState(false);
   const [githubImportOpen, setGithubImportOpen] = useState(false);
@@ -152,6 +186,86 @@ export default function IDEView() {
 
   const { add: addNotification, update: updateNotification } =
     useNotifications();
+
+  // Load directory contents from filesystem
+  const loadDirectory = useCallback(
+    async (dirPath: string): Promise<FileNode[]> => {
+      try {
+        const entries = await invoke<DirectoryEntry[]>("read_directory", {
+          path: dirPath,
+        });
+        return directoryEntriesToFileNodes(entries);
+      } catch (error) {
+        console.error("Failed to load directory:", dirPath, error);
+        addNotification({
+          type: "error",
+          title: "Failed to load directory",
+          message: error instanceof Error ? error.message : String(error),
+          duration: 5000,
+        });
+        return [];
+      }
+    },
+    [addNotification]
+  );
+
+  // Open a folder and set as root
+  const openFolder = useCallback(
+    async (folderPath?: string) => {
+      setIsLoadingFiles(true);
+      try {
+        let targetPath = folderPath;
+
+        if (!targetPath) {
+          // Use Tauri dialog to pick folder
+          const result = await invoke<string | null>("open_folder_dialog", {});
+          if (!result) {
+            setIsLoadingFiles(false);
+            return; // User cancelled
+          }
+          targetPath = result;
+        }
+
+        setRootPath(targetPath);
+        const rootNodes = await loadDirectory(targetPath);
+        setFileTree(rootNodes);
+
+        addNotification({
+          type: "success",
+          title: "Folder opened",
+          message: `Loaded ${targetPath}`,
+          duration: 3000,
+        });
+      } catch (error) {
+        console.error("Failed to open folder:", error);
+        addNotification({
+          type: "error",
+          title: "Failed to open folder",
+          message: error instanceof Error ? error.message : String(error),
+          duration: 5000,
+        });
+      } finally {
+        setIsLoadingFiles(false);
+      }
+    },
+    [loadDirectory, addNotification]
+  );
+
+  // Load file content when clicking on a file
+  const loadFileContent = useCallback(
+    async (filePath: string): Promise<string> => {
+      try {
+        const content = await invoke<string>("read_project_file", {
+          path: filePath,
+        });
+        return content;
+      } catch (error) {
+        console.error("Failed to read file:", filePath, error);
+        return `// Error loading file: ${error instanceof Error ? error.message : String(error)}`;
+      }
+    },
+    []
+  );
 
   // Keyboard shortcuts handlers - memoized to prevent re-binding
   const shortcutHandlers = useMemo(
@@ -215,40 +329,101 @@ export default function IDEView() {
   );
 
   const toggleFolder = useCallback(
-    (path: string) => {
-      const updateTree = (nodes: FileNode[]): FileNode[] => {
-        return nodes.map((node) => {
-          if (node.path === path && node.type === "folder") {
-            return { ...node, expanded: !node.expanded };
-          }
+    async (path: string) => {
+      // Find the node and check if it needs to load children
+      const findNode = (nodes: FileNode[]): FileNode | null => {
+        for (const node of nodes) {
+          if (node.path === path) return node;
           if (node.children) {
-            return { ...node, children: updateTree(node.children) };
+            const found = findNode(node.children);
+            if (found) return found;
           }
-          return node;
-        });
+        }
+        return null;
       };
-      setFileTree(updateTree(fileTree));
+
+      const targetNode = findNode(fileTree);
+      const needsLoad =
+        targetNode &&
+        targetNode.type === "folder" &&
+        (!targetNode.children || targetNode.children.length === 0) &&
+        !targetNode.expanded;
+
+      if (needsLoad) {
+        // Load children before expanding
+        const updateTreeWithLoading = (nodes: FileNode[]): FileNode[] => {
+          return nodes.map((node) => {
+            if (node.path === path && node.type === "folder") {
+              return { ...node, isLoading: true };
+            }
+            if (node.children) {
+              return {
+                ...node,
+                children: updateTreeWithLoading(node.children),
+              };
+            }
+            return node;
+          });
+        };
+        setFileTree(updateTreeWithLoading(fileTree));
+
+        try {
+          const children = await loadDirectory(path);
+          const updateTreeWithChildren = (nodes: FileNode[]): FileNode[] => {
+            return nodes.map((node) => {
+              if (node.path === path && node.type === "folder") {
+                return { ...node, children, expanded: true, isLoading: false };
+              }
+              if (node.children) {
+                return {
+                  ...node,
+                  children: updateTreeWithChildren(node.children),
+                };
+              }
+              return node;
+            });
+          };
+          setFileTree(updateTreeWithChildren);
+        } catch (error) {
+          console.error("Failed to load folder children:", error);
+        }
+      } else {
+        // Just toggle expanded state
+        const updateTree = (nodes: FileNode[]): FileNode[] => {
+          return nodes.map((node) => {
+            if (node.path === path && node.type === "folder") {
+              return { ...node, expanded: !node.expanded };
+            }
+            if (node.children) {
+              return { ...node, children: updateTree(node.children) };
+            }
+            return node;
+          });
+        };
+        setFileTree(updateTree(fileTree));
+      }
     },
-    [fileTree]
+    [fileTree, loadDirectory]
   );
 
   const handleFileClick = useCallback(
-    (file: FileNode) => {
+    async (file: FileNode) => {
       if (file.type === "file") {
+        // Load actual file content from backend
+        const content = await loadFileContent(file.path);
         const fileToOpen: Omit<EditorFile, "id" | "isDirty" | "lastModified"> =
           {
             path: file.path,
             name: file.name,
             language: getLanguageFromPath(file.path),
-            content: "// File content will be loaded from backend\n",
+            content,
           };
         openFile(fileToOpen);
-        // setActiveFile is handled automatically by openFile
       } else {
         toggleFolder(file.path);
       }
     },
-    [openFile, toggleFolder]
+    [openFile, toggleFolder, loadFileContent]
   );
 
   // Import handlers for panels
@@ -508,8 +683,12 @@ export default function IDEView() {
           {activeActivity === "explorer" && (
             <ExplorerPanel
               fileTree={fileTree}
+              rootPath={rootPath}
+              isLoading={isLoadingFiles}
               onFileClick={handleFileClick}
               onToggleFolder={toggleFolder}
+              onOpenFolder={openFolder}
+              onRefresh={() => rootPath && loadDirectory(rootPath)}
             />
           )}
           {activeActivity === "search" && <SearchPanel />}
@@ -549,7 +728,26 @@ export default function IDEView() {
 
         {/* Editor Content */}
         <div className="flex-1 relative bg-background overflow-hidden">
-          {openFiles.length === 0 ? <WelcomeScreen /> : <EditorManager />}
+          {openFiles.length === 0 ? (
+            <WelcomeScreen
+              onOpenFolder={() => openFolder()}
+              onNewFile={() => {
+                openFile({
+                  path: "/untitled-1",
+                  name: "Untitled-1",
+                  language: "plaintext",
+                  content: "// Start typing here...\n",
+                });
+              }}
+              onCloneRepository={() => setActiveActivity("github-import")}
+              onAgentWorkspace={() => {
+                setActiveActivity("agents");
+                setAgentGraphOpen(true);
+              }}
+            />
+          ) : (
+            <EditorManager />
+          )}
         </div>
 
         {/* Agent Execution Graph Panel (Collapsible) */}
@@ -663,12 +861,20 @@ function ActivityBarIcon({
 // Explorer Panel
 function ExplorerPanel({
   fileTree,
+  rootPath,
+  isLoading,
   onFileClick,
   onToggleFolder,
+  onOpenFolder,
+  onRefresh,
 }: {
   fileTree: FileNode[];
+  rootPath: string | null;
+  isLoading: boolean;
   onFileClick: (file: FileNode) => void;
   onToggleFolder: (path: string) => void;
+  onOpenFolder: () => void;
+  onRefresh: () => void;
 }) {
   return (
     <motion.div
@@ -679,9 +885,16 @@ function ExplorerPanel({
     >
       <div className="flex items-center justify-between px-2 py-2 mb-2">
         <span className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
-          Explorer
+          {rootPath ? rootPath.split(/[/\\]/).pop() || "Explorer" : "Explorer"}
         </span>
         <div className="flex gap-1">
+          <button
+            className="p-1 hover:bg-muted rounded transition-colors"
+            title="Open Folder"
+            onClick={onOpenFolder}
+          >
+            <FolderOpen size={14} />
+          </button>
           <button
             className="p-1 hover:bg-muted rounded transition-colors"
             title="New File"
@@ -697,16 +910,26 @@ function ExplorerPanel({
           <button
             className="p-1 hover:bg-muted rounded transition-colors"
             title="Refresh"
+            onClick={onRefresh}
+            disabled={isLoading}
           >
-            <RefreshCw size={14} />
+            <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
           </button>
         </div>
       </div>
-      <FileTreeView
-        nodes={fileTree}
-        onFileClick={onFileClick}
-        onToggleFolder={onToggleFolder}
-      />
+      {isLoading && (
+        <div className="flex items-center justify-center py-4 text-muted-foreground text-sm">
+          <RefreshCw size={14} className="animate-spin mr-2" />
+          Loading...
+        </div>
+      )}
+      {!isLoading && (
+        <FileTreeView
+          nodes={fileTree}
+          onFileClick={onFileClick}
+          onToggleFolder={onToggleFolder}
+        />
+      )}
     </motion.div>
   );
 }
@@ -808,7 +1031,19 @@ function EditorTab({
 }
 
 // Welcome Screen
-function WelcomeScreen() {
+interface WelcomeScreenProps {
+  onOpenFolder: () => void;
+  onNewFile: () => void;
+  onCloneRepository: () => void;
+  onAgentWorkspace: () => void;
+}
+
+function WelcomeScreen({
+  onOpenFolder,
+  onNewFile,
+  onCloneRepository,
+  onAgentWorkspace,
+}: WelcomeScreenProps) {
   return (
     <div className="flex items-center justify-center h-full">
       <div className="text-center max-w-2xl px-6">
@@ -822,7 +1057,10 @@ function WelcomeScreen() {
           Next-generation code editor with embedded AI agent orchestration
         </p>
         <div className="grid grid-cols-2 gap-3 text-sm">
-          <button className="p-4 bg-card hover:bg-muted rounded-lg border border-border text-left transition-colors group">
+          <button
+            onClick={onOpenFolder}
+            className="p-4 bg-card hover:bg-muted rounded-lg border border-border text-left transition-colors group"
+          >
             <div className="font-semibold mb-1 group-hover:text-primary transition-colors">
               Open Folder
             </div>
@@ -830,7 +1068,10 @@ function WelcomeScreen() {
               Start editing existing project
             </div>
           </button>
-          <button className="p-4 bg-card hover:bg-muted rounded-lg border border-border text-left transition-colors group">
+          <button
+            onClick={onNewFile}
+            className="p-4 bg-card hover:bg-muted rounded-lg border border-border text-left transition-colors group"
+          >
             <div className="font-semibold mb-1 group-hover:text-primary transition-colors">
               New File
             </div>
@@ -838,13 +1079,19 @@ function WelcomeScreen() {
               Create a new file
             </div>
           </button>
-          <button className="p-4 bg-card hover:bg-muted rounded-lg border border-border text-left transition-colors group">
+          <button
+            onClick={onCloneRepository}
+            className="p-4 bg-card hover:bg-muted rounded-lg border border-border text-left transition-colors group"
+          >
             <div className="font-semibold mb-1 group-hover:text-primary transition-colors">
               Clone Repository
             </div>
             <div className="text-muted-foreground text-xs">Clone from Git</div>
           </button>
-          <button className="p-4 bg-card hover:bg-muted rounded-lg border border-border text-left transition-colors group">
+          <button
+            onClick={onAgentWorkspace}
+            className="p-4 bg-card hover:bg-muted rounded-lg border border-border text-left transition-colors group"
+          >
             <div className="font-semibold mb-1 group-hover:text-primary transition-colors">
               Agent Workspace
             </div>
@@ -858,7 +1105,7 @@ function WelcomeScreen() {
   );
 }
 
-// Terminal Panel
+// Terminal Panel - Real xterm.js terminal with PowerShell
 function TerminalPanel({ onClose }: { onClose: () => void }) {
   return (
     <div className="h-full flex flex-col">
@@ -866,6 +1113,7 @@ function TerminalPanel({ onClose }: { onClose: () => void }) {
         <div className="flex items-center gap-2 text-sm">
           <TerminalIcon size={14} />
           <span className="font-medium">Terminal</span>
+          <span className="text-xs text-muted-foreground ml-2">PowerShell</span>
         </div>
         <div className="flex gap-1">
           <button
@@ -883,13 +1131,8 @@ function TerminalPanel({ onClose }: { onClose: () => void }) {
           </button>
         </div>
       </div>
-      <div className="flex-1 p-3 font-mono text-sm overflow-auto bg-background">
-        <div className="text-matrix-green">
-          <span className="text-muted-foreground">
-            PS C:\Users\sgbil\NEURECTOMY&gt;
-          </span>{" "}
-          <span className="animate-pulse">_</span>
-        </div>
+      <div className="flex-1 overflow-hidden">
+        <RealTerminal onClose={onClose} />
       </div>
     </div>
   );

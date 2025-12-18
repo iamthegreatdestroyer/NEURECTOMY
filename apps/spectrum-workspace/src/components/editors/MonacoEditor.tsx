@@ -16,38 +16,59 @@ import {
 
 // Configure Monaco environment with bundler-friendly workers
 const workerFactory: Record<string, () => Worker> = {
-  json: () =>
-    new Worker(
-      new URL(
-        "monaco-editor/esm/vs/language/json/json.worker?worker",
-        import.meta.url
-      ),
-      { type: "module", name: "json" }
-    ),
-  css: () =>
-    new Worker(
-      new URL(
-        "monaco-editor/esm/vs/language/css/css.worker?worker",
-        import.meta.url
-      ),
-      { type: "module", name: "css" }
-    ),
-  scss: () =>
-    new Worker(
-      new URL(
-        "monaco-editor/esm/vs/language/css/css.worker?worker",
-        import.meta.url
-      ),
-      { type: "module", name: "scss" }
-    ),
-  less: () =>
-    new Worker(
-      new URL(
-        "monaco-editor/esm/vs/language/css/css.worker?worker",
-        import.meta.url
-      ),
-      { type: "module", name: "less" }
-    ),
+  json: () => {
+    try {
+      return new Worker(
+        new URL(
+          "monaco-editor/esm/vs/language/json/json.worker?worker",
+          import.meta.url
+        ),
+        { type: "module", name: "json" }
+      );
+    } catch {
+      // Fallback for production
+      return new Worker("/monaco-workers/json.worker.js");
+    }
+  },
+  css: () => {
+    try {
+      return new Worker(
+        new URL(
+          "monaco-editor/esm/vs/language/css/css.worker?worker",
+          import.meta.url
+        ),
+        { type: "module", name: "css" }
+      );
+    } catch {
+      return new Worker("/monaco-workers/css.worker.js");
+    }
+  },
+  scss: () => {
+    try {
+      return new Worker(
+        new URL(
+          "monaco-editor/esm/vs/language/css/css.worker?worker",
+          import.meta.url
+        ),
+        { type: "module", name: "scss" }
+      );
+    } catch {
+      return new Worker("/monaco-workers/css.worker.js");
+    }
+  },
+  less: () => {
+    try {
+      return new Worker(
+        new URL(
+          "monaco-editor/esm/vs/language/css/css.worker?worker",
+          import.meta.url
+        ),
+        { type: "module", name: "less" }
+      );
+    } catch {
+      return new Worker("/monaco-workers/css.worker.js");
+    }
+  },
   html: () =>
     new Worker(
       new URL(
