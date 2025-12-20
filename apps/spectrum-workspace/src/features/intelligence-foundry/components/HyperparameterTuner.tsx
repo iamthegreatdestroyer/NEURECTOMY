@@ -629,7 +629,11 @@ export function HyperparameterTuner() {
                           <span className="text-sm font-semibold text-primary">
                             {trial.value.toFixed(4)}
                           </span>
-                          <button className="p-1 hover:bg-muted rounded transition-colors">
+                          <button 
+                            className="p-1 hover:bg-muted rounded transition-colors"
+                            aria-label="View trial details"
+                            title="View trial details"
+                          >
                             <Eye className="w-3.5 h-3.5 text-muted-foreground" />
                           </button>
                         </div>

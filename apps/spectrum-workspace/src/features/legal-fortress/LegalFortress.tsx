@@ -355,7 +355,11 @@ export function LegalFortress() {
                       Updated {doc.lastUpdated}
                     </p>
                   </div>
-                  <button className="p-2 hover:bg-accent rounded-lg transition-colors">
+                  <button 
+                    className="p-2 hover:bg-accent rounded-lg transition-colors"
+                    aria-label="Download document"
+                    title="Download document"
+                  >
                     <Download className="h-4 w-4 text-muted-foreground" />
                   </button>
                 </div>

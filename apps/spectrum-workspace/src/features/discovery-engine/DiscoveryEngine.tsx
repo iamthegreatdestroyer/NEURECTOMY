@@ -3,7 +3,7 @@
  * Research & Knowledge Graph Navigation
  */
 
-import { useState } from 'react';
+import { useState } from "react";
 import {
   Search,
   BookOpen,
@@ -23,7 +23,7 @@ import {
   Clock,
   Bookmark,
   Share2,
-} from 'lucide-react';
+} from "lucide-react";
 
 // Research item type
 interface ResearchItem {
@@ -63,10 +63,12 @@ function ResearchCard({ item }: { item: ResearchItem }) {
           <button
             onClick={() => setSaved(!saved)}
             className={`p-1.5 rounded-lg transition-colors ${
-              saved ? 'bg-yellow-500/10 text-yellow-500' : 'hover:bg-muted text-muted-foreground'
+              saved
+                ? "bg-yellow-500/10 text-yellow-500"
+                : "hover:bg-muted text-muted-foreground"
             }`}
           >
-            <Bookmark className={`w-4 h-4 ${saved ? 'fill-current' : ''}`} />
+            <Bookmark className={`w-4 h-4 ${saved ? "fill-current" : ""}`} />
           </button>
         </div>
       </div>
@@ -82,7 +84,7 @@ function ResearchCard({ item }: { item: ResearchItem }) {
       {/* Authors */}
       <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
         <User className="w-3.5 h-3.5" />
-        <span className="line-clamp-1">{item.authors.join(', ')}</span>
+        <span className="line-clamp-1">{item.authors.join(", ")}</span>
       </div>
 
       {/* Tags */}
@@ -115,13 +117,25 @@ function ResearchCard({ item }: { item: ResearchItem }) {
           </div>
         </div>
         <div className="flex items-center gap-1">
-          <button className="p-2 hover:bg-muted rounded-lg transition-colors">
+          <button
+            className="p-2 hover:bg-muted rounded-lg transition-colors"
+            aria-label="Share"
+            title="Share"
+          >
             <Share2 className="w-4 h-4 text-muted-foreground" />
           </button>
-          <button className="p-2 hover:bg-muted rounded-lg transition-colors">
+          <button
+            className="p-2 hover:bg-muted rounded-lg transition-colors"
+            aria-label="Download"
+            title="Download"
+          >
             <Download className="w-4 h-4 text-muted-foreground" />
           </button>
-          <button className="p-2 hover:bg-muted rounded-lg transition-colors">
+          <button
+            className="p-2 hover:bg-muted rounded-lg transition-colors"
+            aria-label="Open in new tab"
+            title="Open in new tab"
+          >
             <ExternalLink className="w-4 h-4 text-muted-foreground" />
           </button>
         </div>
@@ -131,7 +145,11 @@ function ResearchCard({ item }: { item: ResearchItem }) {
 }
 
 // Trending topic card
-function TrendingCard({ topic }: { topic: { name: string; growth: number; papers: number } }) {
+function TrendingCard({
+  topic,
+}: {
+  topic: { name: string; growth: number; papers: number };
+}) {
   return (
     <div className="flex items-center justify-between p-3 bg-card border border-border rounded-lg hover:border-primary/30 cursor-pointer transition-colors">
       <div className="flex items-center gap-3">
@@ -143,88 +161,97 @@ function TrendingCard({ topic }: { topic: { name: string; growth: number; papers
           <p className="text-xs text-muted-foreground">{topic.papers} papers</p>
         </div>
       </div>
-      <span className="text-sm font-semibold text-emerald-500">+{topic.growth}%</span>
+      <span className="text-sm font-semibold text-emerald-500">
+        +{topic.growth}%
+      </span>
     </div>
   );
 }
 
 // Main Discovery Engine component
 export function DiscoveryEngine() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [activeSource, setActiveSource] = useState<string | null>(null);
 
   // Mock research data
   const researchItems: ResearchItem[] = [
     {
-      id: '1',
-      title: 'Attention Is All You Need: Transformer Architecture for Neural Machine Translation',
-      authors: ['Vaswani, A.', 'Shazeer, N.', 'Parmar, N.', 'Uszkoreit, J.'],
-      source: 'arXiv',
-      date: new Date('2017-06-12'),
-      abstract: 'The dominant sequence transduction models are based on complex recurrent or convolutional neural networks that include an encoder and a decoder. We propose a new simple network architecture based solely on attention mechanisms.',
-      tags: ['transformers', 'attention', 'NLP', 'deep learning'],
+      id: "1",
+      title:
+        "Attention Is All You Need: Transformer Architecture for Neural Machine Translation",
+      authors: ["Vaswani, A.", "Shazeer, N.", "Parmar, N.", "Uszkoreit, J."],
+      source: "arXiv",
+      date: new Date("2017-06-12"),
+      abstract:
+        "The dominant sequence transduction models are based on complex recurrent or convolutional neural networks that include an encoder and a decoder. We propose a new simple network architecture based solely on attention mechanisms.",
+      tags: ["transformers", "attention", "NLP", "deep learning"],
       citations: 89000,
       relevance: 98,
       saved: true,
-      url: 'https://arxiv.org/abs/1706.03762',
+      url: "https://arxiv.org/abs/1706.03762",
     },
     {
-      id: '2',
-      title: 'Large Language Models as Tool Makers: Emergent Capabilities in Few-Shot Learning',
-      authors: ['Chen, M.', 'Tworek, J.', 'Jun, H.'],
-      source: 'NeurIPS 2023',
-      date: new Date('2023-09-15'),
-      abstract: 'We demonstrate that large language models can synthesize executable tools from natural language specifications, enabling a new paradigm of AI-assisted programming and automation.',
-      tags: ['LLM', 'tool use', 'few-shot', 'agents'],
+      id: "2",
+      title:
+        "Large Language Models as Tool Makers: Emergent Capabilities in Few-Shot Learning",
+      authors: ["Chen, M.", "Tworek, J.", "Jun, H."],
+      source: "NeurIPS 2023",
+      date: new Date("2023-09-15"),
+      abstract:
+        "We demonstrate that large language models can synthesize executable tools from natural language specifications, enabling a new paradigm of AI-assisted programming and automation.",
+      tags: ["LLM", "tool use", "few-shot", "agents"],
       citations: 156,
       relevance: 95,
       saved: false,
-      url: '#',
+      url: "#",
     },
     {
-      id: '3',
-      title: 'Constitutional AI: Harmlessness from AI Feedback',
-      authors: ['Bai, Y.', 'Kadavath, S.', 'Kundu, S.'],
-      source: 'Anthropic',
-      date: new Date('2022-12-15'),
-      abstract: 'We describe a method for training AI systems to be harmless and helpful using AI feedback, without human labels for harmlessness. The key is to have AI evaluate and critique its own outputs.',
-      tags: ['AI safety', 'RLHF', 'alignment', 'constitutional AI'],
+      id: "3",
+      title: "Constitutional AI: Harmlessness from AI Feedback",
+      authors: ["Bai, Y.", "Kadavath, S.", "Kundu, S."],
+      source: "Anthropic",
+      date: new Date("2022-12-15"),
+      abstract:
+        "We describe a method for training AI systems to be harmless and helpful using AI feedback, without human labels for harmlessness. The key is to have AI evaluate and critique its own outputs.",
+      tags: ["AI safety", "RLHF", "alignment", "constitutional AI"],
       citations: 892,
       relevance: 91,
       saved: false,
-      url: '#',
+      url: "#",
     },
     {
-      id: '4',
-      title: 'Chain-of-Thought Prompting Elicits Reasoning in Large Language Models',
-      authors: ['Wei, J.', 'Wang, X.', 'Schuurmans, D.'],
-      source: 'Google Research',
-      date: new Date('2022-01-28'),
-      abstract: 'We explore how generating a chain of thought—a series of intermediate reasoning steps—significantly improves the ability of large language models to perform complex reasoning.',
-      tags: ['prompting', 'reasoning', 'LLM', 'chain-of-thought'],
+      id: "4",
+      title:
+        "Chain-of-Thought Prompting Elicits Reasoning in Large Language Models",
+      authors: ["Wei, J.", "Wang, X.", "Schuurmans, D."],
+      source: "Google Research",
+      date: new Date("2022-01-28"),
+      abstract:
+        "We explore how generating a chain of thought—a series of intermediate reasoning steps—significantly improves the ability of large language models to perform complex reasoning.",
+      tags: ["prompting", "reasoning", "LLM", "chain-of-thought"],
       citations: 4500,
       relevance: 89,
       saved: true,
-      url: '#',
+      url: "#",
     },
   ];
 
   // Trending topics
   const trendingTopics = [
-    { name: 'Multi-Modal LLMs', growth: 245, papers: 1243 },
-    { name: 'AI Agents', growth: 189, papers: 876 },
-    { name: 'RAG Systems', growth: 156, papers: 654 },
-    { name: 'Constitutional AI', growth: 134, papers: 432 },
+    { name: "Multi-Modal LLMs", growth: 245, papers: 1243 },
+    { name: "AI Agents", growth: 189, papers: 876 },
+    { name: "RAG Systems", growth: 156, papers: 654 },
+    { name: "Constitutional AI", growth: 134, papers: 432 },
   ];
 
   // Sources
   const sources = [
-    { id: 'arxiv', name: 'arXiv', count: 12500 },
-    { id: 'semantic', name: 'Semantic Scholar', count: 45000 },
-    { id: 'pubmed', name: 'PubMed', count: 8900 },
-    { id: 'ieee', name: 'IEEE Xplore', count: 5600 },
-    { id: 'acm', name: 'ACM DL', count: 3400 },
+    { id: "arxiv", name: "arXiv", count: 12500 },
+    { id: "semantic", name: "Semantic Scholar", count: 45000 },
+    { id: "pubmed", name: "PubMed", count: 8900 },
+    { id: "ieee", name: "IEEE Xplore", count: 5600 },
+    { id: "acm", name: "ACM DL", count: 3400 },
   ];
 
   return (
@@ -242,17 +269,21 @@ export function DiscoveryEngine() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setViewMode('grid')}
+            onClick={() => setViewMode("grid")}
             className={`p-2 rounded-lg transition-colors ${
-              viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+              viewMode === "grid"
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted"
             }`}
           >
             <Grid className="w-4 h-4" />
           </button>
           <button
-            onClick={() => setViewMode('list')}
+            onClick={() => setViewMode("list")}
             className={`p-2 rounded-lg transition-colors ${
-              viewMode === 'list' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+              viewMode === "list"
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted"
             }`}
           >
             <List className="w-4 h-4" />
@@ -293,15 +324,21 @@ export function DiscoveryEngine() {
               {sources.map((source) => (
                 <button
                   key={source.id}
-                  onClick={() => setActiveSource(activeSource === source.id ? null : source.id)}
+                  onClick={() =>
+                    setActiveSource(
+                      activeSource === source.id ? null : source.id
+                    )
+                  }
                   className={`w-full flex items-center justify-between p-2 rounded-lg text-sm transition-colors ${
                     activeSource === source.id
-                      ? 'bg-primary/10 text-primary'
-                      : 'hover:bg-muted'
+                      ? "bg-primary/10 text-primary"
+                      : "hover:bg-muted"
                   }`}
                 >
                   <span>{source.name}</span>
-                  <span className="text-muted-foreground">{source.count.toLocaleString()}</span>
+                  <span className="text-muted-foreground">
+                    {source.count.toLocaleString()}
+                  </span>
                 </button>
               ))}
             </div>
@@ -327,7 +364,11 @@ export function DiscoveryEngine() {
               Recent Searches
             </h3>
             <div className="space-y-2">
-              {['transformer architecture', 'RLHF training', 'agent frameworks'].map((query) => (
+              {[
+                "transformer architecture",
+                "RLHF training",
+                "agent frameworks",
+              ].map((query) => (
                 <button
                   key={query}
                   className="w-full text-left p-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
@@ -343,7 +384,8 @@ export function DiscoveryEngine() {
         <div className="col-span-9">
           <div className="flex items-center justify-between mb-4">
             <p className="text-sm text-muted-foreground">
-              Found <span className="font-semibold text-foreground">2,847</span> results
+              Found <span className="font-semibold text-foreground">2,847</span>{" "}
+              results
             </p>
             <select className="px-3 py-1.5 bg-card border border-border rounded-lg text-sm">
               <option>Sort by Relevance</option>
@@ -352,7 +394,11 @@ export function DiscoveryEngine() {
             </select>
           </div>
 
-          <div className={viewMode === 'grid' ? 'grid grid-cols-2 gap-4' : 'space-y-4'}>
+          <div
+            className={
+              viewMode === "grid" ? "grid grid-cols-2 gap-4" : "space-y-4"
+            }
+          >
             {researchItems.map((item) => (
               <ResearchCard key={item.id} item={item} />
             ))}

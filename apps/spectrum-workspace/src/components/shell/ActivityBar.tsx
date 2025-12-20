@@ -85,6 +85,7 @@ const ActivityBarButton = forwardRef<HTMLButtonElement, ActivityBarButtonProps>(
         ref={ref}
         onClick={onClick}
         title={item.label}
+        aria-label={item.label}
         className={cn(
           "relative w-12 h-12 flex items-center justify-center",
           "transition-all duration-150 group",

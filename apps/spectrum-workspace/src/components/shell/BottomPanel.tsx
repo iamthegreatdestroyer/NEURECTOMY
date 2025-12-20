@@ -262,12 +262,14 @@ function TerminalPanel({
             onClick={onNew}
             className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
             title="New Terminal"
+            aria-label="New Terminal"
           >
             <Plus size={14} />
           </button>
           <button
             className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
             title="Split Terminal"
+            aria-label="Split Terminal"
           >
             <SplitSquareHorizontal size={14} />
           </button>

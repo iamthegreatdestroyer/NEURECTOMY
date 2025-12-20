@@ -308,6 +308,7 @@ function EditorPaneRenderer({ pane }: EditorPaneRendererProps) {
             onClick={() => splitPane(pane.id, "horizontal")}
             className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
             title="Split Right"
+            aria-label="Split Right"
           >
             <SplitSquareHorizontal size={14} />
           </button>
@@ -315,6 +316,7 @@ function EditorPaneRenderer({ pane }: EditorPaneRendererProps) {
             onClick={() => splitPane(pane.id, "vertical")}
             className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
             title="Split Down"
+            aria-label="Split Down"
           >
             <SplitSquareVertical size={14} />
           </button>

@@ -296,12 +296,17 @@ function DockHeader({
               onClick={() => action.run()}
               className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent"
               title={action.label}
+              aria-label={action.label}
             >
               {Icon && <Icon size={14} />}
             </button>
           );
         })}
-        <button className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent">
+        <button
+          className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent"
+          aria-label="More options"
+          title="More options"
+        >
           <MoreHorizontal size={14} />
         </button>
       </div>
@@ -359,6 +364,7 @@ export function ActivityBarItem({
         active && "text-foreground border-l-2 border-primary bg-accent/50"
       )}
       title={label}
+      aria-label={label}
     >
       <Icon size={24} />
     </button>
@@ -392,6 +398,8 @@ export function CollapseButton({
     Icon = isCollapsed ? ChevronUp : ChevronDown;
   }
 
+  const collapseLabel = isCollapsed ? "Expand" : "Collapse";
+
   return (
     <button
       onClick={onClick}
@@ -399,7 +407,8 @@ export function CollapseButton({
         "p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent",
         className
       )}
-      title={isCollapsed ? "Expand" : "Collapse"}
+      title={collapseLabel}
+      aria-label={collapseLabel}
     >
       <Icon size={16} />
     </button>

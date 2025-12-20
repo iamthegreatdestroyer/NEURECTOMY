@@ -269,20 +269,40 @@ export default function DimensionalForge() {
       {/* Toolbar */}
       <div className="h-12 px-4 flex items-center justify-between border-b border-border bg-card">
         <div className="flex items-center gap-2">
-          <button className="p-2 hover:bg-muted rounded-lg transition-colors">
+          <button
+            className="p-2 hover:bg-muted rounded-lg transition-colors"
+            aria-label="Add element"
+            title="Add element"
+          >
             <Plus className="w-4 h-4" />
           </button>
-          <button className="p-2 hover:bg-muted rounded-lg transition-colors">
+          <button
+            className="p-2 hover:bg-muted rounded-lg transition-colors"
+            aria-label="Add shape"
+            title="Add shape"
+          >
             <Box className="w-4 h-4" />
           </button>
           <div className="w-px h-6 bg-border mx-2" />
-          <button className="p-2 hover:bg-muted rounded-lg transition-colors">
+          <button
+            className="p-2 hover:bg-muted rounded-lg transition-colors"
+            aria-label="Zoom in"
+            title="Zoom in"
+          >
             <ZoomIn className="w-4 h-4" />
           </button>
-          <button className="p-2 hover:bg-muted rounded-lg transition-colors">
+          <button
+            className="p-2 hover:bg-muted rounded-lg transition-colors"
+            aria-label="Zoom out"
+            title="Zoom out"
+          >
             <ZoomOut className="w-4 h-4" />
           </button>
-          <button className="p-2 hover:bg-muted rounded-lg transition-colors">
+          <button
+            className="p-2 hover:bg-muted rounded-lg transition-colors"
+            aria-label="Reset view"
+            title="Reset view"
+          >
             <RotateCcw className="w-4 h-4" />
           </button>
         </div>
@@ -589,13 +609,19 @@ export default function DimensionalForge() {
       <div className="h-24 border-t border-border bg-card p-4">
         <div className="flex items-center gap-4 mb-2">
           <div className="flex items-center gap-1">
-            <button className="p-1.5 hover:bg-muted rounded transition-colors">
+            <button
+              className="p-1.5 hover:bg-muted rounded transition-colors"
+              aria-label="Skip to start"
+              title="Skip to start"
+            >
               <SkipBack className="w-4 h-4" />
             </button>
             <button
               className="p-1.5 hover:bg-muted rounded transition-colors"
               onClick={handlePlayPause}
               disabled={!activeWorkflow}
+              aria-label={isPlaying ? "Pause" : "Play"}
+              title={isPlaying ? "Pause" : "Play"}
             >
               {isPlaying ? (
                 <Pause className="w-4 h-4" />
@@ -603,7 +629,11 @@ export default function DimensionalForge() {
                 <Play className="w-4 h-4" />
               )}
             </button>
-            <button className="p-1.5 hover:bg-muted rounded transition-colors">
+            <button
+              className="p-1.5 hover:bg-muted rounded transition-colors"
+              aria-label="Skip to end"
+              title="Skip to end"
+            >
               <SkipForward className="w-4 h-4" />
             </button>
           </div>

@@ -334,13 +334,25 @@ export function AgentEditor() {
           <div className="flex items-center gap-2">
             {!isNewAgent && (
               <>
-                <button className="p-2 hover:bg-accent rounded-lg transition-colors text-muted-foreground">
+                <button
+                  className="p-2 hover:bg-accent rounded-lg transition-colors text-muted-foreground"
+                  aria-label="Duplicate agent"
+                  title="Duplicate agent"
+                >
                   <Copy className="h-5 w-5" />
                 </button>
-                <button className="p-2 hover:bg-accent rounded-lg transition-colors text-muted-foreground">
+                <button
+                  className="p-2 hover:bg-accent rounded-lg transition-colors text-muted-foreground"
+                  aria-label="Refresh agent"
+                  title="Refresh agent"
+                >
                   <RefreshCw className="h-5 w-5" />
                 </button>
-                <button className="p-2 hover:bg-red-500/10 rounded-lg transition-colors text-red-500">
+                <button
+                  className="p-2 hover:bg-red-500/10 rounded-lg transition-colors text-red-500"
+                  aria-label="Delete agent"
+                  title="Delete agent"
+                >
                   <Trash2 className="h-5 w-5" />
                 </button>
                 <div className="w-px h-6 bg-border mx-2" />

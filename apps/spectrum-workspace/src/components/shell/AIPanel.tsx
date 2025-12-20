@@ -151,12 +151,14 @@ export function AIPanel({
             onClick={onClearChat}
             className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
             title="Clear Chat"
+            aria-label="Clear chat history"
           >
             <Trash2 size={14} />
           </button>
           <button
             className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
             title="Settings"
+            aria-label="AI settings"
           >
             <Settings2 size={14} />
           </button>
