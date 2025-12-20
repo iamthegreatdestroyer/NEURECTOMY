@@ -481,10 +481,18 @@ export function ExperimentDashboard() {
                         <Download className="w-3 h-3" />
                         Export
                       </button>
-                      <button 
+                      <button
                         className="p-1.5 bg-background border border-border rounded hover:border-primary/50 transition-colors"
-                        aria-label={experiment.starred ? "Remove from favorites" : "Add to favorites"}
-                        title={experiment.starred ? "Remove from favorites" : "Add to favorites"}
+                        aria-label={
+                          experiment.starred
+                            ? "Remove from favorites"
+                            : "Add to favorites"
+                        }
+                        title={
+                          experiment.starred
+                            ? "Remove from favorites"
+                            : "Add to favorites"
+                        }
                       >
                         {experiment.starred ? (
                           <StarOff className="w-3 h-3" />

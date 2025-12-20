@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 import {
   Shield,
   FileText,
@@ -16,14 +16,14 @@ import {
   Gavel,
   FileCheck,
   AlertCircle,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ComplianceItem {
   id: string;
   title: string;
   category: string;
-  status: 'compliant' | 'warning' | 'non-compliant' | 'pending';
+  status: "compliant" | "warning" | "non-compliant" | "pending";
   lastAudit: string;
   nextAudit: string;
   description: string;
@@ -35,136 +35,144 @@ interface LegalDocument {
   type: string;
   version: string;
   lastUpdated: string;
-  status: 'active' | 'draft' | 'archived';
+  status: "active" | "draft" | "archived";
 }
 
 const mockComplianceItems: ComplianceItem[] = [
   {
-    id: '1',
-    title: 'GDPR Data Protection',
-    category: 'Privacy',
-    status: 'compliant',
-    lastAudit: '2025-11-15',
-    nextAudit: '2026-02-15',
-    description: 'General Data Protection Regulation compliance for EU data subjects',
+    id: "1",
+    title: "GDPR Data Protection",
+    category: "Privacy",
+    status: "compliant",
+    lastAudit: "2025-11-15",
+    nextAudit: "2026-02-15",
+    description:
+      "General Data Protection Regulation compliance for EU data subjects",
   },
   {
-    id: '2',
-    title: 'SOC 2 Type II',
-    category: 'Security',
-    status: 'compliant',
-    lastAudit: '2025-10-01',
-    nextAudit: '2026-04-01',
-    description: 'Service Organization Control for security, availability, and confidentiality',
+    id: "2",
+    title: "SOC 2 Type II",
+    category: "Security",
+    status: "compliant",
+    lastAudit: "2025-10-01",
+    nextAudit: "2026-04-01",
+    description:
+      "Service Organization Control for security, availability, and confidentiality",
   },
   {
-    id: '3',
-    title: 'HIPAA Compliance',
-    category: 'Healthcare',
-    status: 'warning',
-    lastAudit: '2025-09-20',
-    nextAudit: '2025-12-20',
-    description: 'Health Insurance Portability and Accountability Act requirements',
+    id: "3",
+    title: "HIPAA Compliance",
+    category: "Healthcare",
+    status: "warning",
+    lastAudit: "2025-09-20",
+    nextAudit: "2025-12-20",
+    description:
+      "Health Insurance Portability and Accountability Act requirements",
   },
   {
-    id: '4',
-    title: 'PCI DSS',
-    category: 'Financial',
-    status: 'pending',
-    lastAudit: '2025-08-10',
-    nextAudit: '2025-12-10',
-    description: 'Payment Card Industry Data Security Standard',
+    id: "4",
+    title: "PCI DSS",
+    category: "Financial",
+    status: "pending",
+    lastAudit: "2025-08-10",
+    nextAudit: "2025-12-10",
+    description: "Payment Card Industry Data Security Standard",
   },
   {
-    id: '5',
-    title: 'ISO 27001',
-    category: 'Security',
-    status: 'compliant',
-    lastAudit: '2025-11-01',
-    nextAudit: '2026-05-01',
-    description: 'Information security management system certification',
+    id: "5",
+    title: "ISO 27001",
+    category: "Security",
+    status: "compliant",
+    lastAudit: "2025-11-01",
+    nextAudit: "2026-05-01",
+    description: "Information security management system certification",
   },
 ];
 
 const mockDocuments: LegalDocument[] = [
   {
-    id: '1',
-    title: 'Privacy Policy',
-    type: 'Policy',
-    version: '3.2.1',
-    lastUpdated: '2025-11-20',
-    status: 'active',
+    id: "1",
+    title: "Privacy Policy",
+    type: "Policy",
+    version: "3.2.1",
+    lastUpdated: "2025-11-20",
+    status: "active",
   },
   {
-    id: '2',
-    title: 'Terms of Service',
-    type: 'Agreement',
-    version: '2.5.0',
-    lastUpdated: '2025-11-15',
-    status: 'active',
+    id: "2",
+    title: "Terms of Service",
+    type: "Agreement",
+    version: "2.5.0",
+    lastUpdated: "2025-11-15",
+    status: "active",
   },
   {
-    id: '3',
-    title: 'Data Processing Agreement',
-    type: 'Agreement',
-    version: '1.8.3',
-    lastUpdated: '2025-10-30',
-    status: 'active',
+    id: "3",
+    title: "Data Processing Agreement",
+    type: "Agreement",
+    version: "1.8.3",
+    lastUpdated: "2025-10-30",
+    status: "active",
   },
   {
-    id: '4',
-    title: 'Cookie Policy',
-    type: 'Policy',
-    version: '2.0.0-draft',
-    lastUpdated: '2025-12-01',
-    status: 'draft',
+    id: "4",
+    title: "Cookie Policy",
+    type: "Policy",
+    version: "2.0.0-draft",
+    lastUpdated: "2025-12-01",
+    status: "draft",
   },
   {
-    id: '5',
-    title: 'Security Whitepaper',
-    type: 'Documentation',
-    version: '4.1.0',
-    lastUpdated: '2025-11-10',
-    status: 'active',
+    id: "5",
+    title: "Security Whitepaper",
+    type: "Documentation",
+    version: "4.1.0",
+    lastUpdated: "2025-11-10",
+    status: "active",
   },
 ];
 
 export function LegalFortress() {
-  const [activeTab, setActiveTab] = useState<'compliance' | 'documents' | 'audit'>('compliance');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<
+    "compliance" | "documents" | "audit"
+  >("compliance");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const statusConfig = {
-    compliant: { 
-      icon: CheckCircle, 
-      color: 'text-green-500', 
-      bg: 'bg-green-500/10',
-      label: 'Compliant' 
+    compliant: {
+      icon: CheckCircle,
+      color: "text-green-500",
+      bg: "bg-green-500/10",
+      label: "Compliant",
     },
-    warning: { 
-      icon: AlertTriangle, 
-      color: 'text-yellow-500', 
-      bg: 'bg-yellow-500/10',
-      label: 'Warning' 
+    warning: {
+      icon: AlertTriangle,
+      color: "text-yellow-500",
+      bg: "bg-yellow-500/10",
+      label: "Warning",
     },
-    'non-compliant': { 
-      icon: AlertCircle, 
-      color: 'text-red-500', 
-      bg: 'bg-red-500/10',
-      label: 'Non-Compliant' 
+    "non-compliant": {
+      icon: AlertCircle,
+      color: "text-red-500",
+      bg: "bg-red-500/10",
+      label: "Non-Compliant",
     },
-    pending: { 
-      icon: Clock, 
-      color: 'text-blue-500', 
-      bg: 'bg-blue-500/10',
-      label: 'Pending' 
+    pending: {
+      icon: Clock,
+      color: "text-blue-500",
+      bg: "bg-blue-500/10",
+      label: "Pending",
     },
   };
 
   const complianceStats = {
-    compliant: mockComplianceItems.filter(i => i.status === 'compliant').length,
-    warning: mockComplianceItems.filter(i => i.status === 'warning').length,
-    nonCompliant: mockComplianceItems.filter(i => i.status === 'non-compliant').length,
-    pending: mockComplianceItems.filter(i => i.status === 'pending').length,
+    compliant: mockComplianceItems.filter((i) => i.status === "compliant")
+      .length,
+    warning: mockComplianceItems.filter((i) => i.status === "warning").length,
+    nonCompliant: mockComplianceItems.filter(
+      (i) => i.status === "non-compliant"
+    ).length,
+    pending: mockComplianceItems.filter((i) => i.status === "pending").length,
   };
 
   return (
@@ -190,18 +198,18 @@ export function LegalFortress() {
         {/* Tabs */}
         <div className="flex gap-1 mt-6 p-1 bg-muted rounded-lg w-fit">
           {[
-            { id: 'compliance', label: 'Compliance', icon: Shield },
-            { id: 'documents', label: 'Documents', icon: FileText },
-            { id: 'audit', label: 'Audit Trail', icon: Eye },
-          ].map(tab => (
+            { id: "compliance", label: "Compliance", icon: Shield },
+            { id: "documents", label: "Documents", icon: FileText },
+            { id: "audit", label: "Audit Trail", icon: Eye },
+          ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as typeof activeTab)}
               className={cn(
-                'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors',
+                "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors",
                 activeTab === tab.id
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               <tab.icon className="h-4 w-4" />
@@ -241,7 +249,9 @@ export function LegalFortress() {
               <AlertCircle className="h-5 w-5 text-red-500" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{complianceStats.nonCompliant}</p>
+              <p className="text-2xl font-bold">
+                {complianceStats.nonCompliant}
+              </p>
               <p className="text-sm text-muted-foreground">Non-Compliant</p>
             </div>
           </div>
@@ -279,12 +289,12 @@ export function LegalFortress() {
           </button>
         </div>
 
-        {activeTab === 'compliance' && (
+        {activeTab === "compliance" && (
           <div className="space-y-4">
-            {mockComplianceItems.map(item => {
+            {mockComplianceItems.map((item) => {
               const status = statusConfig[item.status];
               const StatusIcon = status.icon;
-              
+
               return (
                 <div
                   key={item.id}
@@ -292,8 +302,8 @@ export function LegalFortress() {
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-4">
-                      <div className={cn('p-2 rounded-lg', status.bg)}>
-                        <StatusIcon className={cn('h-5 w-5', status.color)} />
+                      <div className={cn("p-2 rounded-lg", status.bg)}>
+                        <StatusIcon className={cn("h-5 w-5", status.color)} />
                       </div>
                       <div>
                         <h3 className="font-semibold">{item.title}</h3>
@@ -313,10 +323,13 @@ export function LegalFortress() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className={cn(
-                        'px-2 py-1 rounded-full text-xs font-medium',
-                        status.bg, status.color
-                      )}>
+                      <span
+                        className={cn(
+                          "px-2 py-1 rounded-full text-xs font-medium",
+                          status.bg,
+                          status.color
+                        )}
+                      >
                         {status.label}
                       </span>
                       <ChevronRight className="h-5 w-5 text-muted-foreground" />
@@ -328,9 +341,9 @@ export function LegalFortress() {
           </div>
         )}
 
-        {activeTab === 'documents' && (
+        {activeTab === "documents" && (
           <div className="grid grid-cols-2 gap-4">
-            {mockDocuments.map(doc => (
+            {mockDocuments.map((doc) => (
               <div
                 key={doc.id}
                 className="p-4 bg-card rounded-xl border border-border hover:border-primary/50 transition-colors cursor-pointer"
@@ -342,7 +355,7 @@ export function LegalFortress() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold truncate">{doc.title}</h3>
-                      {doc.status === 'draft' && (
+                      {doc.status === "draft" && (
                         <span className="px-2 py-0.5 bg-yellow-500/10 text-yellow-500 text-xs rounded-full">
                           Draft
                         </span>
@@ -355,7 +368,7 @@ export function LegalFortress() {
                       Updated {doc.lastUpdated}
                     </p>
                   </div>
-                  <button 
+                  <button
                     className="p-2 hover:bg-accent rounded-lg transition-colors"
                     aria-label="Download document"
                     title="Download document"
@@ -368,7 +381,7 @@ export function LegalFortress() {
           </div>
         )}
 
-        {activeTab === 'audit' && (
+        {activeTab === "audit" && (
           <div className="space-y-4">
             <div className="p-6 bg-card rounded-xl border border-border text-center">
               <Gavel className="h-12 w-12 text-muted-foreground mx-auto mb-4" />

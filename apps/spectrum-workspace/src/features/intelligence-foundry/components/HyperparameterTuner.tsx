@@ -629,7 +629,7 @@ export function HyperparameterTuner() {
                           <span className="text-sm font-semibold text-primary">
                             {trial.value.toFixed(4)}
                           </span>
-                          <button 
+                          <button
                             className="p-1 hover:bg-muted rounded transition-colors"
                             aria-label="View trial details"
                             title="View trial details"
