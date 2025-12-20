@@ -53,7 +53,7 @@ class Settings(BaseSettings):
     ws_max_connections: int = 100
     
     # CORS Configuration
-    cors_origins: str = "http://localhost:5173,http://localhost:3000,http://localhost:8080,tauri://localhost,http://localhost:1420"
+    cors_origins: str = "http://localhost:16000,http://localhost:16080,tauri://localhost,http://localhost:1420"
     
     @property
     def cors_origins_list(self) -> list[str]:

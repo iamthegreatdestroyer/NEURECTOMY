@@ -132,7 +132,7 @@ async fn test_error_response_format() {
 #[tokio::test]
 async fn test_cors_headers() {
     // Verify CORS configuration
-    let allowed_origin = "http://localhost:3000";
+    let allowed_origin = "http://localhost:16000";
     let allowed_methods = vec!["GET", "POST", "PUT", "DELETE"];
     
     assert!(allowed_methods.contains(&"POST"));

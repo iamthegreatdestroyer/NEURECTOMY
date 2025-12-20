@@ -7,7 +7,7 @@ import { GraphQLClient, gql } from "graphql-request";
 
 // Configuration
 const GRAPHQL_URL =
-  import.meta.env.VITE_GRAPHQL_URL || "http://localhost:8080/graphql";
+  import.meta.env.VITE_GRAPHQL_URL || "http://localhost:16080/graphql";
 
 // Create GraphQL client instance
 export const graphqlClient = new GraphQLClient(GRAPHQL_URL, {

@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/component: backend
     app.kubernetes.io/part-of: neurectomy-platform
 data:
-  mlflow-tracking-uri: "http://mlflow:5000"
+  mlflow-tracking-uri: "http://mlflow:16610"
   log-level: "INFO"
   rate-limit-requests: "100"
   rate-limit-window-seconds: "60"

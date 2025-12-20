@@ -48,9 +48,9 @@ pub mod api_keys {
 
 /// Test configuration values
 pub mod config {
-    pub const TEST_DATABASE_URL: &str = "postgres://test:test@localhost:5432/neurectomy_test";
-    pub const TEST_REDIS_URL: &str = "redis://localhost:6379/1";
-    pub const TEST_NEO4J_URI: &str = "bolt://localhost:7687";
+    pub const TEST_DATABASE_URL: &str = "postgres://test:test@localhost:16432/neurectomy_test";
+    pub const TEST_REDIS_URL: &str = "redis://localhost:16500/1";
+    pub const TEST_NEO4J_URI: &str = "bolt://localhost:16475";
     pub const TEST_JWT_SECRET: &str = "test_jwt_secret_for_development_only_32bytes";
 }
 

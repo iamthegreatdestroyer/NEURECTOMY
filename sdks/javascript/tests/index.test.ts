@@ -9,7 +9,7 @@ describe('NeurectomyClient', () => {
   let client: NeurectomyClient;
   const mockConfig: NeurectomyConfig = {
     apiKey: 'test-api-key',
-    baseURL: 'http://localhost:8000',
+    baseURL: 'http://localhost:16081',
     timeout: 5000,
   };
 

@@ -19,9 +19,9 @@
 
 // Environment configuration
 const GRAPHQL_ENDPOINT =
-  import.meta.env.VITE_GRAPHQL_ENDPOINT || "http://localhost:8000/graphql";
+  import.meta.env.VITE_GRAPHQL_ENDPOINT || "http://localhost:16080/graphql";
 const WS_ENDPOINT =
-  import.meta.env.VITE_WS_ENDPOINT || "ws://localhost:8000/graphql";
+  import.meta.env.VITE_WS_ENDPOINT || "ws://localhost:16080/graphql";
 
 /**
  * WebSocket Client for Subscriptions

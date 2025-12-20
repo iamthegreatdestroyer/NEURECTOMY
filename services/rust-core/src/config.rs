@@ -82,7 +82,7 @@ impl AppConfig {
         let config = config::Config::builder()
             // Server defaults
             .set_default("server.host", "0.0.0.0")?
-            .set_default("server.port", 8080)?
+            .set_default("server.port", 16082)?
             .set_default("server.env", "development")?
             // Database defaults
             .set_default("database.max_connections", 10)?

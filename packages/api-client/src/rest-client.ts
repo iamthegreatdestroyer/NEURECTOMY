@@ -308,7 +308,7 @@ class RESTClient {
 
 // Create default REST client instance
 const REST_API_BASE_URL =
-  import.meta.env.VITE_REST_API_URL || "http://localhost:8000/api";
+  import.meta.env.VITE_REST_API_URL || "http://localhost:16080/api";
 
 export const restClient = new RESTClient(REST_API_BASE_URL);
 

@@ -42,14 +42,14 @@ USER neurectomy
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     ENVIRONMENT=production \
-    PORT=8000
+    PORT=16081
 
 # Expose port
-EXPOSE 8000
+EXPOSE 16081
 
 # Health check
 HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD curl -f http://localhost:16081/health || exit 1
 
 # Run Intelligence Foundry application
-CMD ["uvicorn", "intelligence_foundry_main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "intelligence_foundry_main:app", "--host", "0.0.0.0", "--port", "16081"]

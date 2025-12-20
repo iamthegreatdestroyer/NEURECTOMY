@@ -24,7 +24,7 @@ impl TestApp {
         // In production, this would spin up testcontainers
         Self {
             router: Router::new(),
-            db_url: "postgres://test:test@localhost:5432/neurectomy_test".to_string(),
+            db_url: "postgres://test:test@localhost:16432/neurectomy_test".to_string(),
         }
     }
 }

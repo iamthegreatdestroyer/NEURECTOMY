@@ -361,7 +361,7 @@ class InferenceConfig:
     backend: InferenceBackend = InferenceBackend.RYOT_LOCAL
     
     # Ryot-specific
-    ryot_endpoint: str = "http://localhost:8000"
+    ryot_endpoint: str = "http://localhost:46080"
     ryot_model: str = "bitnet-7b"
     
     # Generation

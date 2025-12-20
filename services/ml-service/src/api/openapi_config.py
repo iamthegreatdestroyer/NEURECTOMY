@@ -226,7 +226,7 @@ def customize_openapi_schema(openapi_schema: Dict[str, Any]) -> Dict[str, Any]:
     # Add servers
     openapi_schema["servers"] = [
         {
-            "url": "http://localhost:8000",
+            "url": "http://localhost:16081",
             "description": "Local Development"
         },
         {

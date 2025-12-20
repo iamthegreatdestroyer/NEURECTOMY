@@ -37,7 +37,7 @@ describe("RyotService", () => {
     vi.clearAllMocks();
     // Reset to default config
     setAIConfig({
-      ryotApiUrl: "http://localhost:8080",
+      ryotApiUrl: "http://localhost:46080",
       defaultModel: "ryot-bitnet-7b",
     });
   });
@@ -67,7 +67,7 @@ describe("RyotService", () => {
 
       expect(available).toBe(true);
       expect(mockFetch).toHaveBeenCalledWith(
-        "http://localhost:8080/v1/models",
+        "http://localhost:46080/v1/models",
         expect.objectContaining({ method: "GET" })
       );
     });

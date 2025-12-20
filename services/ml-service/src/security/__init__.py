@@ -89,7 +89,7 @@ class SecurityConfig(BaseModel):
     max_failed_attempts: int = 5
     lockout_duration_minutes: int = 15
     # Redis configuration for distributed deployments
-    redis_url: str = Field(default_factory=lambda: os.environ.get("REDIS_URL", "redis://localhost:6379"))
+    redis_url: str = Field(default_factory=lambda: os.environ.get("REDIS_URL", "redis://localhost:16500"))
 
 
 # Default config

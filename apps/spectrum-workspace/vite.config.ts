@@ -5,8 +5,6 @@ import path from "path";
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  // Use absolute paths for Tauri's tauri://localhost protocol
-  // Tauri 2.0 serves bundled assets from tauri://localhost/ which requires absolute paths
   base: "/",
   resolve: {
     alias: {
@@ -20,23 +18,8 @@ export default defineConfig({
       "@utils": path.resolve(__dirname, "./src/utils"),
     },
   },
-  // Vitest configuration
-  test: {
-    globals: true,
-    environment: "jsdom",
-    setupFiles: ["./src/test/setup.ts"],
-    include: ["src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
-    coverage: {
-      provider: "v8",
-      reporter: ["text", "json", "html"],
-    },
-    alias: {
-      // Mock monaco-editor in tests
-      "monaco-editor": path.resolve(
-        __dirname,
-        "./src/test/__mocks__/monaco-editor.ts"
-      ),
-    },
+  worker: {
+    format: "es",
   },
   server: {
     port: 16000,
@@ -57,24 +40,28 @@ export default defineConfig({
   },
   build: {
     outDir: "dist",
-    sourcemap: true,
+    sourcemap: false,
+    minify: "esbuild",
     rollupOptions: {
       output: {
         manualChunks: {
           "react-vendor": ["react", "react-dom", "react-router-dom"],
           "three-vendor": ["three", "@react-three/fiber", "@react-three/drei"],
-          "radix-vendor": [
-            "@radix-ui/react-dialog",
-            "@radix-ui/react-dropdown-menu",
-            "@radix-ui/react-tabs",
-            "@radix-ui/react-tooltip",
-          ],
-          "monaco-vendor": ["@monaco-editor/react"],
         },
       },
     },
   },
   optimizeDeps: {
-    include: ["react", "react-dom", "three"],
+    include: [
+      "react",
+      "react-dom",
+      "react-router-dom",
+      "three",
+      "@radix-ui/react-scroll-area",
+    ],
+    exclude: ["@monaco-editor/react"],
+  },
+  define: {
+    global: "globalThis",
   },
 });

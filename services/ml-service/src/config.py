@@ -35,15 +35,15 @@ class Settings(BaseSettings):
     
     # Server
     host: str = "0.0.0.0"
-    port: int = 8081
+    port: int = 16081
     debug: bool = True
     
     # Database
-    database_url: str = "postgresql+asyncpg://neurectomy:neurectomy@localhost:5432/neurectomy"
-    redis_url: str = "redis://localhost:6379"
+    database_url: str = "postgresql+asyncpg://neurectomy:neurectomy@localhost:16432/neurectomy"
+    redis_url: str = "redis://localhost:16500"
     
     # CORS - @CIPHER: Explicit origins only, no wildcards in production
-    cors_origins: List[str] = ["http://localhost:3000", "http://localhost:8080"]
+    cors_origins: List[str] = ["http://localhost:16000", "http://localhost:16080"]
     cors_allow_methods: List[str] = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
     cors_allow_headers: List[str] = [
         "Authorization",
@@ -70,7 +70,7 @@ class Settings(BaseSettings):
     
     # vLLM - Production inference server
     # @TENSOR @VELOCITY - vLLM provides 2-4x throughput vs Ollama
-    vllm_url: str = "http://localhost:8000"  # vLLM OpenAI-compatible endpoint
+    vllm_url: str = "http://localhost:16081"  # vLLM OpenAI-compatible endpoint
     vllm_model: str = "meta-llama/Llama-3.2-8B-Instruct"
     vllm_api_key: Optional[SecretStr] = None  # Optional API key for vLLM
     
@@ -79,7 +79,7 @@ class Settings(BaseSettings):
     embedding_dim: int = 384
     
     # MLflow
-    mlflow_tracking_uri: str = "http://localhost:5000"
+    mlflow_tracking_uri: str = "http://localhost:16610"
     
     # Inference optimization settings
     # @VELOCITY - Performance tuning for real-time agent intelligence

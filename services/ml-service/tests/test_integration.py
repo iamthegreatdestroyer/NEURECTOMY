@@ -368,7 +368,7 @@ class TestCORS:
         response = test_client.options(
             "/api/v1/llm/chat",
             headers={
-                "Origin": "http://localhost:3000",
+                "Origin": "http://localhost:16000",
                 "Access-Control-Request-Method": "POST",
                 "Access-Control-Request-Headers": "Content-Type",
             },
@@ -383,7 +383,7 @@ class TestCORS:
         response = test_client.get(
             "/health",
             headers={
-                "Origin": "http://localhost:3000",
+                "Origin": "http://localhost:16000",
             },
         )
         

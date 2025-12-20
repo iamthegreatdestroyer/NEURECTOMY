@@ -300,7 +300,7 @@ class TestEndToEndWorkflows:
         response = await async_client.options(
             "/api/v1/health",
             headers={
-                "Origin": "http://localhost:3000",
+                "Origin": "http://localhost:16000",
                 "Access-Control-Request-Method": "GET"
             }
         )

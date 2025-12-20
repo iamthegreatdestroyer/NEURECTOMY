@@ -28,10 +28,10 @@ def verify_sdk_client():
     try:
         from neurectomy.sdk import NeurectomyClient, NeurectomyConfig
         
-        config = NeurectomyConfig(base_url="http://localhost:8000")
+        config = NeurectomyConfig(base_url="http://localhost:16081")
         client = NeurectomyClient(config)
         
-        assert client.config.base_url == "http://localhost:8000"
+        assert client.config.base_url == "http://localhost:16081"
         
         client.close()
         
@@ -91,8 +91,8 @@ def main():
         print("  ✅ PHASE 7 VERIFICATION COMPLETE")
         print("=" * 60)
         print()
-        print("  API available at: http://localhost:8000")
-        print("  Docs available at: http://localhost:8000/docs")
+        print("  API available at: http://localhost:16081")
+        print("  Docs available at: http://localhost:16081/docs")
         return 0
     else:
         print("=" * 60)

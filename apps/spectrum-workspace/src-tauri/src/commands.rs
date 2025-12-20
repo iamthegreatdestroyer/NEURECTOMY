@@ -137,8 +137,7 @@ pub async fn open_folder_dialog(
     use tauri_plugin_dialog::DialogExt;
     
     let dialog = app.dialog().file()
-        .set_title("Select Folder")
-        .set_directory(true);
+        .set_title("Select Folder");
     
     let result = dialog.blocking_pick_folder();
     

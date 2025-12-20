@@ -30,9 +30,9 @@ from httpx import AsyncClient, ASGITransport
 class TestSettings:
     """Test-specific settings that override production config."""
     
-    DATABASE_URL = "postgresql+asyncpg://test:test@localhost:5434/test_neurectomy"
-    REDIS_URL = "redis://localhost:6379/1"  # Use different DB for tests
-    MLFLOW_TRACKING_URI = "http://localhost:5000"
+    DATABASE_URL = "postgresql+asyncpg://test:test@localhost:16432/test_neurectomy"
+    REDIS_URL = "redis://localhost:16500/1"  # Use different DB for tests
+    MLFLOW_TRACKING_URI = "http://localhost:16610"
     
     # Mock API keys
     OPENAI_API_KEY = "test-openai-key"
@@ -604,19 +604,19 @@ async def api_client() -> AsyncGenerator[AsyncClient, None]:
 @pytest.fixture
 def mlflow_base_url() -> str:
     """MLflow Tracking Server base URL."""
-    return "http://localhost:5000"
+    return "http://localhost:16610"
 
 
 @pytest.fixture
 def minio_base_url() -> str:
     """MinIO S3 storage base URL."""
-    return "http://localhost:9001"
+    return "http://localhost:16951"
 
 
 @pytest.fixture
 def optuna_base_url() -> str:
     """Optuna Dashboard base URL."""
-    return "http://localhost:8085"
+    return "http://localhost:16611"
 
 
 @pytest_asyncio.fixture

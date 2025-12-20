@@ -91,7 +91,7 @@ spec:
         url: http://flagger-loadtester.flagger-system/
         timeout: 5s
         metadata:
-          cmd: "hey -z 1m -q 10 -c 2 http://prod-ml-service-canary.neurectomy-prod:8000/health"
+          cmd: "hey -z 1m -q 10 -c 2 http://prod-ml-service-canary.neurectomy-prod:16081/health"
 
       # Pre-rollout acceptance test
       - name: acceptance-test
@@ -99,7 +99,7 @@ spec:
         url: http://flagger-loadtester.flagger-system/
         timeout: 30s
         metadata:
-          cmd: "curl -s http://prod-ml-service-canary.neurectomy-prod:8000/health | grep -q 'ok'"
+          cmd: "curl -s http://prod-ml-service-canary.neurectomy-prod:16081/health | grep -q 'ok'"
 
       # Post-rollout notification
       - name: notify-promotion
@@ -168,6 +168,6 @@ spec:
         url: http://flagger-loadtester.flagger-system/
         timeout: 30s
         metadata:
-          cmd: "curl -s http://staging-ml-service-canary.neurectomy-staging:8000/health | grep -q 'ok'"
+          cmd: "curl -s http://staging-ml-service-canary.neurectomy-staging:16081/health | grep -q 'ok'"
 
   progressDeadlineSeconds: 300

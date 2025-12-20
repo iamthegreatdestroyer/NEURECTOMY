@@ -146,7 +146,7 @@ echo "## API Health"
 echo "-------------"
 
 # Internal health check
-HEALTH_INTERNAL=$(kubectl exec -n neurectomy deploy/ml-service -- curl -s localhost:8000/health 2>/dev/null | grep -o '"status":"[^"]*"' | head -1 || echo "")
+HEALTH_INTERNAL=$(kubectl exec -n neurectomy deploy/ml-service -- curl -s localhost:16081/health 2>/dev/null | grep -o '"status":"[^"]*"' | head -1 || echo "")
 if echo "$HEALTH_INTERNAL" | grep -q "healthy\|ok\|up"; then
     log_test "Internal health endpoint" "PASS"
 else

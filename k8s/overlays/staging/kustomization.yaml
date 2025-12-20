@@ -123,7 +123,7 @@ secretGenerator:
   - name: ml-service-secrets
     behavior: replace
     literals:
-      - database-url=postgresql://neurectomy:${DB_PASSWORD}@postgres-staging:5432/neurectomy_staging
-      - redis-url=redis://redis-staging:6379
+      - database-url=postgresql://neurectomy:${DB_PASSWORD}@postgres-staging:16432/neurectomy_staging
+      - redis-url=redis://redis-staging:16500
       # Note: In production, use External Secrets Operator or Sealed Secrets
       - jwt-secret=${JWT_SECRET_STAGING}

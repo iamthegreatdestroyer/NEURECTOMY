@@ -92,6 +92,6 @@ secretGenerator:
   - name: ml-service-secrets
     behavior: replace
     literals:
-      - database-url=postgresql://neurectomy:neurectomy@postgres:5432/neurectomy_dev
-      - redis-url=redis://redis:6379
+      - database-url=postgresql://neurectomy:neurectomy@postgres:16432/neurectomy_dev
+      - redis-url=redis://redis:16500
       - jwt-secret=dev-jwt-secret-not-for-production

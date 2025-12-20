@@ -122,7 +122,7 @@ data:
       # Neurectomy API services
       - job_name: 'neurectomy-api'
         static_configs:
-          - targets: ['neurectomy-api:8000']
+          - targets: ['neurectomy-api:16081']
         relabel_configs:
           - source_labels: [__address__]
             target_label: instance

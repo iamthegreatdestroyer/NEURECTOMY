@@ -15,7 +15,7 @@ import json
 class NeurectomyConfig:
     """SDK configuration."""
     
-    base_url: str = "http://localhost:8000"
+    base_url: str = "http://localhost:16080"
     api_key: Optional[str] = None
     timeout: float = 60.0
     max_retries: int = 3

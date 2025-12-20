@@ -398,7 +398,7 @@ export class IntelligenceFoundryWebSocket {
    */
   private getWebSocketUrl(): string {
     if (typeof window === "undefined") {
-      return "ws://localhost:8080/ws/intelligence-foundry";
+      return "ws://localhost:16083/ws/intelligence-foundry";
     }
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const host = window.location.host;

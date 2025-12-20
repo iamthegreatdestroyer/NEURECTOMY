@@ -27,7 +27,7 @@ spec:
         app.kubernetes.io/component: backend
       annotations:
         prometheus.io/scrape: "true"
-        prometheus.io/port: "8000"
+        prometheus.io/port: "16081"
         prometheus.io/path: "/metrics"
     spec:
       serviceAccountName: ml-service
@@ -41,13 +41,13 @@ spec:
           imagePullPolicy: Always
           ports:
             - name: http
-              containerPort: 8000
+              containerPort: 16081
               protocol: TCP
           env:
             - name: ENVIRONMENT
               value: "production"
             - name: PORT
-              value: "8000"
+              value: "16081"
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:

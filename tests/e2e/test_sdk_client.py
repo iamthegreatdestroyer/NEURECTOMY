@@ -10,7 +10,7 @@ class TestSDKClient:
         try:
             from neurectomy.sdk import NeurectomyClient, NeurectomyConfig
             
-            config = NeurectomyConfig(base_url="http://localhost:8000")
+            config = NeurectomyConfig(base_url="http://localhost:16081")
             client = NeurectomyClient(config)
             
             assert client is not None
